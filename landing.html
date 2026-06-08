@@ -1,0 +1,353 @@
+<!DOCTYPE html><html class="dark" lang="ko" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SNS NewsGen - AI-Powered Card News Generator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        @font-face {
+            font-family: 'HangamePoker';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/HangamePoker.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+    </style>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "on-tertiary": "#3c0091",
+                        "surface": "#0b1326",
+                        "inverse-surface": "#dae2fd",
+                        "on-surface-variant": "#bcc9cd",
+                        "on-secondary-fixed": "#001a42",
+                        "on-primary": "#003640",
+                        "outline-variant": "#3d494c",
+                        "surface-container-lowest": "#060e20",
+                        "on-tertiary-fixed": "#23005c",
+                        "inverse-on-surface": "#283044",
+                        "surface-container-low": "#131b2e",
+                        "surface-container": "#171f33",
+                        "on-primary-container": "#00424f",
+                        "on-secondary": "#002e6a",
+                        "background": "#0b1326",
+                        "on-surface": "#dae2fd",
+                        "outline": "#869397",
+                        "surface-tint": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#0566d9",
+                        "surface-variant": "#2d3449",
+                        "surface-dim": "#0b1326",
+                        "secondary": "#adc6ff",
+                        "surface-bright": "#31394d",
+                        "on-primary-fixed": "#001f26",
+                        "on-tertiary-container": "#4900ae",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004395",
+                        "surface-container-high": "#222a3d",
+                        "on-primary-fixed-variant": "#004e5c",
+                        "primary-fixed-dim": "#4cd7f6",
+                        "tertiary-container": "#b395ff",
+                        "on-secondary-container": "#e6ecff",
+                        "on-background": "#dae2fd",
+                        "primary-container": "#06b6d4",
+                        "tertiary-fixed": "#e9ddff",
+                        "tertiary": "#d0bcff",
+                        "surface-container-highest": "#2d3449",
+                        "on-error": "#690005",
+                        "primary-fixed": "#acedff",
+                        "primary": "#4cd7f6",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "secondary-fixed": "#d8e2ff",
+                        "error": "#ffb4ab",
+                        "inverse-primary": "#00687a",
+                        "secondary-fixed-dim": "#adc6ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "gutter": "24px",
+                        "sm": "8px",
+                        "container-max": "1280px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "xl": "40px",
+                        "margin-desktop": "48px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter", "HangamePoker"],
+                        "body-sm": ["Inter", "HangamePoker"],
+                        "display-lg": ["Plus Jakarta Sans", "HangamePoker"],
+                        "headline-sm": ["Plus Jakarta Sans", "HangamePoker"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter", "HangamePoker"],
+                        "headline-md": ["Plus Jakarta Sans", "HangamePoker"],
+                        "korean": ["HangamePoker", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .cta-gradient {
+            background: linear-gradient(135deg, #06b6d4 0%, #0566d9 100%);
+        }
+        .aurora-blur {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%);
+            filter: blur(60px);
+            z-index: -1;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0b1326;
+            color: #FFFFFF;
+            overflow-x: hidden;
+        }
+        .font-korean-bold {
+            font-family: 'HangamePoker', sans-serif;
+            font-weight: 800;
+        }
+        .font-korean-reg {
+            font-family: 'HangamePoker', sans-serif;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body class="font-body-md selection:bg-primary-container selection:text-white">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-lg border-b border-white/10 shadow-sm">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-headline-md" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">SNS NewsGen</h1>
+</div>
+<nav class="hidden md:flex gap-md">
+<a class="text-white font-bold font-body-md text-body-md" href="#">Home</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Showcase</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 font-body-md text-body-md" href="#">Pricing</a>
+</nav>
+<button class="cta-gradient text-white px-6 py-2 rounded-full font-label-md text-label-md active:scale-95 transition-transform">Get Started</button>
+</div>
+</header>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative px-margin-mobile md:px-margin-desktop py-xl overflow-hidden min-h-[707px] flex flex-col items-center justify-center text-center">
+<div class="aurora-blur top-[-100px] left-[-100px]" style="transform: translate(19.8462px, 15.6913px);"></div>
+<div class="aurora-blur bottom-[-100px] right-[-100px]" style="transform: translate(39.6923px, 31.3825px);"></div>
+<div class="max-w-4xl mx-auto space-y-lg">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel text-primary font-label-md text-label-sm mb-4">
+<span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+<span class="font-korean-reg text-white">AI-Powered Newsletter Evolution</span>
+</div>
+<h2 class="font-korean-bold text-[32px] md:text-[64px] leading-[1.2] text-white mb-md">
+                    키워드 하나로<br class="md:hidden"> <span class="text-primary">3초 만에</span> 카드뉴스 만들기
+                </h2>
+<p class="font-korean-reg text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
+                    복잡한 디자인 툴 없이 인공지능이 당신의 아이디어를<br class="hidden md:block"> 전문가급 SNS 카드뉴스로 변환합니다. 성과를 예측하는<br class="hidden md:block"> AI 데이터 지표까지 <br>한 번에 확인하세요.
+                </p>
+<div class="relative w-full max-w-2xl mx-auto mt-lg group">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary-container to-primary blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+<div class="relative flex items-center glass-panel p-2 rounded-xl">
+<span class="material-symbols-outlined ml-4 text-outline">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-white placeholder-outline/50 font-korean-reg px-4 py-3" placeholder="뉴스레터의 핵심 키워드를 입력하세요 (예: 2024 AI 트렌드)" type="text">
+<button class="cta-gradient text-white px-8 py-3 rounded-lg font-label-md text-label-md shadow-lg flex items-center gap-2 hover:brightness-110 transition-all">
+<span class="font-korean-bold">Generate</span>
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</button>
+</div>
+</div>
+<!-- Platform Selection Chips -->
+<div class="flex flex-wrap justify-center gap-sm mt-xl">
+<span class="font-korean-reg text-white/60 w-full mb-2">Select Platform</span>
+<button class="px-6 py-2 rounded-full border border-primary-container bg-primary-container text-white font-label-md text-label-md flex items-center gap-2 transition-all">
+                        Instagram
+                    </button>
+<button class="px-6 py-2 rounded-full border hover:border-primary transition-colors font-label-md text-label-md flex items-center gap-2 border-outline text-white/70">
+                        LinkedIn
+                    </button>
+<button class="px-6 py-2 rounded-full border border-outline hover:border-primary transition-colors text-white/70 font-label-md text-label-md flex items-center gap-2">
+                        X
+                    </button>
+<button class="px-6 py-2 rounded-full border hover:border-primary transition-colors font-label-md text-label-md flex items-center gap-2 bg-primary-container text-white border-primary-container">
+                        Threads
+                    </button>
+<button class="px-6 py-2 rounded-full border border-outline hover:border-primary transition-colors text-white/70 font-label-md text-label-md flex items-center gap-2">
+                        KakaoStory
+                    </button>
+</div>
+</div>
+</section>
+<!-- Preview Mockup Section -->
+<section class="px-margin-mobile md:px-margin-desktop py-xl max-w-7xl mx-auto">
+<div class="relative glass-panel rounded-3xl p-base md:p-md overflow-hidden aspect-[16/9]">
+<img alt="Platform Preview" class="w-full h-full object-cover rounded-2xl opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBuG3T_Kyv5xz9AI2Zo9yifomI3E6Aempg3KTWRsuj_vBr4kJw_oDoKuROFzAYev2hDJqEPLf-8P7sSP_ARJ0uqItNmRhK4ybYJCY-WUSFF42p_2bBh6pUhYxWA42Wg9eBKt9xvPHrejL20t2UI4fq3Mh68U0QqCRRZVWjoY7NEKjZowzNvnF7VC5fs2U9AzRWpeHEaWEPYHuP5_EeZsLv-SBFZ95KaEJ7dHAJaffSC3y9o464n6HXC8fo429s6sBRJ_zb-5sF_YhT">
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+<div class="absolute bottom-10 left-10 max-w-md">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
+<span class="text-primary font-korean-bold">AI 생성 실시간 프리뷰</span>
+</div>
+<h3 class="font-korean-bold text-2xl md:text-3xl text-white font-black">입력 즉시 완성되는 레이아웃</h3>
+</div>
+</div>
+</section>
+<!-- Features: AI Performance Indicators -->
+<section class="px-margin-mobile md:px-margin-desktop py-xl max-w-7xl mx-auto">
+<div class="text-center mb-xl">
+<h3 class="font-korean-bold text-3xl md:text-4xl text-white mb-4">성과를 예측하는 <br>6가지 AI 지표</h3>
+<p class="font-korean-reg text-white/70">단순 제작을 넘어, 발행 전 게시물의 <br>잠재 성과를 미리 분석합니다.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Attention -->
+<div class="glass-panel p-lg rounded-2xl group hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[28px]">visibility</span>
+</div>
+<h4 class="font-headline-md text-white mb-sm">Attention</h4>
+<p class="font-korean-reg text-white/80 mb-md leading-relaxed">시선을 끄는 비주얼 요소와 텍스트 배치 분석을 통해 첫 인상 점수를 매깁니다.</p>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[85%]"></div>
+</div>
+</div>
+<!-- CTR -->
+<div class="glass-panel p-lg rounded-2xl group hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[28px]">ads_click</span>
+</div>
+<h4 class="font-headline-md text-white mb-sm">CTR</h4>
+<p class="font-korean-reg text-white/80 mb-md leading-relaxed">클릭을 유도하는 헤드라인과 버튼(CTA)의 <br>최적화 수준을 예측합니다.</p>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[72%]"></div>
+</div>
+</div>
+<!-- Dwell Time -->
+<div class="glass-panel p-lg rounded-2xl group hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[28px]">timer</span>
+</div>
+<h4 class="font-headline-md text-white mb-sm">Dwell time</h4>
+<p class="font-korean-reg text-white/80 mb-md leading-relaxed">콘텐츠의 가독성과 흥미도를 분석하여 <br>사용자가 머무는 시간을 추정합니다.</p>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[91%]"></div>
+</div>
+</div>
+<!-- Share -->
+<div class="glass-panel p-lg rounded-2xl group hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[28px]">share</span>
+</div>
+<h4 class="font-headline-md text-white mb-sm">Share</h4>
+<p class="font-korean-reg text-white/80 mb-md leading-relaxed">정보의 가치와 공유 동기를 자극하는 키워드 <br>포함 여부를 판단합니다.</p>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[64%]"></div>
+</div>
+</div>
+<!-- Like -->
+<div class="glass-panel p-lg rounded-2xl group hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[28px]">favorite</span>
+</div>
+<h4 class="font-headline-md text-white mb-sm">Like</h4>
+<p class="font-korean-reg text-white/80 mb-md leading-relaxed">디자인 톤앤매너와 감성적 공감 포인트를 분석하여 호감도를 예측합니다.</p>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[88%]"></div>
+</div>
+</div>
+<!-- Repost -->
+<div class="glass-panel p-lg rounded-2xl group hover:border-primary transition-all">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-md group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[28px]">repeat</span>
+</div>
+<h4 class="font-headline-md text-white mb-sm">Repost</h4>
+<p class="font-korean-reg text-white/80 mb-md leading-relaxed">콘텐츠의 파급력과 커뮤니티 내 재확산 <br>가능성을 시뮬레이션합니다.</p>
+<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[59%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="px-margin-mobile md:px-margin-desktop py-xl max-w-7xl mx-auto text-center">
+<div class="glass-panel p-xl rounded-[40px] relative overflow-hidden">
+<div class="aurora-blur top-[-200px] left-1/2 -translate-x-1/2 opacity-40" style="transform: translate(59.5385px, 47.0738px);"></div>
+<h2 class="font-korean-bold text-[32px] md:text-[40px] text-white mb-md">지금 바로 무료로 <br>시작해보세요</h2>
+<p class="font-korean-reg text-white/80 mb-lg max-w-xl mx-auto text-lg">첫 3개의 카드뉴스는&nbsp;</p><div class="">무료로 제작 가능합니다.<br> AI의 놀라운 효율성을 <br>직접 경험하세요.</div><p></p>
+<div class="flex flex-col sm:flex-row gap-md justify-center">
+<button class="cta-gradient text-white px-10 py-4 rounded-xl font-korean-bold text-lg shadow-2xl hover:scale-105 transition-transform">무료 체험하기</button>
+<button class="bg-white/5 border border-white/10 text-white px-10 py-4 rounded-xl font-korean-reg text-lg hover:bg-white/10 transition-colors">엔터프라이즈 문의</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-lg border-t border-white/5 bg-surface-container-lowest">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop gap-md max-w-7xl mx-auto">
+<div class="flex flex-col items-center md:items-start gap-2">
+<div class="font-headline-sm text-white font-black">SNS NewsGen</div>
+<p class="font-label-sm text-primary">© 2024 SNS Newsletter Generator. AI-Powered Creativity.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-md">
+<a class="text-white/60 hover:text-primary transition-colors font-label-sm" href="#">Privacy Policy</a>
+<a class="text-white/60 hover:text-primary transition-colors font-label-sm" href="#">Terms of Service</a>
+<a class="text-white/60 hover:text-primary transition-colors font-label-sm" href="#">API Status</a>
+<a class="text-white/60 hover:text-primary transition-colors font-label-sm" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interactions for chip selection
+        const chips = document.querySelectorAll('button.border-outline');
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => {
+                    c.classList.remove('bg-primary-container', 'text-white', 'border-primary-container');
+                    c.classList.add('border-outline', 'text-white/70');
+                });
+                chip.classList.remove('border-outline', 'text-white/70');
+                chip.classList.add('bg-primary-container', 'text-white', 'border-primary-container');
+            });
+        });
+
+        // Atmospheric parallax effect for aurora blurs
+        document.addEventListener('mousemove', (e) => {
+            const blurs = document.querySelectorAll('.aurora-blur');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            blurs.forEach((blur, index) => {
+                const speed = (index + 1) * 20;
+                blur.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+            });
+        });
+    </script>
+
+
+
+
+
+
+</body></html>

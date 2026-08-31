@@ -4,34 +4,23 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const STATUS_MESSAGES = [
-  "키워드 분석 및 최신 뉴스 검색 중...",
-  "카드뉴스 구성 및 슬라이드 설계 중...",
-  "슬라이드 카피 작성 중...",
-  "이미지 키워드 최적화 중...",
-  "해시태그 및 캡션 생성 중...",
-  "AI 성과 지표 예측 중...",
-  "마무리 최적화 진행 중...",
-];
-
-const METRIC_LABELS = [
-  { key: "attention", label: "주목도" },
-  { key: "ctr", label: "클릭률 예측" },
-  { key: "dwellTime", label: "체류시간" },
-  { key: "share", label: "공유 지수" },
-  { key: "like", label: "호감도" },
-  { key: "repost", label: "저장률" },
+  "기사 본문 확인 중...",
+  "최신 사실 관계 검색 중...",
+  "카드 구성 설계 중...",
+  "문장 다시 쓰는 중...",
+  "줄바꿈 다듬는 중...",
+  "캡션과 해시태그 작성 중...",
+  "마무리 정리 중...",
 ];
 
 function LoadingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const keyword = searchParams.get("keyword") ?? "";
-  const theme = searchParams.get("theme") ?? "Modern Minimal";
   const url = searchParams.get("url") ?? "";
 
   const [progress, setProgress] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
-  const [gaugeValues, setGaugeValues] = useState<number[]>([0, 0, 0, 0, 0, 0]);
   const [error, setError] = useState<string | null>(null);
   const hasFetched = useRef(false);
 
@@ -48,12 +37,6 @@ function LoadingContent() {
       currentProgress = Math.min(currentProgress + increment, 95);
       setProgress(currentProgress);
       setStatusIdx(Math.floor((currentProgress / 100) * STATUS_MESSAGES.length));
-      setGaugeValues((prev) =>
-        prev.map((_, i) => {
-          const targetApprox = 65 + i * 6;
-          return Math.min(targetApprox, (currentProgress / 100) * targetApprox * 1.05);
-        })
-      );
     }, intervalMs);
 
     const generate = async () => {
@@ -61,7 +44,7 @@ function LoadingContent() {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword, theme, url }),
+          body: JSON.stringify({ keyword, url }),
         });
 
         if (!res.ok) {
@@ -70,20 +53,13 @@ function LoadingContent() {
         }
 
         const data = await res.json();
-        sessionStorage.setItem("newsletterData", JSON.stringify(data));
-        sessionStorage.setItem("newsletterMeta", JSON.stringify({ keyword, theme }));
+        sessionStorage.setItem("cardNewsData", JSON.stringify(data));
+        sessionStorage.setItem(
+          "cardNewsMeta",
+          JSON.stringify({ keyword, createdAt: new Date().toISOString() })
+        );
 
         clearInterval(animInterval);
-
-        const finalMetrics = [
-          data.metrics?.attention ?? 85,
-          data.metrics?.ctr ?? 72,
-          data.metrics?.dwellTime ?? 91,
-          data.metrics?.share ?? 64,
-          data.metrics?.like ?? 88,
-          data.metrics?.repost ?? 59,
-        ];
-        setGaugeValues(finalMetrics);
 
         let p = currentProgress;
         const finishInterval = setInterval(() => {
@@ -104,7 +80,7 @@ function LoadingContent() {
 
     generate();
     return () => clearInterval(animInterval);
-  }, [keyword, theme, url, router]);
+  }, [keyword, url, router]);
 
   const circumference = 508;
   const dashOffset = circumference - (progress / 100) * circumference;
@@ -254,23 +230,6 @@ function LoadingContent() {
             </div>
           </div>
 
-          {/* Metric gauges */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
-            {METRIC_LABELS.map((metric, i) => (
-              <div key={metric.key} className="glass-panel p-4 rounded-xl space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/70 font-korean-bold text-sm">{metric.label}</span>
-                  <span className="text-primary font-bold text-sm">{Math.floor(gaugeValues[i])}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-700 rounded-full"
-                    style={{ width: `${gaugeValues[i]}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
 
           {/* Log bar */}
           <div className="mt-8 w-full glass-panel p-3 px-4 rounded-xl flex items-center gap-4 border border-white/5">

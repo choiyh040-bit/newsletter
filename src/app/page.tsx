@@ -11,9 +11,9 @@ export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   const stats = [
-    { value: 98, label: "AI 정확도", suffix: "%" },
-    { value: 3, label: "평균 생성 시간", suffix: "초" },
-    { value: 50, label: "무료 생성 횟수", suffix: "회+" },
+    { value: 1080, label: "카드 가로", suffix: "px" },
+    { value: 1350, label: "카드 세로", suffix: "px" },
+    { value: 5, label: "장당 카드 수", suffix: "장" },
   ];
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function LandingPage() {
             <h1 className="font-korean-bold text-[38px] md:text-[72px] leading-[1.15] text-white mb-6">
               <span className="text-primary">인스타그램 카드뉴스</span>
               <br />
-              <span className="text-white/60 text-[28px] md:text-[48px]">AI가 3초 만에 완성</span>
+              <span className="text-white/60 text-[28px] md:text-[48px]">기사 하나로 5장 완성</span>
             </h1>
 
             <p className="font-korean-reg text-white/60 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
@@ -122,7 +122,7 @@ export default function LandingPage() {
                 <input
                   id="query-input"
                   className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-4 py-3 outline-none text-[15px]"
-                  placeholder="예: 2024 트렌드 소비자 동향 분석"
+                  placeholder="기사 URL 붙여넣기 (또는 키워드만 입력)"
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -138,7 +138,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 </button>
               </div>
-              <p className="text-white/30 text-xs mt-2 text-center">URL 입력 시 해당 페이지 내용을 자동으로 분석합니다</p>
+              <p className="text-white/30 text-xs mt-2 text-center">기사 URL을 함께 넣으면 그 본문을 근거로 만듭니다</p>
             </div>
 
             {/* Stats */}
@@ -196,7 +196,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-korean-bold text-white text-xl">Instagram 카드뉴스</h3>
-                  <p className="text-white/40 text-sm">1:1 정방형 · 5장 슬라이드</p>
+                  <p className="text-white/40 text-sm">1080 × 1350 (4:5) · 4~5장</p>
                 </div>
               </div>
               <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "1/1", maxHeight: "280px" }}>
@@ -211,7 +211,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <ul className="space-y-3">
-                {["1:1 정방형 카드 5장 자동 생성", "슬라이드별 AI 이미지 매칭", "캡션 + 해시태그 자동 작성", "성과 예측 AI 지표 (좋아요·공유·CTR)"].map((item) => (
+                {["기사 URL 붙여넣으면 본문까지 읽어옴", "표지 + 상세 + 마무리 구조로 자동 구성", "캡션 + 해시태그 + 출처 자동 작성", "PNG 한 장씩 또는 전체 ZIP으로 저장"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
                       style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b)" }}>
@@ -235,8 +235,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { num: "01", icon: "edit", title: "키워드 입력", desc: "뉴스 주제나 URL을 자유롭게 입력하세요. 길게 쓸 필요 없어요.", color: "from-cyan-500 to-blue-600" },
-              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "Gemini AI가 실시간 검색 후 카드뉴스 5장을 생성합니다.", color: "from-violet-500 to-purple-600" },
-              { num: "03", icon: "download", title: "복사 & 게시", desc: "텍스트 복사 또는 이미지 다운로드 후 바로 SNS에 올리면 끝!", color: "from-pink-500 to-rose-600" },
+              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "기사 본문을 읽고 사실을 확인한 뒤 카드 5장을 구성합니다.", color: "from-violet-500 to-purple-600" },
+              { num: "03", icon: "download", title: "PNG 저장", desc: "카드 5장을 PNG로 내려받고 캡션을 복사해 그대로 올리면 끝!", color: "from-pink-500 to-rose-600" },
             ].map((step) => (
               <div key={step.num} className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-white/15 transition-all text-center group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform shadow-lg`}>
@@ -250,35 +250,43 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ─── AI Metrics Section ───────────────────────────── */}
+        {/* ─── 제작 규칙 ─────────────────────────────────── */}
         <section id="examples" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">발행 전 성과 예측</h2>
+            <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">지키는 규칙</h2>
             <p className="font-korean-reg text-white/50 text-base max-w-xl mx-auto">
-              AI가 생성한 콘텐츠의 예상 성과 지표를 미리 확인하세요
+              그럴듯해 보이는 것보다, 올려도 문제 없는 것을 만듭니다.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
             {[
-              { icon: "visibility", label: "주목도", pct: "87%", desc: "첫 화면 시선 집중" },
-              { icon: "ads_click", label: "클릭률", pct: "74%", desc: "링크·프로필 클릭 유도" },
-              { icon: "timer", label: "체류시간", pct: "92%", desc: "슬라이드 완독률" },
-              { icon: "share", label: "공유율", pct: "67%", desc: "스토리 공유·DM 전달" },
-              { icon: "favorite", label: "좋아요", pct: "89%", desc: "감성 공감 지수" },
-              { icon: "repeat", label: "저장률", pct: "61%", desc: "북마크 저장 예측" },
-            ].map(({ icon, label, pct, desc }) => (
-              <div key={label} className="glass-panel p-6 rounded-2xl group hover:border-primary/30 transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
-                  </div>
-                  <span className="font-korean-bold text-2xl text-primary">{pct}</span>
+              {
+                icon: "edit_note",
+                title: "원문을 베끼지 않습니다",
+                desc: "기사 문장을 그대로 옮기지 않고 새 문장으로 다시 씁니다. 직접인용은 15단어 미만으로 한 번만 씁니다.",
+              },
+              {
+                icon: "copyright",
+                title: "저작권 안전한 배경만",
+                desc: "출처가 불분명한 보도용 사진이나 스톡 이미지를 쓰지 않습니다. 기본은 그라데이션과 타이포그래피입니다.",
+              },
+              {
+                icon: "format_line_spacing",
+                title: "줄바꿈을 직접 끊습니다",
+                desc: "브라우저 자동 줄바꿈에 맡기면 서술어가 혼자 남습니다. 의미 단위로 미리 나눠서 렌더링합니다.",
+              },
+              {
+                icon: "crop_portrait",
+                title: "1080 × 1350 고정",
+                desc: "인스타그램 세로 피드에 잘리지 않고 들어가는 4:5 규격으로 뽑습니다. 미리보기와 저장 결과가 같습니다.",
+              },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="glass-panel p-6 rounded-2xl">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
                 </div>
-                <h4 className="font-korean-bold text-white text-base mb-1">{label}</h4>
-                <p className="text-white/40 text-xs">{desc}</p>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden mt-4">
-                  <div className="h-full bg-primary rounded-full" style={{ width: pct }} />
-                </div>
+                <h4 className="font-korean-bold text-white text-base mb-2">{title}</h4>
+                <p className="text-white/50 text-sm leading-relaxed font-korean-reg">{desc}</p>
               </div>
             ))}
           </div>
@@ -296,7 +304,7 @@ export default function LandingPage() {
                 지금 바로 무료로<br />카드뉴스 만들기
               </h2>
               <p className="font-korean-reg text-white/60 text-base max-w-lg mx-auto mb-10 leading-relaxed">
-                로그인 없이 바로 시작할 수 있어요.<br />첫 50개는 완전 무료입니다.
+                로그인 없이 바로 시작할 수 있어요.<br />만든 카드는 PNG로 바로 내려받습니다.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
@@ -304,7 +312,7 @@ export default function LandingPage() {
                   className="cta-gradient text-white px-10 py-4 rounded-2xl font-korean-bold text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all"
                   style={{ boxShadow: "0 20px 60px rgba(6,182,212,0.35)" }}
                 >
-                  무료 생성 시작하기 →
+                  카드뉴스 만들기 →
                 </button>
               </div>
             </div>

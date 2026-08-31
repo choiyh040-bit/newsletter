@@ -38,6 +38,30 @@ body {
   overflow-x: hidden;
 }
 
+/* 카드뉴스 전용 서체. OFL-1.1, public/fonts/OFL.txt 참고.
+   같은 출처에서 받아야 PNG로 내보낼 때 글자가 깨지지 않는다. */
+@font-face {
+  font-family: 'Wanted Sans';
+  src: url('/fonts/WantedSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Wanted Sans';
+  src: url('/fonts/WantedSans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Wanted Sans';
+  src: url('/fonts/WantedSans-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'HangamePoker';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/HangamePoker.woff2') format('woff2');

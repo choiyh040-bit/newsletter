@@ -4,12 +4,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
-type Platform = "instagram" | "threads";
-
 export default function LandingPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [activePlatform, setActivePlatform] = useState<Platform>("instagram");
   const [animatedStats, setAnimatedStats] = useState([0, 0, 0]);
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +46,7 @@ export default function LandingPage() {
     } else if (!extractedKeyword) {
       extractedKeyword = query.trim();
     }
-    const params = new URLSearchParams({ keyword: extractedKeyword, platform: activePlatform });
+    const params = new URLSearchParams({ keyword: extractedKeyword });
     if (extractedUrl) params.append("url", extractedUrl);
     router.push(`/loading?${params.toString()}`);
   };
@@ -109,41 +106,13 @@ export default function LandingPage() {
             <h1 className="font-korean-bold text-[38px] md:text-[72px] leading-[1.15] text-white mb-6">
               <span className="text-primary">인스타그램 카드뉴스</span>
               <br />
-              <span className="text-white/90">+ 스레드 타래</span>
-              <br />
               <span className="text-white/60 text-[28px] md:text-[48px]">AI가 3초 만에 완성</span>
             </h1>
 
             <p className="font-korean-reg text-white/60 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
               키워드나 URL 하나만 입력하면, AI가 최신 뉴스를 검색해<br className="hidden md:block" />
-              인스타 카드뉴스 5장 + 스레드 타래 본문을 동시에 생성합니다.
+              인스타그램 카드뉴스 5장을 한 번에 생성합니다.
             </p>
-
-            {/* Platform Tabs */}
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <button
-                onClick={() => setActivePlatform("instagram")}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-korean-bold transition-all ${
-                  activePlatform === "instagram"
-                    ? "bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white shadow-lg scale-105"
-                    : "glass-panel text-white/50 hover:text-white hover:scale-105"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
-                Instagram 카드뉴스
-              </button>
-              <button
-                onClick={() => setActivePlatform("threads")}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-korean-bold transition-all ${
-                  activePlatform === "threads"
-                    ? "bg-white text-black shadow-lg scale-105"
-                    : "glass-panel text-white/50 hover:text-white hover:scale-105"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>alternate_email</span>
-                Threads 타래
-              </button>
-            </div>
 
             {/* Input */}
             <div className="relative w-full max-w-2xl mx-auto">
@@ -153,7 +122,7 @@ export default function LandingPage() {
                 <input
                   id="query-input"
                   className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-4 py-3 outline-none text-[15px]"
-                  placeholder={activePlatform === "instagram" ? "예: 2024 트렌드 소비자 동향 분석" : "예: AI 기술 최신 동향 https://..."}
+                  placeholder="예: 2024 트렌드 소비자 동향 분석"
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -191,7 +160,7 @@ export default function LandingPage() {
               style={{ boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)" }}>
               <Image
                 src="/hero_mockup.png"
-                alt="카드뉴스 및 스레드 생성 예시"
+                alt="인스타그램 카드뉴스 생성 예시"
                 width={1200}
                 height={600}
                 className="w-full object-cover opacity-80"
@@ -209,13 +178,13 @@ export default function LandingPage() {
               <span className="material-symbols-outlined text-primary text-[14px]">auto_awesome</span>
               <span className="text-white/70 text-xs font-medium">핵심 기능</span>
             </div>
-            <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">두 가지 포맷, 하나의 AI</h2>
+            <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">인스타그램에 집중합니다</h2>
             <p className="font-korean-reg text-white/50 text-base max-w-xl mx-auto">
-              인스타그램과 스레드, 각 플랫폼에 최적화된 콘텐츠를 동시에 생성합니다.
+              카드뉴스 하나만 제대로. 인스타그램 피드에 최적화된 콘텐츠를 생성합니다.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 max-w-xl mx-auto">
             {/* Instagram Feature Card */}
             <div className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-pink-500/30 transition-all group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
@@ -242,7 +211,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <ul className="space-y-3">
-                {["1:1 정방형 카드 5장 자동 생성", "슬라이드별 AI 이미지 매칭", "캡션 + 해시태그 30개 자동 작성", "성과 예측 AI 지표 (좋아요·공유·CTR)"].map((item) => (
+                {["1:1 정방형 카드 5장 자동 생성", "슬라이드별 AI 이미지 매칭", "캡션 + 해시태그 자동 작성", "성과 예측 AI 지표 (좋아요·공유·CTR)"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
                       style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b)" }}>
@@ -254,34 +223,6 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Threads Feature Card */}
-            <div className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-white/20 transition-all group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
-                style={{ background: "radial-gradient(circle, #ffffff, transparent)", filter: "blur(40px)" }} />
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center">
-                  <span className="material-symbols-outlined text-black text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>alternate_email</span>
-                </div>
-                <div>
-                  <h3 className="font-korean-bold text-white text-xl">Threads 타래</h3>
-                  <p className="text-white/40 text-sm">뉴스 타래 · 5-7개 글</p>
-                </div>
-              </div>
-              <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "1/1", maxHeight: "280px" }}>
-                <Image src="/threads_news_preview.png" alt="스레드 타래 예시" fill className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              </div>
-              <ul className="space-y-3">
-                {["뉴스 타래 5~7개 자동 작성", "오프닝·본문·마무리 구조화", "이모지 + 줄바꿈 최적화", "첫 번째 타래 후킹 문구 강화"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
-                    <span className="w-5 h-5 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center border border-white/20">
-                      <span className="material-symbols-outlined text-white text-[12px]">check</span>
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
         </section>
 
@@ -294,7 +235,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { num: "01", icon: "edit", title: "키워드 입력", desc: "뉴스 주제나 URL을 자유롭게 입력하세요. 길게 쓸 필요 없어요.", color: "from-cyan-500 to-blue-600" },
-              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "Gemini AI가 실시간 검색 후 카드뉴스 & 스레드 타래를 동시 생성합니다.", color: "from-violet-500 to-purple-600" },
+              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "Gemini AI가 실시간 검색 후 카드뉴스 5장을 생성합니다.", color: "from-violet-500 to-purple-600" },
               { num: "03", icon: "download", title: "복사 & 게시", desc: "텍스트 복사 또는 이미지 다운로드 후 바로 SNS에 올리면 끝!", color: "from-pink-500 to-rose-600" },
             ].map((step) => (
               <div key={step.num} className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-white/15 transition-all text-center group">

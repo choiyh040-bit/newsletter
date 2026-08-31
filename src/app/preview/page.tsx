@@ -13,12 +13,6 @@ interface Slide {
   body: string;
 }
 
-interface Thread {
-  threadNumber: number;
-  content: string;
-  type: "hook" | "body" | "cta";
-}
-
 interface InstagramData {
   title: string;
   slides: Slide[];
@@ -34,26 +28,10 @@ interface InstagramData {
   };
 }
 
-interface ThreadsData {
-  title: string;
-  threads: Thread[];
-  caption: string;
-  hashtags: string[];
-  metrics: {
-    attention: number;
-    ctr: number;
-    dwellTime: number;
-    share: number;
-    like: number;
-    repost: number;
-  };
-}
-
-type NewsletterData = InstagramData | ThreadsData;
+type NewsletterData = InstagramData;
 
 interface NewsletterMeta {
   keyword: string;
-  platform: string;
   theme: string;
 }
 
@@ -163,72 +141,6 @@ function InstagramSlideCard({
   );
 }
 
-// ─── Threads Post ─────────────────────────────────────────────────────────────
-function ThreadPost({
-  thread,
-  isLast,
-  keyword,
-}: {
-  thread: Thread;
-  isLast: boolean;
-  keyword: string;
-}) {
-  const [liked, setLiked] = useState(false);
-  const typeColors = {
-    hook: "from-cyan-500 to-blue-600",
-    body: "from-violet-500 to-purple-600",
-    cta: "from-pink-500 to-rose-600",
-  };
-  const typeLabels = { hook: "오프닝", body: "본문", cta: "마무리" };
-
-  return (
-    <div className="flex gap-3">
-      {/* Avatar + thread line */}
-      <div className="flex flex-col items-center flex-shrink-0">
-        <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${typeColors[thread.type]} flex items-center justify-center text-white font-bold text-sm`}>
-          {thread.threadNumber}
-        </div>
-        {!isLast && <div className="w-0.5 flex-1 bg-white/10 mt-2 mb-0 min-h-[24px]" />}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 pb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-white font-bold text-sm">@{keyword.slice(0, 8) || "cardgen"}</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full text-white font-bold bg-gradient-to-r ${typeColors[thread.type]}`}>
-            {typeLabels[thread.type]}
-          </span>
-        </div>
-        <p className="text-white/80 text-sm leading-relaxed whitespace-pre-line mb-3">
-          {thread.content}
-        </p>
-        <div className="flex items-center gap-5">
-          <button
-            onClick={() => setLiked(!liked)}
-            className="flex items-center gap-1.5 text-white/40 hover:text-pink-400 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: liked ? "'FILL' 1" : "'FILL' 0" }}>
-              favorite
-            </span>
-            <span className="text-xs">{liked ? "1" : "0"}</span>
-          </button>
-          <button className="flex items-center gap-1.5 text-white/40 hover:text-blue-400 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-            <span className="text-xs">0</span>
-          </button>
-          <button className="flex items-center gap-1.5 text-white/40 hover:text-green-400 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">repeat</span>
-            <span className="text-xs">0</span>
-          </button>
-          <button className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors ml-auto">
-            <span className="material-symbols-outlined text-[16px]">share</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Score Ring ───────────────────────────────────────────────────────────────
 function ScoreRing({ value, label, icon }: { value: number; label: string; icon: string }) {
   const r = 22;
@@ -261,7 +173,7 @@ function PreviewContent() {
   const [data, setData] = useState<NewsletterData | null>(null);
   const [meta, setMeta] = useState<NewsletterMeta | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [copied, setCopied] = useState<"caption" | "hashtags" | "thread" | null>(null);
+  const [copied, setCopied] = useState<"caption" | "hashtags" | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
@@ -275,24 +187,17 @@ function PreviewContent() {
     }
   }, []);
 
-  const isInstagram = meta?.platform === "instagram" || (!meta?.platform && "slides" in (data ?? {}));
-  const isThreads = meta?.platform === "threads";
-
-  const instagramData = (isInstagram ? data : null) as InstagramData | null;
-  const threadsData = (isThreads ? data : null) as ThreadsData | null;
+  const instagramData = data;
 
   const totalSlides = instagramData?.slides?.length ?? 0;
   const nextSlide = useCallback(() => setCurrentSlide((s) => (s + 1) % totalSlides), [totalSlides]);
   const prevSlide = useCallback(() => setCurrentSlide((s) => (s - 1 + totalSlides) % totalSlides), [totalSlides]);
 
-  const copyText = async (type: "caption" | "hashtags" | "thread") => {
+  const copyText = async (type: "caption" | "hashtags") => {
     if (!data) return;
     let text = "";
     if (type === "caption") text = data.caption;
-    else if (type === "hashtags") text = data.hashtags.map((h) => `#${h}`).join(" ");
-    else if (type === "thread" && threadsData) {
-      text = threadsData.threads.map((t) => t.content).join("\n\n---\n\n");
-    }
+    else text = data.hashtags.map((h) => `#${h}`).join(" ");
     await navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
@@ -308,7 +213,6 @@ function PreviewContent() {
   }, []);
 
   useEffect(() => {
-    if (!isInstagram) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") nextSlide();
       if (e.key === "ArrowLeft") prevSlide();
@@ -316,7 +220,7 @@ function PreviewContent() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nextSlide, prevSlide, isInstagram]);
+  }, [nextSlide, prevSlide]);
 
   if (!data) {
     return (
@@ -407,11 +311,9 @@ function PreviewContent() {
             {meta && (
               <div className="flex items-center gap-2 px-3 py-1 rounded-full glass-panel">
                 <span className="material-symbols-outlined text-primary text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  {isInstagram ? "photo_camera" : "alternate_email"}
+                  photo_camera
                 </span>
-                <span className="text-white/60 text-xs">
-                  {isInstagram ? "Instagram 카드뉴스" : "Threads 타래"}
-                </span>
+                <span className="text-white/60 text-xs">Instagram 카드뉴스</span>
               </div>
             )}
           </div>
@@ -426,7 +328,7 @@ function PreviewContent() {
         </section>
 
         {/* ── INSTAGRAM LAYOUT ── */}
-        {isInstagram && instagramData && (
+        {instagramData && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left: Phone Preview */}
             <div className="lg:col-span-5 flex flex-col items-center sticky top-24">
@@ -593,128 +495,6 @@ function PreviewContent() {
                     <span className="material-symbols-outlined text-sm">content_copy</span>
                     캡션 복사
                   </button>
-                </div>
-              </div>
-
-              {/* New content */}
-              <button onClick={() => router.push("/")}
-                className="w-full py-3 rounded-xl border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm">
-                <span className="material-symbols-outlined text-sm">refresh</span>
-                <span className="font-korean-reg">새 콘텐츠 만들기</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── THREADS LAYOUT ── */}
-        {isThreads && threadsData && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left: Thread Preview (phone style) */}
-            <div className="lg:col-span-6 flex flex-col items-center sticky top-24">
-              <div className="relative w-full max-w-[380px] bg-[#101010] rounded-3xl border border-white/10 shadow-2xl overflow-hidden"
-                style={{ boxShadow: "0 40px 80px rgba(0,0,0,0.6)" }}>
-                {/* Threads header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-                  <span className="text-white font-bold text-base">스레드</span>
-                  <span className="material-symbols-outlined text-white text-xl">more_horiz</span>
-                </div>
-
-                {/* Threads content */}
-                <div className="p-5 max-h-[600px] overflow-y-auto">
-                  {threadsData.threads.map((thread, i) => (
-                    <ThreadPost
-                      key={i}
-                      thread={thread}
-                      isLast={i === threadsData.threads.length - 1}
-                      keyword={meta?.keyword?.slice(0, 8) || "cardgen"}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* AI Metrics */}
-              <div className="mt-5 w-full max-w-[380px] glass-panel rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="material-symbols-outlined text-primary text-sm">auto_graph</span>
-                  <h4 className="text-white font-korean-bold text-sm">AI 성과 예측 지표</h4>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {METRIC_LIST.map(({ key, label, icon }) => (
-                    <ScoreRing key={key} value={threadsData.metrics[key]} label={label} icon={icon} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Details */}
-            <div className="lg:col-span-6 space-y-5">
-              {/* Thread texts */}
-              <div className="glass-panel rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-white font-korean-bold text-sm flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-sm">format_list_numbered</span>
-                    타래 전체 보기
-                  </h4>
-                  <button onClick={() => copyText("thread")} id="copy-thread-btn"
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full glass-panel hover:bg-white/10 transition-colors"
-                    style={{ color: copied === "thread" ? "#4cd7f6" : "rgba(255,255,255,0.5)" }}>
-                    <span className="material-symbols-outlined text-xs">{copied === "thread" ? "check" : "content_copy"}</span>
-                    {copied === "thread" ? "복사됨!" : "전체 복사"}
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {threadsData.threads.map((thread, i) => {
-                    const typeColors = { hook: "border-cyan-500/30 bg-cyan-500/5", body: "border-violet-500/20 bg-violet-500/5", cta: "border-pink-500/30 bg-pink-500/5" };
-                    const typeLabels = { hook: "오프닝", body: "본문", cta: "마무리" };
-                    return (
-                      <div key={i} className={`rounded-xl p-4 border ${typeColors[thread.type]}`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-white/30 font-mono text-xs">{String(i + 1).padStart(2, "0")}</span>
-                          <span className="text-white/40 text-xs">{typeLabels[thread.type]}</span>
-                        </div>
-                        <p className="text-white/80 text-sm leading-relaxed whitespace-pre-line">{thread.content}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Caption */}
-              <div className="glass-panel p-5 rounded-2xl space-y-4">
-                <h4 className="text-white font-korean-bold flex items-center gap-2 text-sm">
-                  <span className="material-symbols-outlined text-primary text-sm">edit_note</span>
-                  스레드 캡션
-                </h4>
-                <div className="relative bg-white/3 rounded-xl p-4 border border-white/5">
-                  <p className="text-white/80 text-sm leading-relaxed pr-8">{threadsData.caption}</p>
-                  <button onClick={() => copyText("caption")} id="copy-caption-threads-btn"
-                    className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-                    <span className="material-symbols-outlined text-sm" style={{ color: copied === "caption" ? "#4cd7f6" : "rgba(255,255,255,0.4)" }}>
-                      {copied === "caption" ? "check" : "content_copy"}
-                    </span>
-                  </button>
-                </div>
-                <div className="border-t border-white/5 pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-white font-korean-bold text-sm flex items-center gap-2">
-                      <span className="material-symbols-outlined text-primary text-sm">tag</span>
-                      해시태그
-                    </h4>
-                    <button onClick={() => copyText("hashtags")}
-                      className="flex items-center gap-1 text-xs hover:text-white transition-colors"
-                      style={{ color: copied === "hashtags" ? "#4cd7f6" : "rgba(255,255,255,0.4)" }}>
-                      <span className="material-symbols-outlined text-xs">{copied === "hashtags" ? "check" : "content_copy"}</span>
-                      {copied === "hashtags" ? "복사됨!" : "전체 복사"}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {threadsData.hashtags.map((tag, i) => (
-                      <span key={i} className="px-3 py-1 rounded-full text-sm font-medium border border-white/10"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)" }}>
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </div>
 

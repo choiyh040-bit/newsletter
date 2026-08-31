@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-const INSTAGRAM_MESSAGES = [
+const STATUS_MESSAGES = [
   "키워드 분석 및 최신 뉴스 검색 중...",
   "카드뉴스 구성 및 슬라이드 설계 중...",
   "슬라이드 카피 작성 중...",
@@ -11,16 +11,6 @@ const INSTAGRAM_MESSAGES = [
   "해시태그 및 캡션 생성 중...",
   "AI 성과 지표 예측 중...",
   "마무리 최적화 진행 중...",
-];
-
-const THREADS_MESSAGES = [
-  "키워드 분석 및 최신 뉴스 검색 중...",
-  "타래 구조 설계 중...",
-  "오프닝 후킹 문구 작성 중...",
-  "본문 타래 콘텐츠 작성 중...",
-  "팩트체크 및 수치 검증 중...",
-  "해시태그 및 캡션 생성 중...",
-  "최종 최적화 진행 중...",
 ];
 
 const METRIC_LABELS = [
@@ -36,12 +26,8 @@ function LoadingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const keyword = searchParams.get("keyword") ?? "";
-  const platform = searchParams.get("platform") ?? "instagram";
   const theme = searchParams.get("theme") ?? "Modern Minimal";
   const url = searchParams.get("url") ?? "";
-
-  const isInstagram = platform === "instagram";
-  const STATUS_MESSAGES = isInstagram ? INSTAGRAM_MESSAGES : THREADS_MESSAGES;
 
   const [progress, setProgress] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
@@ -75,7 +61,7 @@ function LoadingContent() {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword, platform, theme, url }),
+          body: JSON.stringify({ keyword, theme, url }),
         });
 
         if (!res.ok) {
@@ -85,7 +71,7 @@ function LoadingContent() {
 
         const data = await res.json();
         sessionStorage.setItem("newsletterData", JSON.stringify(data));
-        sessionStorage.setItem("newsletterMeta", JSON.stringify({ keyword, platform, theme }));
+        sessionStorage.setItem("newsletterMeta", JSON.stringify({ keyword, theme }));
 
         clearInterval(animInterval);
 
@@ -118,7 +104,7 @@ function LoadingContent() {
 
     generate();
     return () => clearInterval(animInterval);
-  }, [keyword, platform, theme, router]);
+  }, [keyword, theme, url, router]);
 
   const circumference = 508;
   const dashOffset = circumference - (progress / 100) * circumference;
@@ -175,10 +161,10 @@ function LoadingContent() {
           </Link>
           <div className="flex items-center gap-3 px-4 py-1.5 rounded-full glass-panel">
             <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-              {isInstagram ? "photo_camera" : "alternate_email"}
+              photo_camera
             </span>
             <span className="text-white/60 text-xs font-medium">
-              {isInstagram ? "Instagram 카드뉴스" : "Threads 타래"} 생성 중
+              Instagram 카드뉴스 생성 중
             </span>
           </div>
           <button className="cta-gradient text-surface px-4 py-2 rounded-full font-korean-bold text-sm active:scale-95 transition-transform">
@@ -216,7 +202,7 @@ function LoadingContent() {
           {/* Progress ring */}
           <div className="relative mb-8">
             <div className="absolute inset-0 rounded-full opacity-20 blur-3xl animate-pulse"
-              style={{ background: isInstagram ? "linear-gradient(135deg, #f58529, #dd2a7b)" : "rgba(255,255,255,0.3)" }} />
+              style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b)" }} />
             <div className="relative w-44 h-44 md:w-52 md:h-52 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="50%" cy="50%" fill="transparent" r="45%" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
@@ -225,7 +211,7 @@ function LoadingContent() {
                   cy="50%"
                   fill="transparent"
                   r="45%"
-                  stroke={isInstagram ? "url(#instagramGradient)" : "white"}
+                  stroke="url(#instagramGradient)"
                   strokeDasharray={circumference}
                   strokeDashoffset={dashOffset}
                   strokeLinecap="round"
@@ -245,10 +231,10 @@ function LoadingContent() {
                   className="material-symbols-outlined text-4xl animate-pulse"
                   style={{
                     fontVariationSettings: "'FILL' 1",
-                    color: isInstagram ? "#dd2a7b" : "white",
+                    color: "#dd2a7b",
                   }}
                 >
-                  {isInstagram ? "photo_camera" : "alternate_email"}
+                  photo_camera
                 </span>
                 <div className="font-korean-bold text-5xl md:text-6xl mt-1 text-white font-extrabold">
                   {Math.floor(progress)}%
@@ -260,7 +246,7 @@ function LoadingContent() {
           {/* Status */}
           <div className="text-center space-y-3 mb-10 max-w-2xl">
             <h2 className="font-korean-bold text-2xl md:text-3xl text-white leading-tight">
-              {isInstagram ? "인스타그램 카드뉴스" : "스레드 타래"} 생성 중...
+              인스타그램 카드뉴스 생성 중...
             </h2>
             <div className="flex items-center justify-center gap-3 text-white/60">
               <span className="inline-block w-2 h-2 rounded-full bg-primary animate-ping" />
@@ -295,7 +281,7 @@ function LoadingContent() {
             </div>
             <div className="flex-1 h-px bg-white/10" />
             <code className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
-              cardgen_ai · {platform} · keyword=&quot;{keyword}&quot;
+              cardgen_ai · instagram · keyword=&quot;{keyword}&quot;
             </code>
           </div>
         </div>

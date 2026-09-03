@@ -52,6 +52,16 @@ npm run dev                  # http://localhost:3000
 환경변수를 나중에 추가했다면 **재배포해야 반영됩니다**. 기존 배포에는
 적용되지 않습니다.
 
+### vercel.json
+
+저장소의 `vercel.json`이 `"framework": "nextjs"`를 지정합니다. 이 값은 Vercel
+대시보드의 Framework Preset 설정보다 우선합니다.
+
+이 파일이 없고 대시보드 설정이 `Other`이면, Vercel은 `next build`를 돌려
+빌드는 성공시키지만 그 결과물 대신 `public/` 폴더를 정적 사이트로 서빙합니다.
+`public/`에는 `index.html`이 없으므로 모든 경로가 `NOT_FOUND`로 404가 됩니다.
+빌드가 성공했는데 사이트가 404인 증상이면 이 설정부터 확인하세요.
+
 `/api/generate`는 검색과 생성을 함께 하느라 20~40초가 걸립니다. 그래서
 `maxDuration`을 60초로 잡아두었습니다(`src/app/api/generate/route.ts`).
 Vercel 요금제별 함수 실행 시간 상한을 넘으면 이 값과 무관하게 잘리므로,

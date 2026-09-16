@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { saveCardNews } from "@/lib/cardNewsStore";
 
 const STATUS_MESSAGES = [
   "기사 본문 확인 중...",
@@ -53,11 +54,9 @@ function LoadingContent() {
         }
 
         const data = await res.json();
-        sessionStorage.setItem("cardNewsData", JSON.stringify(data));
-        sessionStorage.setItem(
-          "cardNewsMeta",
-          JSON.stringify({ keyword, createdAt: new Date().toISOString() })
-        );
+        // 결과에 고유 주소를 준다. /preview?id=... 로 넘기면 새로고침해도
+        // 같은 카드뉴스가 다시 열리고, 주소를 북마크해 둘 수도 있다.
+        const id = saveCardNews(keyword, data);
 
         clearInterval(animInterval);
 
@@ -68,7 +67,7 @@ function LoadingContent() {
           setStatusIdx(STATUS_MESSAGES.length - 1);
           if (p >= 100) {
             clearInterval(finishInterval);
-            setTimeout(() => router.push("/preview"), 600);
+            setTimeout(() => router.replace(`/preview?id=${id}`), 600);
           }
         }, 30);
       } catch (err: unknown) {

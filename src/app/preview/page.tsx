@@ -1,23 +1,49 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import CardNewsCard from "@/components/CardNewsCard";
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
+import {
+  deleteCardNews,
+  useCardNewsHistory,
+  useIsHydrated,
+} from "@/lib/cardNewsStore";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
-import { useIsHydrated, useStoredCardNews } from "@/lib/useStoredCardNews";
 
 /** 미리보기에서 카드를 줄여 보여줄 비율. 캡처는 항상 원본 크기로 한다. */
 const PREVIEW_SCALE = 0.42;
 
+/** 목록이 화면을 다 차지하지 않도록 보여줄 개수를 제한한다. */
+const MAX_VISIBLE_HISTORY = 8;
+
 type CopyTarget = "caption" | "hashtags";
 
-export default function PreviewPage() {
+/** 오늘 만든 것인지 한눈에 보이게 짧게 적는다. */
+function formatWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const today = new Date().toDateString() === date.toDateString();
+  const time = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return today ? `오늘 ${time}` : `${date.getMonth() + 1}월 ${date.getDate()}일 ${time}`;
+}
+
+function PreviewContent() {
   const router = useRouter();
-  const { data, meta } = useStoredCardNews();
+  const searchParams = useSearchParams();
+  const history = useCardNewsHistory();
   const loaded = useIsHydrated();
-  const [current, setCurrent] = useState(0);
+
+  // 주소에 id 가 있으면 그 결과를, 없으면 가장 최근 것을 연다.
+  const id = searchParams.get("id");
+  const entry = id ? history.find((e) => e.id === id) : history[0];
+  const data = entry?.data ?? null;
+
+  // 보고 있는 장을 결과 id와 함께 들고 있는다. 다른 결과로 옮겼을 때 첫 장으로
+  // 되돌리는 일을 효과로 처리하면 렌더가 한 번 더 도는데, 렌더 시점에 id를
+  // 비교하면 그럴 필요가 없다.
+  const [slidePos, setSlidePos] = useState({ id: "", index: 0 });
   const [copied, setCopied] = useState<CopyTarget | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -26,8 +52,21 @@ export default function PreviewPage() {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const total = data?.slides.length ?? 0;
-  const next = useCallback(() => setCurrent((i) => (i + 1) % total), [total]);
-  const prev = useCallback(() => setCurrent((i) => (i - 1 + total) % total), [total]);
+  const entryId = entry?.id ?? "";
+  const current = slidePos.id === entryId ? slidePos.index : 0;
+
+  const goTo = useCallback(
+    (move: (index: number) => number) => {
+      setSlidePos((prev) => ({
+        id: entryId,
+        index: move(prev.id === entryId ? prev.index : 0),
+      }));
+    },
+    [entryId]
+  );
+
+  const next = useCallback(() => goTo((i) => (i + 1) % total), [goTo, total]);
+  const prev = useCallback(() => goTo((i) => (i - 1 + total) % total), [goTo, total]);
 
   useEffect(() => {
     if (total === 0) return;
@@ -51,8 +90,8 @@ export default function PreviewPage() {
   };
 
   // 날짜를 앞에 붙여 내려받은 파일이 만든 순서대로 정렬되게 한다.
-  const datePrefix = (meta?.createdAt ?? new Date().toISOString()).slice(0, 10);
-  const baseName = `${datePrefix}-${safeFileName(meta?.keyword ?? data?.title ?? "cardnews")}`;
+  const datePrefix = (entry?.createdAt ?? new Date().toISOString()).slice(0, 10);
+  const baseName = `${datePrefix}-${safeFileName(entry?.keyword ?? data?.title ?? "cardnews")}`;
 
   const saveOne = async () => {
     const node = cardRefs.current[current];
@@ -81,6 +120,15 @@ export default function PreviewPage() {
       setExportError(err instanceof Error ? err.message : "저장에 실패했습니다.");
     } finally {
       setExporting(null);
+    }
+  };
+
+  /** 지금 보고 있는 것을 지우면 남은 것 중 최신으로 옮긴다. */
+  const handleDelete = (targetId: string, isCurrent: boolean) => {
+    const remaining = history.filter((item) => item.id !== targetId);
+    deleteCardNews(targetId);
+    if (isCurrent) {
+      router.replace(remaining[0] ? `/preview?id=${remaining[0].id}` : "/preview");
     }
   };
 
@@ -299,9 +347,67 @@ export default function PreviewPage() {
                 </p>
               </div>
             )}
+
+            {history.length > 1 && (
+              <div className="glass-panel p-5 rounded-2xl">
+                <h4 className="text-white font-korean-bold text-sm mb-1">최근 생성</h4>
+                <p className="text-white/40 text-xs mb-4 font-korean-reg">
+                  이 브라우저에만 저장됩니다. 최대 {MAX_VISIBLE_HISTORY}건까지 보여줍니다.
+                </p>
+                <ul className="space-y-1">
+                  {history.slice(0, MAX_VISIBLE_HISTORY).map((item) => {
+                    const isCurrent = item.id === entry?.id;
+                    return (
+                      <li key={item.id} className="flex items-center gap-1">
+                        <button
+                          onClick={() => router.replace(`/preview?id=${item.id}`)}
+                          className={`flex-1 text-left px-3 py-2 rounded-lg transition-colors min-w-0 ${
+                            isCurrent ? "bg-white/10" : "hover:bg-white/5"
+                          }`}
+                        >
+                          <span
+                            className={`block text-sm truncate ${
+                              isCurrent ? "text-primary font-korean-bold" : "text-white/70"
+                            }`}
+                          >
+                            {item.keyword || item.data.title}
+                          </span>
+                          <span className="block text-white/35 text-xs mt-0.5">
+                            {formatWhen(item.createdAt)} · {item.data.slides.length}장
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id, isCurrent)}
+                          aria-label="이 결과 삭제"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-red-400 hover:bg-white/5 transition-colors flex-shrink-0"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </main>
     </>
+  );
+}
+
+export default function PreviewPage() {
+  // useSearchParams 를 쓰는 화면은 Suspense 경계 안에 있어야 한다. 이 경로는
+  // 미리 렌더되므로, 경계가 없으면 프로덕션 빌드가 실패한다.
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-white/60 font-korean-reg">
+          불러오는 중...
+        </div>
+      }
+    >
+      <PreviewContent />
+    </Suspense>
   );
 }

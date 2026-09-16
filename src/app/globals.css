@@ -62,6 +62,40 @@ body {
   font-display: swap;
 }
 
+/* 명조 계열 카드 템플릿용. 나눔명조, OFL-1.1, public/fonts/OFL-NanumMyeongjo.txt.
+   한글 파일을 먼저 선언하고 라틴 파일을 뒤에 둔다. 겹치는 글자는 나중 선언이
+   이기므로, 숫자와 알파벳은 라틴 전용 파일로 그려진다. */
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('/fonts/NanumMyeongjo-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('/fonts/NanumMyeongjo-Regular-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2070-209F, U+20A0-20BF;
+}
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('/fonts/NanumMyeongjo-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('/fonts/NanumMyeongjo-Bold-latin.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2070-209F, U+20A0-20BF;
+}
+
 @font-face {
   font-family: 'HangamePoker';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/HangamePoker.woff2') format('woff2');

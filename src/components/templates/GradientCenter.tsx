@@ -1,49 +1,14 @@
-import { CARD_HEIGHT, CARD_WIDTH, type CardNews, type CardSlide } from "@/lib/cardnews";
-
-/** #rrggbb 를 밝기만 조절해서 같은 계열의 다른 색으로 만든다. */
-function shade(hex: string, amount: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const channel = (shift: number) => {
-    const value = (n >> shift) & 0xff;
-    const next = amount >= 0
-      ? value + (255 - value) * amount
-      : value * (1 + amount);
-    return Math.round(Math.min(255, Math.max(0, next)));
-  };
-  return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
-}
+import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
+import { gradientFor, shade } from "@/lib/templates/color";
+import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 
 /**
- * 장마다 배경에 조금씩 변화를 준다.
+ * 색 배경 · 고딕 · 중앙 카드.
  *
- * 색상(hue)은 세트 전체가 포인트 컬러 하나로 통일돼야 하므로 바꾸지 않고,
- * 밝은 쪽 끝의 명도와 그라데이션 각도만 옮긴다. 5장을 넘길 때 같은 그림이
- * 반복되는 느낌을 없애면서도 한 세트로 보이게 하기 위한 것이다.
+ * 그라데이션 위에 반투명 다크 카드를 얹고 그 안에 글을 넣는다. 사진 없이
+ * 완결되는 기본 템플릿이다.
  */
-function background(accent: string, index: number, total: number): string {
-  const t = total > 1 ? index / (total - 1) : 0;
-  const highlight = 0.34 - t * 0.18;
-  const angle = 150 + t * 45;
-  return `linear-gradient(${angle}deg, ${shade(accent, highlight)} 0%, ${accent} 46%, ${shade(accent, -0.5)} 100%)`;
-}
-
-/**
- * 카드 한 장. 항상 1080x1350 실제 크기로 그린다.
- *
- * 미리보기에서는 바깥에서 transform: scale 로 줄여 쓰고, PNG로 저장할 때는
- * 이 크기 그대로 캡처한다. 덕분에 화면에 보이는 것과 저장되는 것이 같다.
- */
-export default function CardNewsCard({
-  slide,
-  accent,
-  total,
-  source,
-}: {
-  slide: CardSlide;
-  accent: string;
-  total: number;
-  source: CardNews["source"];
-}) {
+export default function GradientCenter({ slide, accent, total, source }: TemplateProps) {
   const isCover = slide.kind === "cover";
   const index = slide.slideNumber - 1;
 
@@ -60,8 +25,8 @@ export default function CardNewsCard({
         overflow: "hidden",
         // 사진 없이 그라데이션과 타이포그래피만으로 만든다. 저작권 확인이
         // 끝난 사진이 없을 때 쓰는 기본 배경이다.
-        background: background(accent, index, total),
-        fontFamily: "'Wanted Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        background: gradientFor(accent, index, total),
+        fontFamily: FONT_STACK.sans,
         color: "#ffffff",
       }}
     >

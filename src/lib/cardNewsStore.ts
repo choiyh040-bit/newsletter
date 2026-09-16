@@ -24,6 +24,8 @@ export interface CardNewsEntry {
   keyword: string;
   createdAt: string;
   data: CardNews;
+  /** 고른 카드 템플릿. 없으면 기본 템플릿으로 본다. */
+  templateId?: string;
 }
 
 // ─── 저장소 읽고 쓰기 ────────────────────────────────────────────────────────
@@ -126,6 +128,20 @@ export function saveCardNews(keyword: string, data: CardNews): string {
   writeRaw(JSON.stringify(next));
   notify();
   return entry.id;
+}
+
+/**
+ * 고른 템플릿을 기억한다.
+ *
+ * 화면 상태로만 두면 다른 결과를 보다가 돌아올 때마다 기본값으로 되돌아간다.
+ * 어떤 디자인으로 뽑을지는 결과에 붙은 선택이므로 함께 보관한다.
+ */
+export function setCardNewsTemplate(id: string, templateId: string): void {
+  const next = parseHistory(readRaw()).map((entry) =>
+    entry.id === id ? { ...entry, templateId } : entry
+  );
+  writeRaw(JSON.stringify(next));
+  notify();
 }
 
 export function deleteCardNews(id: string): void {

@@ -3,13 +3,18 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import CardNewsCard from "@/components/CardNewsCard";
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
 import {
   deleteCardNews,
+  setCardNewsTemplate,
   useCardNewsHistory,
   useIsHydrated,
 } from "@/lib/cardNewsStore";
+import {
+  BACKGROUND_LABEL,
+  availableTemplates,
+  templateById,
+} from "@/lib/templates";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
 
 /** 미리보기에서 카드를 줄여 보여줄 비율. 캡처는 항상 원본 크기로 한다. */
@@ -44,6 +49,11 @@ function PreviewContent() {
   // 되돌리는 일을 효과로 처리하면 렌더가 한 번 더 도는데, 렌더 시점에 id를
   // 비교하면 그럴 필요가 없다.
   const [slidePos, setSlidePos] = useState({ id: "", index: 0 });
+  // 사진 파이프라인이 아직 없어 색 배경 템플릿만 고를 수 있다.
+  const choices = availableTemplates(false);
+  const template = templateById(entry?.templateId);
+  const Render = template.Render;
+
   const [copied, setCopied] = useState<CopyTarget | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -172,7 +182,13 @@ function PreviewContent() {
               cardRefs.current[i] = el;
             }}
           >
-            <CardNewsCard slide={slide} accent={data.accent} total={total} source={data.source} />
+            <Render
+              slide={slide}
+              accent={data.accent}
+              total={total}
+              source={data.source}
+              photo={null}
+            />
           </div>
         ))}
       </div>
@@ -228,11 +244,12 @@ function PreviewContent() {
                   height: CARD_HEIGHT,
                 }}
               >
-                <CardNewsCard
+                <Render
                   slide={data.slides[current]}
                   accent={data.accent}
                   total={total}
                   source={data.source}
+                  photo={null}
                 />
               </div>
             </div>
@@ -260,6 +277,49 @@ function PreviewContent() {
 
           {/* 오른쪽 패널 */}
           <div className="lg:col-span-5 space-y-5">
+            <div className="glass-panel p-5 rounded-2xl">
+              <h4 className="text-white font-korean-bold text-sm mb-1 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-sm">palette</span>
+                디자인
+              </h4>
+              <p className="text-white/40 text-xs mb-4 font-korean-reg">
+                같은 기사로 바로 바꿔볼 수 있습니다. 다시 생성하지 않습니다.
+              </p>
+              <div className="space-y-2">
+                {choices.map((choice) => {
+                  const isCurrent = choice.id === template.id;
+                  return (
+                    <button
+                      key={choice.id}
+                      onClick={() => entry && setCardNewsTemplate(entry.id, choice.id)}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
+                        isCurrent
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-white/10 hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`text-sm ${
+                            isCurrent ? "text-primary font-korean-bold" : "text-white/80"
+                          }`}
+                        >
+                          {choice.name}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+                          {BACKGROUND_LABEL[choice.background]}
+                        </span>
+                      </span>
+                      <span className="block text-white/40 text-xs mt-1">{choice.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-white/30 text-xs mt-3 font-korean-reg">
+                사진 배경 디자인은 사진 기능이 붙으면 여기에 함께 나옵니다.
+              </p>
+            </div>
+
             <div className="glass-panel p-5 rounded-2xl">
               <h4 className="text-white font-korean-bold text-sm mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-sm">download</span>

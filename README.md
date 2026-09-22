@@ -71,6 +71,9 @@ SKILL.md는 `<br>` 태그로 줄을 끊으라고 하지만, 여기서는 **줄 �
 고른 템플릿은 결과와 함께 보관되므로(`CardNewsEntry.templateId`), 다른 결과를
 보다가 돌아와도 유지됩니다.
 
+앞으로 만들 디자인의 참고 자료와, 그것을 넣기 전에 풀어야 할 구조적 문제는
+`docs/template-references.md`에 정리해 두었습니다.
+
 ## 로컬에서 실행
 
 ```bash
@@ -127,5 +130,6 @@ CORS 때문에 글자가 깨질 수 있습니다.
 | `src/lib/cardnews.ts` | 카드 규격, 데이터 타입, 모델 응답 정리 |
 | `src/components/templates/` | 카드 템플릿별 렌더링 (1080×1350) |
 | `src/lib/templates/` | 템플릿 목록과 배경·글꼴 축 정의 |
+| `docs/template-references.md` | 디자인 참고 자료와 미해결 과제 |
 | `src/lib/exportCards.ts` | 카드 DOM을 PNG/ZIP으로 내보내기 |
 | `src/app/preview/page.tsx` | 미리보기 화면과 내보내기 버튼 |

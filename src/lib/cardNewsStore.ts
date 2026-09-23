@@ -26,6 +26,13 @@ export interface CardNewsEntry {
   data: CardNews;
   /** 고른 카드 템플릿. 없으면 기본 템플릿으로 본다. */
   templateId?: string;
+  /**
+   * 고른 색 조합. 색 조합을 가진 템플릿에서만 의미가 있다.
+   *
+   * 템플릿과 한 칸에 묶지 않고 따로 둔다. 템플릿을 바꿨다가 되돌아왔을 때
+   * 고르던 색이 그대로 있는 편이 자연스럽기 때문이다.
+   */
+  variantId?: string;
 }
 
 // ─── 저장소 읽고 쓰기 ────────────────────────────────────────────────────────
@@ -150,6 +157,15 @@ export function saveCardNews(keyword: string, data: CardNews): string {
 export function setCardNewsTemplate(id: string, templateId: string): void {
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, templateId } : entry
+  );
+  writeRaw(JSON.stringify(next));
+  notify();
+}
+
+/** 고른 색 조합을 기억한다. 이유는 `setCardNewsTemplate` 와 같다. */
+export function setCardNewsVariant(id: string, variantId: string): void {
+  const next = parseHistory(readRaw()).map((entry) =>
+    entry.id === id ? { ...entry, variantId } : entry
   );
   writeRaw(JSON.stringify(next));
   notify();

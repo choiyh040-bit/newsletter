@@ -7,6 +7,7 @@ import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
 import {
   deleteCardNews,
   setCardNewsTemplate,
+  setCardNewsVariant,
   useCardNewsHistory,
   useIsHydrated,
 } from "@/lib/cardNewsStore";
@@ -14,6 +15,7 @@ import {
   BACKGROUND_LABEL,
   availableTemplates,
   templateById,
+  variantFor,
 } from "@/lib/templates";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
 
@@ -52,6 +54,7 @@ function PreviewContent() {
   // 사진 파이프라인이 아직 없어 색 배경 템플릿만 고를 수 있다.
   const choices = availableTemplates(false);
   const template = templateById(entry?.templateId);
+  const variant = variantFor(template, entry?.variantId);
   const Render = template.Render;
 
   const [copied, setCopied] = useState<CopyTarget | null>(null);
@@ -188,6 +191,7 @@ function PreviewContent() {
               total={total}
               source={data.source}
               photo={null}
+              variant={variant}
             />
           </div>
         ))}
@@ -250,6 +254,7 @@ function PreviewContent() {
                   total={total}
                   source={data.source}
                   photo={null}
+              variant={variant}
                 />
               </div>
             </div>
@@ -315,6 +320,39 @@ function PreviewContent() {
                   );
                 })}
               </div>
+              {/* 색 조합. 색을 가진 템플릿에서만 나온다. */}
+              {template.variants && template.variants.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-white/5">
+                  <div className="flex items-baseline justify-between mb-3">
+                    <span className="text-white/70 text-xs font-korean-bold">색 조합</span>
+                    <span className="text-white/40 text-xs">{variant?.name}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {template.variants.map((option) => {
+                      const isCurrent = option.id === variant?.id;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => entry && setCardNewsVariant(entry.id, option.id)}
+                          title={option.name}
+                          aria-label={option.name}
+                          aria-pressed={isCurrent}
+                          className={`w-9 h-9 rounded-full border transition-transform hover:scale-110 ${
+                            isCurrent ? "border-white/70 scale-110" : "border-white/15"
+                          }`}
+                          style={{ background: option.base }}
+                        >
+                          <span
+                            className="block w-3.5 h-3.5 rounded-full mx-auto"
+                            style={{ background: option.neon }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <p className="text-white/30 text-xs mt-3 font-korean-reg">
                 사진 배경 디자인은 사진 기능이 붙으면 여기에 함께 나옵니다.
               </p>

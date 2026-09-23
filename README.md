@@ -34,7 +34,7 @@ PNG로 내려받는 웹앱입니다.
 | 보도용·유료 스톡 이미지 사용 금지 | 사진을 아예 쓰지 않음. `CardNewsCard.tsx`가 그라데이션으로 대체 |
 | 캔버스 1080 × 1350 (4:5) | `cardnews.ts`의 `CARD_WIDTH`/`CARD_HEIGHT` |
 | 원티드산스 | `public/fonts/`, `globals.css`의 `@font-face`. 명조 템플릿은 나눔명조 |
-| 좌상단 카테고리 배지 | 각 템플릿 (`src/components/templates/`) |
+| 좌상단 카테고리 배지 | 각 템플릿 (`src/components/templates/`). `DarkNeon`은 알약 대신 네온색 글자 |
 | 중앙 반투명 다크 카드 위 흰 텍스트 | `GradientCenter.tsx` (`rgba(10,14,20,0.58)`) |
 | 세트 전체를 포인트 컬러 하나로 통일 | `lib/templates/color.ts` — 색상은 고정, 명도만 장별로 변화 |
 | 표지는 작은 소제목 → 큰 헤드라인 | 각 템플릿의 `isCover` 분기 |
@@ -81,6 +81,29 @@ SKILL.md는 `<br>` 태그로 줄을 끊으라고 하지만, 여기서는 **줄 �
 
 고른 템플릿은 결과와 함께 보관되므로(`CardNewsEntry.templateId`), 다른 결과를
 보다가 돌아와도 유지됩니다.
+
+### 색 조합 (variant)
+
+레이아웃은 같고 색만 다른 것은 **새 템플릿이 아니라 색 조합**입니다. 그렇게
+나누지 않으면 템플릿 목록이 금세 색 견본으로 뒤덮입니다.
+
+`어두운 바탕 · 네온` 템플릿이 이 구조를 씁니다. 거의 검정인 바탕 위에 형광
+한 색만 올리는 디자인이라, 색 한 쌍을 바꾸면 인상이 완전히 달라집니다.
+
+새 조합을 넣는 일은 `src/lib/templates/variants.ts`에 한 줄 더하는 것이
+전부입니다.
+
+```ts
+{ id: "black-lime", name: "검정 · 형광 그린", base: "#0A0C0A", neon: "#B8FF2E" },
+```
+
+컴포넌트는 `base`와 `neon` 두 값만 보고 나머지를 계산합니다. 글자색은
+`inkFor(base)`가 **바탕 밝기를 보고 뒤집으므로**, 아이보리처럼 밝은 바탕도
+그대로 됩니다(`ivory-crimson`).
+
+이 템플릿만 기사에서 뽑은 `accent`를 쓰지 않습니다. 바탕이 고정이고 네온 한
+색이 혼자 튀는 것이 전부라, 기사마다 색이 달라지면 인상이 무너지기 때문입니다.
+색은 사람이 고르고, 고른 값은 결과에 함께 보관됩니다(`CardNewsEntry.variantId`).
 
 앞으로 만들 디자인의 참고 자료와, 그것을 넣기 전에 풀어야 할 구조적 문제는
 `docs/template-references.md`에 정리해 두었습니다.
@@ -141,6 +164,7 @@ CORS 때문에 글자가 깨질 수 있습니다.
 | `src/lib/cardnews.ts` | 카드 규격, 데이터 타입, 모델 응답 정리 |
 | `src/components/templates/` | 카드 템플릿별 렌더링 (1080×1350) |
 | `src/lib/templates/` | 템플릿 목록과 배경·글꼴 축 정의 |
+| `src/lib/templates/variants.ts` | 색 조합 목록. 새 색은 여기 한 줄 |
 | `docs/template-references.md` | 디자인 참고 자료와 미해결 과제 |
 | `src/lib/exportCards.ts` | 카드 DOM을 PNG/ZIP으로 내보내기 |
 | `src/app/preview/page.tsx` | 미리보기 화면과 내보내기 버튼 |

@@ -68,3 +68,69 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
 
   return { h, s, l };
 }
+
+// ─── 어두운 바탕 + 네온 한 색 계열에서 쓰는 것들 ─────────────────────────────
+
+/** #rrggbb 에 투명도를 붙인다. 네온색을 옅게 깔 때 쓴다. */
+export function withAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 0xff}, ${(n >> 8) & 0xff}, ${n & 0xff}, ${alpha})`;
+}
+
+/** 사람 눈이 느끼는 밝기. 바탕이 밝은지 어두운지 판단할 때만 쓴다. */
+function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const channel = (shift: number) => {
+    const v = ((n >> shift) & 0xff) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0);
+}
+
+/** 바탕 위에 올릴 글자색 네 단계. */
+export interface Ink {
+  /** 헤드라인 */
+  strong: string;
+  /** 설명문 */
+  muted: string;
+  /** 워터마크·장수 표시 */
+  faint: string;
+  /** 가는 선 */
+  hairline: string;
+  /** 배경 격자. 있는지 없는지 알아채지 못할 정도로 옅어야 한다. */
+  grid: string;
+  /**
+   * 배경 글로우의 진하기.
+   *
+   * 어두운 바탕에서는 빛이 번지는 것처럼 보이지만, 밝은 바탕에서는 같은
+   * 값이 잉크 얼룩처럼 보인다. 그래서 바탕 밝기에 따라 따로 잡는다.
+   */
+  glow: number;
+}
+
+/**
+ * 바탕색에 맞는 글자색을 고른다.
+ *
+ * 글자색을 흰색으로 박아 두면 밝은 바탕 조합을 아예 만들 수 없다. 색 조합을
+ * 열어 두는 것이 이 템플릿의 목적이므로, 바탕 밝기를 보고 글자를 뒤집는다.
+ * 덕분에 `variants.ts` 에 아이보리 바탕 한 줄을 더해도 그냥 읽힌다.
+ */
+export function inkFor(base: string): Ink {
+  return luminance(base) > 0.4
+    ? {
+        strong: "#101014",
+        muted: "rgba(16, 16, 20, 0.68)",
+        faint: "rgba(16, 16, 20, 0.34)",
+        hairline: "rgba(16, 16, 20, 0.14)",
+        grid: "rgba(16, 16, 20, 0.05)",
+        glow: 0.1,
+      }
+    : {
+        strong: "#ffffff",
+        muted: "rgba(255, 255, 255, 0.62)",
+        faint: "rgba(255, 255, 255, 0.26)",
+        hairline: "rgba(255, 255, 255, 0.10)",
+        grid: "rgba(255, 255, 255, 0.035)",
+        glow: 0.26,
+      };
+}

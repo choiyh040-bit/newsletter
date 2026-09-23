@@ -28,6 +28,26 @@ export const FONT_STACK: Record<FontKind, string> = {
   serif: "'Nanum Myeongjo', serif",
 };
 
+/**
+ * 한 템플릿 안에서 고를 수 있는 색 조합.
+ *
+ * "검정 + 핑크"와 "검정 + 형광 그린"은 서로 다른 디자인이 아니라 같은 디자인의
+ * 다른 색이다. 이런 것까지 템플릿으로 하나씩 만들면 목록이 금세 색 견본으로
+ * 뒤덮인다. 그래서 디자인(레이아웃)과 색을 따로 떼어, 색만 다른 것은 여기서
+ * 고르게 한다.
+ *
+ * 새 조합을 넣는 일은 `variants.ts` 배열에 한 줄을 더하는 것이 전부다.
+ */
+export interface TemplateVariant {
+  id: string;
+  /** 선택 버튼에 보이는 이름 (예: "검정 · 핫핑크") */
+  name: string;
+  /** 카드 바탕색 (#rrggbb). 어두운 색이 아니어도 된다. */
+  base: string;
+  /** 포인트 한 색 (#rrggbb). 바탕 위에서 혼자 튀는 역할을 한다. */
+  neon: string;
+}
+
 /** 카드 한 장을 그릴 때 템플릿이 받는 값. */
 export interface TemplateProps {
   slide: CardSlide;
@@ -40,6 +60,11 @@ export interface TemplateProps {
    * 아직 사진 파이프라인이 없어 항상 null 이다.
    */
   photo: TemplatePhoto | null;
+  /**
+   * 고른 색 조합. `variants` 를 가진 템플릿에서만 쓴다.
+   * 색 조합이 없는 템플릿은 항상 null 이고 `accent` 만 본다.
+   */
+  variant: TemplateVariant | null;
 }
 
 export interface TemplatePhoto {
@@ -57,4 +82,9 @@ export interface Template {
   background: BackgroundKind;
   font: FontKind;
   Render: ComponentType<TemplateProps>;
+  /**
+   * 고를 수 있는 색 조합. 없으면 기사에서 뽑은 `accent` 를 그대로 쓴다는 뜻이다.
+   * 첫 항목이 기본값이므로 순서가 의미를 갖는다.
+   */
+  variants?: readonly TemplateVariant[];
 }

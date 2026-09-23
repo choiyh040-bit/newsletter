@@ -17,6 +17,21 @@ export const DEFAULT_ACCENT = "#0f5b8c";
 
 export type SlideKind = "cover" | "detail" | "outro";
 
+/**
+ * 한 줄을 이루는 조각.
+ *
+ * 한 줄 안에서 일부 단어만 색을 달리하려면 줄을 통째로 다룰 수 없다.
+ * 그래서 줄을 조각으로 쪼개 두고, 강조할 조각에만 표시를 남긴다.
+ */
+export interface TextSpan {
+  text: string;
+  /** 참이면 템플릿이 포인트 컬러로 그린다. */
+  accent: boolean;
+}
+
+/** 화면의 한 줄. 조각들이 옆으로 이어 붙는다. */
+export type TextLine = TextSpan[];
+
 export interface CardSlide {
   slideNumber: number;
   kind: SlideKind;
@@ -31,9 +46,9 @@ export interface CardSlide {
    * 한글 어절 단위 줄바꿈이 일정하지 않아 "~습니다" 같은 서술어 앞에서
    * 줄이 끊기는 일이 잦기 때문이다.
    */
-  heading: string[];
+  heading: TextLine[];
   /** 본문. heading과 같은 규칙으로 한 원소가 한 줄이다. */
-  body: string[];
+  body: TextLine[];
 }
 
 export interface CardNewsSource {
@@ -58,15 +73,70 @@ export interface CardNewsMeta {
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
-/** 문자열이든 배열이든 받아서 "한 원소 = 한 줄" 배열로 만든다. */
-function toLines(value: unknown, maxLines: number): string[] {
+/**
+ * 강조 표시. `*이렇게*` 감싼 부분이 포인트 컬러로 칠해진다.
+ *
+ * 모델에게 중첩 객체 배열을 받는 대신 문자열 안에 표시를 넣게 했다. 응답
+ * 형식이 지금까지와 같은 문자열 배열로 유지되어, 이미 저장해 둔 결과도
+ * 그대로 읽힌다. 모델 입장에서도 배열을 겹쳐 만드는 것보다 훨씬 쉽다.
+ */
+const ACCENT_MARK = /\*([^*]+)\*/g;
+
+/** 한 줄 문자열을 조각으로 쪼갠다. 짝이 맞지 않는 별표는 그냥 글자로 둔다. */
+function parseSpans(line: string): TextLine {
+  const spans: TextLine = [];
+  let cursor = 0;
+
+  for (const match of line.matchAll(ACCENT_MARK)) {
+    const start = match.index;
+    if (start > cursor) {
+      spans.push({ text: line.slice(cursor, start), accent: false });
+    }
+    spans.push({ text: match[1], accent: true });
+    cursor = start + match[0].length;
+  }
+
+  if (cursor < line.length) {
+    spans.push({ text: line.slice(cursor), accent: false });
+  }
+  return spans.length > 0 ? spans : [{ text: line, accent: false }];
+}
+
+/** 한 줄의 글자만 이어 붙인다. 제목처럼 꾸밈이 필요 없는 곳에서 쓴다. */
+export function lineText(line: TextLine): string {
+  return line.map((span) => span.text).join("");
+}
+
+/**
+ * 문자열이든 배열이든 받아서 "한 원소 = 한 줄" 배열로 만든다.
+ *
+ * 이미 조각으로 쪼개진 값(보관해 둔 결과를 다시 읽는 경우)도 그대로 통과시켜,
+ * 저장소에서 꺼낸 것과 모델이 갓 만든 것을 같은 함수로 다룰 수 있게 한다.
+ */
+function toLines(value: unknown, maxLines: number): TextLine[] {
   const raw = Array.isArray(value) ? value : [value];
+
   return raw
-    .flatMap((line) =>
-      typeof line === "string" ? line.split(/<br\s*\/?>|\n/) : []
-    )
-    .map((line) => line.trim())
-    .filter(Boolean)
+    .flatMap((line): TextLine[] => {
+      if (typeof line === "string") {
+        return line
+          .split(/<br\s*\/?>|\n/)
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .map(parseSpans);
+      }
+      // 이미 조각 배열인 경우
+      if (Array.isArray(line)) {
+        const spans = line
+          .filter(
+            (span): span is TextSpan =>
+              typeof span === "object" && span !== null && typeof span.text === "string"
+          )
+          .map((span) => ({ text: span.text, accent: span.accent === true }));
+        return lineText(spans).trim() ? [spans] : [];
+      }
+      return [];
+    })
     .slice(0, maxLines);
 }
 
@@ -127,7 +197,7 @@ export function normalizeCardNews(raw: unknown): CardNews {
       : null;
 
   return {
-    title: toText(input.title, slides[0].heading.join(" ")),
+    title: toText(input.title, slides[0].heading.map(lineText).join(" ")),
     accent: HEX_COLOR.test(accent) ? accent : DEFAULT_ACCENT,
     slides,
     caption: toText(input.caption),

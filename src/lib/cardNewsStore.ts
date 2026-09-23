@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { CardNews } from "./cardnews";
+import { normalizeCardNews, type CardNews } from "./cardnews";
 
 /**
  * 생성한 카드뉴스를 브라우저에 보관한다.
@@ -55,14 +55,25 @@ function parseHistory(raw: string): CardNewsEntry[] {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (entry): entry is CardNewsEntry =>
-        typeof entry === "object" &&
-        entry !== null &&
-        typeof entry.id === "string" &&
-        typeof entry.data === "object" &&
-        entry.data !== null
-    );
+    return parsed
+      .filter(
+        (entry): entry is CardNewsEntry =>
+          typeof entry === "object" &&
+          entry !== null &&
+          typeof entry.id === "string" &&
+          typeof entry.data === "object" &&
+          entry.data !== null
+      )
+      .flatMap((entry) => {
+        // 강조 기능이 생기기 전에 저장한 결과는 줄이 그냥 문자열이다.
+        // 꺼낼 때 한 번 더 정리해서 지금 형식으로 맞춘다. 정리조차 되지 않는
+        // 것은 애초에 그릴 수 없는 값이므로 목록에서 뺀다.
+        try {
+          return [{ ...entry, data: normalizeCardNews(entry.data) }];
+        } catch {
+          return [];
+        }
+      });
   } catch {
     return [];
   }

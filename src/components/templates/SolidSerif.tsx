@@ -1,6 +1,7 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { shade, solidFor } from "@/lib/templates/color";
+import { accentText, shade, solidFor } from "@/lib/templates/color";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
+import TextLines from "./TextLines";
 
 /**
  * 색 배경 · 명조 · 상단 정렬.
@@ -74,9 +75,7 @@ export default function SolidSerif({ slide, accent, total, source }: TemplatePro
             letterSpacing: "-0.02em",
           }}
         >
-          {slide.heading.map((line, i) => (
-            <div key={i}>{line}</div>
-          ))}
+          <TextLines lines={slide.heading} accentColor={accentText(accent)} />
         </div>
 
         {slide.body.length > 0 && (
@@ -90,9 +89,7 @@ export default function SolidSerif({ slide, accent, total, source }: TemplatePro
                 color: "rgba(255,255,255,0.86)",
               }}
             >
-              {slide.body.map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
+              <TextLines lines={slide.body} accentColor={accentText(accent)} />
             </div>
           </>
         )}

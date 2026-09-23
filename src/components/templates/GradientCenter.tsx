@@ -1,6 +1,7 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { gradientFor, shade } from "@/lib/templates/color";
+import { accentText, gradientFor, shade } from "@/lib/templates/color";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
+import TextLines from "./TextLines";
 
 /**
  * 색 배경 · 고딕 · 중앙 카드.
@@ -114,9 +115,7 @@ export default function GradientCenter({ slide, accent, total, source }: Templat
               letterSpacing: "-0.035em",
             }}
           >
-            {slide.heading.map((line, i) => (
-              <div key={i}>{line}</div>
-            ))}
+            <TextLines lines={slide.heading} accentColor={accentText(accent)} />
           </div>
 
           {slide.body.length > 0 && (
@@ -129,9 +128,7 @@ export default function GradientCenter({ slide, accent, total, source }: Templat
                 letterSpacing: "-0.01em",
               }}
             >
-              {slide.body.map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
+              <TextLines lines={slide.body} accentColor={accentText(accent)} />
             </div>
           )}
         </div>

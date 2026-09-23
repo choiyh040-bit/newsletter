@@ -33,3 +33,38 @@ export function solidFor(accent: string, index: number, total: number): string {
   const t = total > 1 ? index / (total - 1) : 0;
   return shade(accent, -0.2 - t * 0.3);
 }
+
+/**
+ * 강조한 글자에 쓸 색.
+ *
+ * 밝기만 올리면 흰 글자와 구별되지 않는다. 옅은 하늘색과 흰색은 카드 크기로
+ * 줄여 놓으면 같은 색으로 보인다. 그래서 색상(hue)은 그대로 두고 채도를
+ * 끌어올려, 흰 글자 옆에서 "다른 색"으로 읽히게 한다.
+ */
+export function accentText(accent: string): string {
+  const { h } = hexToHsl(accent);
+  return `hsl(${Math.round(h)}, 88%, 68%)`;
+}
+
+/** #rrggbb 를 색상·채도·밝기로 바꾼다. 강조색을 만들 때만 쓴다. */
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 0xff) / 255;
+  const g = ((n >> 8) & 0xff) / 255;
+  const b = (n & 0xff) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+
+  if (d === 0) return { h: 0, s: 0, l };
+
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h: number;
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+  else if (max === g) h = ((b - r) / d + 2) * 60;
+  else h = ((r - g) / d + 4) * 60;
+
+  return { h, s, l };
+}

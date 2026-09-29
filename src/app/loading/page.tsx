@@ -50,7 +50,11 @@ function LoadingContent() {
 
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.error ?? "생성 실패");
+          // 서버가 붙여 보낸 detail 까지 함께 올린다. 이게 없으면 화면에는
+          // "생성에 실패했습니다" 한 줄만 남아, 모델이 단종된 것인지 쿼터가
+          // 떨어진 것인지 구분할 수 없다. 아래 분기들도 detail 안의 코드를
+          // 보고 갈린다.
+          throw new Error([err.error, err.detail].filter(Boolean).join("\n\n") || "생성 실패");
         }
 
         const data = await res.json();
@@ -86,10 +90,24 @@ function LoadingContent() {
   const statusMessage = STATUS_MESSAGES[Math.min(statusIdx, STATUS_MESSAGES.length - 1)];
 
   if (error) {
-    const isRateLimit = error.includes("429") || error.includes("할당량") || error.includes("Resource has been exhausted");
-    const displayError = isRateLimit
-      ? "현재 이용자가 많아 AI 서버 접속이 지연되고 있습니다. 약 1분 후 다시 시도해주세요."
-      : error;
+    const isRateLimit =
+      error.includes("429") ||
+      error.includes("할당량") ||
+      error.includes("RESOURCE_EXHAUSTED") ||
+      error.includes("Resource has been exhausted");
+    // 모델이 단종되면 코드를 고치기 전까지 다시 시도해도 소용이 없다.
+    // "잠시 후 다시" 안내로 뭉뚱그리면 원인을 영영 못 찾는다.
+    const isModelGone =
+      error.includes("no longer available") || error.includes("NOT_FOUND");
+    const isBusy = error.includes("UNAVAILABLE") || error.includes("high demand");
+
+    const displayError = isModelGone
+      ? "AI 모델이 단종되어 더 이상 호출되지 않습니다.\n다시 시도해도 같은 결과입니다. src/app/api/generate/route.ts 의 MODEL 값을 현재 쓸 수 있는 모델로 바꿔야 합니다."
+      : isRateLimit
+        ? "AI 사용량 한도를 넘었습니다.\n구글 AI 스튜디오에서 남은 할당량을 확인하세요. 검색 기능이 붙은 요청은 별도 한도를 씁니다."
+        : isBusy
+          ? "AI 서버가 혼잡합니다. 잠시 후 다시 시도해주세요."
+          : error;
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6 text-center">
@@ -97,7 +115,13 @@ function LoadingContent() {
           <span className="material-symbols-outlined text-red-400 text-4xl">error</span>
         </div>
         <h2 className="font-korean-bold text-2xl text-white">
-          {isRateLimit ? "서버 혼잡 안내" : "생성 중 오류가 발생했습니다"}
+          {isModelGone
+            ? "AI 모델 설정을 고쳐야 합니다"
+            : isRateLimit
+              ? "사용량 한도 안내"
+              : isBusy
+                ? "서버 혼잡 안내"
+                : "생성 중 오류가 발생했습니다"}
         </h2>
         <p className="text-white/70 font-korean-reg max-w-md leading-relaxed whitespace-pre-line">{displayError}</p>
         <div className="flex gap-4">

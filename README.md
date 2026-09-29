@@ -119,6 +119,24 @@ npm run dev                  # http://localhost:3000
 `GEMINI_API_KEY`는 [Google AI Studio](https://aistudio.google.com/apikey)에서
 발급받습니다. 없으면 화면은 뜨지만 생성 요청이 500으로 실패합니다.
 
+### 생성이 실패할 때
+
+쓰는 모델은 `src/app/api/generate/route.ts`의 `MODEL` 한 곳에 있습니다.
+실패 화면이 원인을 세 갈래로 나눠 알려줍니다.
+
+| 화면 문구 | 원인 | 할 일 |
+| --- | --- | --- |
+| AI 모델 설정을 고쳐야 합니다 | 모델 단종(`NOT_FOUND`) | `MODEL` 값을 바꿉니다. 다시 시도해도 소용없습니다 |
+| 사용량 한도 안내 | 쿼터 초과 | 할당량을 확인합니다 |
+| 서버 혼잡 안내 | 일시적 `UNAVAILABLE` | 잠시 후 다시 시도합니다 |
+
+주의할 점 두 가지입니다.
+
+- **모델 목록에 있다고 호출되는 것이 아닙니다.** `ListModels`에는 보이는데
+  `generateContent`는 404를 주는 경우가 있습니다. 호출해 봐야 압니다.
+- **검색 도구(`googleSearch`)는 쿼터가 따로입니다.** 맨 요청은 되는데 카드뉴스
+  생성만 429가 날 수 있습니다.
+
 ## 배포 (Vercel)
 
 1. [vercel.com/new](https://vercel.com/new)에서 이 GitHub 저장소를 Import 합니다.

@@ -12,7 +12,7 @@ import {
  */
 export const maxDuration = 60;
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.7-flash";
 
 /** 기사 본문을 읽어올 때 기다릴 시간. 이보다 오래 걸리면 검색으로만 만든다. */
 const ARTICLE_FETCH_TIMEOUT_MS = 10_000;

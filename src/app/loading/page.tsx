@@ -100,8 +100,16 @@ function LoadingContent() {
     const isModelGone =
       error.includes("no longer available") || error.includes("NOT_FOUND");
     const isBusy = error.includes("UNAVAILABLE") || error.includes("high demand");
+    // 키가 서버까지 제대로 전달되지 않은 경우. 할당량이나 모델과는 무관하다.
+    const isAuth =
+      error.includes("UNAUTHENTICATED") ||
+      error.includes("API_KEY_INVALID") ||
+      error.includes("PERMISSION_DENIED") ||
+      error.includes("GEMINI_API_KEY가 설정되지");
 
-    const displayError = isModelGone
+    const displayError = isAuth
+      ? "API 키가 서버에 제대로 전달되지 않았습니다.\n\nVercel의 환경변수 GEMINI_API_KEY 값을 확인하세요. 따옴표나 공백이 섞여 있지 않아야 하고, Google AI Studio에서 만든 키여야 합니다(클라우드 콘솔의 OAuth 자격증명이 아닙니다). 값을 고친 뒤에는 반드시 재배포해야 반영됩니다."
+      : isModelGone
       ? "AI 모델이 단종되어 더 이상 호출되지 않습니다.\n다시 시도해도 같은 결과입니다. src/app/api/generate/route.ts 의 MODEL 값을 현재 쓸 수 있는 모델로 바꿔야 합니다."
       : isRateLimit
         ? "AI 사용량 한도를 넘었습니다.\n구글 AI 스튜디오에서 남은 할당량을 확인하세요. 검색 기능이 붙은 요청은 별도 한도를 씁니다."
@@ -115,7 +123,9 @@ function LoadingContent() {
           <span className="material-symbols-outlined text-red-400 text-4xl">error</span>
         </div>
         <h2 className="font-korean-bold text-2xl text-white">
-          {isModelGone
+          {isAuth
+            ? "API 키 설정을 확인해주세요"
+            : isModelGone
             ? "AI 모델 설정을 고쳐야 합니다"
             : isRateLimit
               ? "사용량 한도 안내"

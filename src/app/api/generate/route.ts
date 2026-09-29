@@ -19,9 +19,18 @@ const ARTICLE_FETCH_TIMEOUT_MS = 10_000;
 const ARTICLE_MAX_CHARS = 6_000;
 
 function client() {
-  const apiKey = process.env.GEMINI_API_KEY;
+  // 붙여넣다 딸려 온 공백이나 줄바꿈을 털어낸다. 키가 공백뿐이면 값이
+  // 있는 것으로 쳐서 그대로 호출하게 되고, 구글에서 알아보기 어려운
+  // 인증 오류로 돌아온다.
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
-  return new GoogleGenAI({ apiKey });
+
+  // vertexai 를 명시하지 않으면 SDK 가 환경 변수
+  // (GOOGLE_GENAI_USE_VERTEXAI / GOOGLE_GENAI_USE_ENTERPRISE)를 보고
+  // 스스로 Vertex AI 모드로 넘어간다. 그 모드는 API 키가 아니라 OAuth
+  // 토큰으로 인증하므로, 키가 멀쩡해도 401(UNAUTHENTICATED)이 난다.
+  // 우리는 AI Studio 키만 쓰므로 모드를 코드에서 못박는다.
+  return new GoogleGenAI({ apiKey, vertexai: false });
 }
 
 /** 기사 URL에서 사람이 읽는 본문만 뽑아낸다. 실패하면 빈 문자열. */

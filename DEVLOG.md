@@ -7,6 +7,76 @@
 
 ---
 
+## 2026-09-29 — SDK가 몰래 Vertex AI 모드로 넘어가던 문제
+
+### 배경
+
+키를 새로 발급받아 배포했더니 이번엔 401 이 났다.
+
+```
+Request had invalid authentication credentials.
+Expected OAuth 2 access token, login cookie or other valid credential.
+reason: ACCESS_TOKEN_TYPE_UNSUPPORTED
+```
+
+**"키가 틀렸다"가 아니라 "OAuth 토큰을 달라"는 말이다.** 우리는 API 키로
+부르고 있는데 서버는 다른 방식의 인증을 기대하고 있었다.
+
+### 원인은 저장소 밖이 아니라 SDK 안이었다
+
+`@google/genai` 는 Gemini API 모드와 Vertex AI 모드 두 가지로 동작한다.
+Vertex 모드는 API 키가 아니라 **OAuth 토큰**으로 인증한다.
+
+어느 쪽인지는 `vertexai` 옵션으로 정하는데, 우리는 `{ apiKey }` 만 넘기고
+있었다. 이때 SDK 는 **환경 변수를 보고 스스로 정한다.**
+
+```js
+// node_modules/@google/genai/dist/node/index.mjs
+const envVertexaiStr = getEnv('GOOGLE_GENAI_USE_VERTEXAI');
+...
+if (envVertexaiStr !== undefined) return useVertexaiEnv;
+```
+
+즉 배포 환경에 `GOOGLE_GENAI_USE_VERTEXAI`(또는
+`GOOGLE_GENAI_USE_ENTERPRISE`)가 **있기만 하면** 우리 코드를 한 줄도 안
+건드렸는데 인증 방식이 통째로 바뀐다. 키를 아무리 새로 발급받아도 소용없다.
+
+**이런 종류가 제일 찾기 어렵다.** 코드를 아무리 읽어도 원인이 안 보이고,
+증상은 "키 문제"처럼 생겼다. AGENTS.md 가 말하는 "저장소 밖에 있는 설정"
+그 자체다. 전에 Vercel 의 Framework Preset 때문에 404 가 났던 것과 같은 종류다.
+
+### 결정과 근거
+
+**모드를 코드에서 못박았다**(`vertexai: false`). 우리는 AI Studio 키만 쓴다.
+바깥 환경이 무엇을 켜 두든 여기서는 Gemini API 모드로 고정이다. SDK 의
+자동 판단에 맡길 이유가 없다 — 편의를 얻는 대신 원인 모를 고장을 얻는다.
+
+**키를 `trim()` 한다.** 붙여넣을 때 줄바꿈이나 공백이 딸려 오면 값이
+"있는" 것으로 쳐서 그대로 호출하고, 알아보기 어려운 인증 오류로 돌아온다.
+공백뿐이면 없는 것으로 본다.
+
+**인증 실패를 따로 안내한다.** 앞선 항목에서 단종/쿼터/혼잡 셋으로 나눴는데
+네 번째가 생겼다. 이건 할당량과 아무 상관이 없는데 "한도 안내"로 뭉뚱그리면
+엉뚱한 곳(결제, 키 재발급)을 헤매게 된다. 실제로 한 번 헤맸다.
+
+### 겪은 문제
+
+**증상을 재현해 보고서야 범위를 좁혔다.** 잘못된 키(`400 API_KEY_INVALID`),
+빈 키(`403 PERMISSION_DENIED`), 헤더 없음(`403`) — **어느 것도 이 401 이
+아니었다.** `Authorization: Bearer` 를 붙였을 때만 같은 계열의 401 이 나왔다.
+거기서 "우리 요청이 Bearer 토큰을 보내고 있다"는 데까지 갔고, SDK 를 열어
+보게 됐다. **틀린 답들을 지워서 남은 것을 찾았다.**
+
+### 남은 일
+
+- **아직 진짜 기사로 한 번도 못 돌렸다.** 모델 단종 → 검색 쿼터 → 인증 모드,
+  세 번 연속 다른 벽에 막혔다.
+- **검색(grounding) 쿼터 429 는 그대로 남아 있다.** 이 인증 문제를 넘어도
+  그 벽이 다시 나올 수 있다. 그때는 기사 본문을 읽은 경우 검색 도구를 빼는
+  쪽으로 간다.
+
+---
+
 ## 2026-09-29 — 모델 단종, 그리고 실패 원인이 화면에 안 보이던 문제
 
 ### 배경

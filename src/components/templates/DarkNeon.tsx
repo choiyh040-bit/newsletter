@@ -33,7 +33,7 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        padding: "88px 80px",
+        padding: "84px 72px",
         boxSizing: "border-box",
         overflow: "hidden",
         background: base,
@@ -75,7 +75,7 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
           <div
             style={{
               marginTop: 32,
-              fontSize: 28,
+              fontSize: 32,
               fontWeight: 700,
               color: neon,
               letterSpacing: "0.09em",
@@ -101,7 +101,7 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
       >
         <div
           style={{
-            fontSize: isCover ? 86 : isOutro ? 72 : 60,
+            fontSize: isCover ? 92 : isOutro ? 82 : 70,
             fontWeight: 800,
             lineHeight: isCover ? 1.3 : 1.36,
             letterSpacing: "-0.035em",
@@ -113,8 +113,8 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
         {slide.body.length > 0 && (
           <div
             style={{
-              marginTop: isCover ? 40 : 46,
-              fontSize: isCover ? 32 : 34,
+              marginTop: isCover ? 44 : 50,
+              fontSize: isCover ? 38 : 42,
               fontWeight: 400,
               lineHeight: 1.72,
               letterSpacing: "-0.01em",
@@ -130,8 +130,8 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
         {isCover && slide.sub && (
           <div
             style={{
-              marginTop: 44,
-              fontSize: 30,
+              marginTop: 48,
+              fontSize: 34,
               fontWeight: 500,
               color: ink.faint,
               letterSpacing: "0.01em",
@@ -173,10 +173,10 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
           borderTop: `1px solid ${ink.hairline}`,
         }}
       >
-        <div style={{ fontSize: 22, color: ink.faint, letterSpacing: "0.02em" }}>
+        <div style={{ fontSize: 24, color: ink.faint, letterSpacing: "0.02em" }}>
           {source ? `출처 · ${source.name}` : " "}
         </div>
-        <div style={{ fontSize: 22, color: ink.faint, letterSpacing: "0.12em" }}>
+        <div style={{ fontSize: 24, color: ink.faint, letterSpacing: "0.12em" }}>
           {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </div>
       </div>

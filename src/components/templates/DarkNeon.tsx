@@ -5,7 +5,7 @@ import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
 
 /**
- * 어두운 바탕 · 네온 한 색 · 전부 좌측 정렬.
+ * 어두운 바탕 · 네온 한 색.
  *
  * `docs/template-references.md` 의 A 계열을 우리 데이터에 맞게 옮긴 것이다.
  * 앞선 두 템플릿과 결정적으로 다른 점은 **색을 기사에서 뽑지 않는다**는
@@ -13,13 +13,18 @@ import TextLines from "./TextLines";
  * 고정이고, 네온 한 색이 그 위에서 혼자 튄다. 그래서 기사마다 색이 달라지면
  * 인상이 무너진다. 색은 사람이 `variant` 로 고른다.
  *
- * 화면을 구성하는 장치는 세 개뿐이다. 좌상단 굵은 바, 네온 라벨, 그리고
- * 우하단에서 번지는 글로우. 나머지는 전부 글자 크기와 여백으로만 만든다.
+ * 화면을 구성하는 장치는 세 개뿐이다. 굵은 바, 네온 라벨, 그리고 우하단에서
+ * 번지는 글로우. 나머지는 전부 글자 크기와 여백으로만 만든다.
+ *
+ * 정렬은 기본이 좌측이다. 참고 자료 A 가 전부 좌측이기도 하고, 본문이 길면
+ * 중앙은 읽기 어렵다. 짧고 단정적인 세트를 위해 중앙도 열어 뒀다.
  */
-export default function DarkNeon({ slide, total, source, variant }: TemplateProps) {
+export default function DarkNeon({ slide, total, source, variant, align }: TemplateProps) {
   // 색 조합이 없는 상태로 그릴 일은 없지만, 들어오더라도 화면이 비지 않게 한다.
   const { base, neon } = variant ?? NEON_VARIANTS[0];
   const ink = inkFor(base);
+
+  const centered = align === "center";
 
   const isCover = slide.kind === "cover";
   const isOutro = slide.kind === "outro";
@@ -69,7 +74,15 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
       {/* 상단: 모든 장에 공통으로 들어가는 바 + 카테고리 라벨.
           SKILL.md 는 흰 알약 배지를 쓰라고 하지만, 이 계열은 면을 쓰지 않고
           선과 색으로만 위계를 만든다. 알약을 얹으면 그 원칙이 깨진다. */}
-      <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: centered ? "center" : "flex-start",
+          textAlign: centered ? "center" : "left",
+        }}
+      >
         <div style={{ width: 96, height: 10, borderRadius: 2, background: neon }} />
         {slide.badge && (
           <div
@@ -97,6 +110,8 @@ export default function DarkNeon({ slide, total, source, variant }: TemplateProp
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          alignItems: centered ? "center" : "stretch",
+          textAlign: centered ? "center" : "left",
         }}
       >
         <div

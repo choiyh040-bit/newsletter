@@ -48,6 +48,25 @@ export interface TemplateVariant {
   neon: string;
 }
 
+/**
+ * 글 덩어리를 어느 쪽에 붙일지.
+ *
+ * 사진이 없는 카드에서는 정렬이 장식이 아니라 기능이다. 중앙 정렬은 줄마다
+ * 왼쪽 끝이 움직여서, 서너 줄만 넘어가도 눈이 돌아올 지점을 잃는다. 그래서
+ * **기본은 좌측**이고, 짧고 단정적인 세트에서만 사람이 중앙으로 바꾼다.
+ *
+ * 우측 정렬은 넣지 않았다. 한글에서 우측 정렬은 너무 센 제스처라 본문에
+ * 쓰면 읽기가 확 나빠진다. 필요해지면 그때 한 줄짜리 전용으로 연다.
+ */
+export type TextAlign = "left" | "center";
+
+export const DEFAULT_ALIGN: TextAlign = "left";
+
+export const ALIGN_LABEL: Record<TextAlign, string> = {
+  left: "좌측",
+  center: "중앙",
+};
+
 /** 카드 한 장을 그릴 때 템플릿이 받는 값. */
 export interface TemplateProps {
   slide: CardSlide;
@@ -65,6 +84,8 @@ export interface TemplateProps {
    * 색 조합이 없는 템플릿은 항상 null 이고 `accent` 만 본다.
    */
   variant: TemplateVariant | null;
+  /** 글 정렬. `alignable` 이 아닌 템플릿은 무시한다. */
+  align: TextAlign;
 }
 
 export interface TemplatePhoto {
@@ -87,4 +108,11 @@ export interface Template {
    * 첫 항목이 기본값이므로 순서가 의미를 갖는다.
    */
   variants?: readonly TemplateVariant[];
+  /**
+   * 정렬을 고를 수 있는 템플릿인지.
+   *
+   * 모든 템플릿에 열지 않는다. `GradientCenter` 는 중앙이, `SolidSerif` 는
+   * 좌측 상단이 그 디자인의 정체성이라, 바꾸면 다른 템플릿이 되어 버린다.
+   */
+  alignable?: boolean;
 }

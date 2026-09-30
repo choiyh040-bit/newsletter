@@ -43,6 +43,7 @@ export const TEMPLATES: Template[] = [
     font: "sans",
     Render: DarkNeon,
     variants: NEON_VARIANTS,
+    alignable: true,
   },
 ];
 

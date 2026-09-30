@@ -8,6 +8,7 @@ import {
   deleteCardNews,
   setCardNewsTemplate,
   setCardNewsVariant,
+  setCardNewsAlign,
   useCardNewsHistory,
   useIsHydrated,
 } from "@/lib/cardNewsStore";
@@ -16,6 +17,9 @@ import {
   availableTemplates,
   templateById,
   variantFor,
+  ALIGN_LABEL,
+  DEFAULT_ALIGN,
+  type TextAlign,
 } from "@/lib/templates";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
 
@@ -55,6 +59,7 @@ function PreviewContent() {
   const choices = availableTemplates(false);
   const template = templateById(entry?.templateId);
   const variant = variantFor(template, entry?.variantId);
+  const align: TextAlign = entry?.align ?? DEFAULT_ALIGN;
   const Render = template.Render;
 
   const [copied, setCopied] = useState<CopyTarget | null>(null);
@@ -192,6 +197,7 @@ function PreviewContent() {
               source={data.source}
               photo={null}
               variant={variant}
+              align={align}
             />
           </div>
         ))}
@@ -255,6 +261,7 @@ function PreviewContent() {
                   source={data.source}
                   photo={null}
               variant={variant}
+              align={align}
                 />
               </div>
             </div>
@@ -350,6 +357,36 @@ function PreviewContent() {
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* 정렬. 이걸 고를 수 있는 템플릿에서만 나온다. */}
+              {template.alignable && (
+                <div className="mt-5 pt-4 border-t border-white/5">
+                  <div className="flex items-baseline justify-between mb-3">
+                    <span className="text-white/70 text-xs font-korean-bold">정렬</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["left", "center"] as const).map((option) => {
+                      const isCurrent = option === align;
+                      return (
+                        <button
+                          key={option}
+                          onClick={() => entry && setCardNewsAlign(entry.id, option)}
+                          className={`py-2 rounded-xl border text-sm transition-colors ${
+                            isCurrent
+                              ? "border-primary/50 bg-primary/10 text-primary font-korean-bold"
+                              : "border-white/10 text-white/70 hover:bg-white/5"
+                          }`}
+                        >
+                          {ALIGN_LABEL[option]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-white/30 text-xs mt-2 font-korean-reg">
+                    본문이 길면 좌측이 읽기 좋습니다. 중앙은 짧고 단정적인 세트에 어울립니다.
+                  </p>
                 </div>
               )}
 

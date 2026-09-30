@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { normalizeCardNews, type CardNews } from "./cardnews";
+import type { TextAlign } from "./templates/types";
 
 /**
  * 생성한 카드뉴스를 브라우저에 보관한다.
@@ -33,6 +34,8 @@ export interface CardNewsEntry {
    * 고르던 색이 그대로 있는 편이 자연스럽기 때문이다.
    */
   variantId?: string;
+  /** 고른 정렬. 없으면 좌측으로 본다. */
+  align?: TextAlign;
 }
 
 // ─── 저장소 읽고 쓰기 ────────────────────────────────────────────────────────
@@ -166,6 +169,15 @@ export function setCardNewsTemplate(id: string, templateId: string): void {
 export function setCardNewsVariant(id: string, variantId: string): void {
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, variantId } : entry
+  );
+  writeRaw(JSON.stringify(next));
+  notify();
+}
+
+/** 고른 정렬을 기억한다. 이유는 `setCardNewsTemplate` 와 같다. */
+export function setCardNewsAlign(id: string, align: TextAlign): void {
+  const next = parseHistory(readRaw()).map((entry) =>
+    entry.id === id ? { ...entry, align } : entry
   );
   writeRaw(JSON.stringify(next));
   notify();

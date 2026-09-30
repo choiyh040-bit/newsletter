@@ -12,7 +12,7 @@ import {
  */
 export const maxDuration = 60;
 
-const MODEL = "gemini-3.7-flash";
+const MODEL = "gemini-3-flash-preview";
 
 /** 기사 본문을 읽어올 때 기다릴 시간. 이보다 오래 걸리면 검색으로만 만든다. */
 const ARTICLE_FETCH_TIMEOUT_MS = 10_000;
@@ -38,7 +38,13 @@ async function readArticle(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; CardGenAI/1.0)" },
+      // 언론사 다수가 봇처럼 보이는 UA 를 막는다. 평범한 브라우저로 요청해야
+      // 본문을 받아올 확률이 높고, 본문을 받아와야 검색 할당량을 안 쓴다.
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9",
+      },
     });
     if (!res.ok) return "";
 
@@ -61,7 +67,7 @@ function buildPrompt(keyword: string, article: string): string {
 - 키워드: ${keyword}
 ${
   article
-    ? `- 아래 기사 본문을 1차 근거로 삼으세요. 검색은 보조 확인용으로만 쓰세요.\n\n<기사 본문>\n${article}\n</기사 본문>`
+    ? `- 아래 기사 본문**만**을 근거로 삼으세요. 본문에 없는 사실, 수치, 순위는 절대 쓰지 마세요.\n\n<기사 본문>\n${article}\n</기사 본문>`
     : `- 제공된 기사 본문이 없습니다. 반드시 Google 검색 도구를 실행해 최신 기사와 수치를 확인한 뒤 작성하세요.`
 }
 
@@ -130,11 +136,18 @@ ${
 모든 텍스트는 한국어로 작성하세요.`;
 }
 
-async function generateOnce(prompt: string): Promise<CardNews> {
+/**
+ * 한 번 생성한다.
+ *
+ * `useSearch` 가 거짓이면 검색 도구를 아예 붙이지 않는다. 검색 도구는
+ * 일반 생성과 **할당량이 따로**라, 붙이는 것만으로 429 가 날 수 있다.
+ * 기사 본문을 이미 읽어 온 경우에는 근거가 손에 있으므로 붙이지 않는다.
+ */
+async function generateOnce(prompt: string, useSearch: boolean): Promise<CardNews> {
   const response = await client().models.generateContent({
     model: MODEL,
     contents: prompt,
-    config: { tools: [{ googleSearch: {} }] },
+    config: useSearch ? { tools: [{ googleSearch: {} }] } : {},
   });
   return normalizeCardNews(extractJson(response.text ?? ""));
 }
@@ -163,17 +176,24 @@ export async function POST(request: Request) {
     console.warn("기사 본문을 읽지 못해 검색만으로 생성합니다:", url);
   }
 
-  const prompt = buildPrompt(keyword || "입력된 기사 내용 요약", article);
+  // 근거가 손에 없을 때만 검색에 기댄다. 본문을 읽어 왔으면 검색 도구를
+  // 붙이지 않아, 따로 걸려 있는 검색 할당량을 쓰지 않는다.
+  const useSearch = !article;
+
+  // 본문을 못 읽었는데 키워드도 없으면 검색할 거리가 없다. 그럴 때는 주소
+  // 자체를 준다. "입력된 기사 내용 요약" 같은 문구로는 아무것도 못 찾는다.
+  const subject = keyword || (article ? "아래 기사 본문의 내용" : url);
+  const prompt = buildPrompt(subject, article);
 
   // 검색 도구를 켜면 응답 스키마를 강제할 수 없어 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    return Response.json(await generateOnce(prompt));
+    return Response.json(await generateOnce(prompt, useSearch));
   } catch (firstError) {
     console.warn("첫 생성 실패, 재시도합니다:", firstError);
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요.`;
-      return Response.json(await generateOnce(stricter));
+      return Response.json(await generateOnce(stricter, useSearch));
     } catch (error) {
       console.error("카드뉴스 생성 실패:", error);
       const message = error instanceof Error ? error.message : "알 수 없는 오류";

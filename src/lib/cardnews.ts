@@ -57,6 +57,17 @@ export interface CardSlide {
   heading: TextLine[];
   /** 본문. heading과 같은 규칙으로 한 원소가 한 줄이다. */
   body: TextLine[];
+  /**
+   * 그 장에서 남길 한 마디. 상세 장 맨 아래 상자에 들어간다.
+   *
+   * 참고 자료 E 를 재 보니, 정보가 담긴 장은 거의 다 **데이터를 늘어놓고
+   * 끝내지 않고** 테두리 있는 상자에 결론 한두 줄을 넣어 마무리했다.
+   * 그래야 "그래서 뭐?"가 눈으로 분리된다. body 안에 섞어 두면 같은 무게로
+   * 깔려서 결론이 아니라 넷째 줄이 된다.
+   *
+   * 없으면 상자를 그리지 않는다.
+   */
+  note: TextLine[];
 }
 
 export interface CardNewsSource {
@@ -213,6 +224,7 @@ export function normalizeCardNews(raw: unknown): CardNews {
       sub: toText(slide.sub),
       heading: toLines(slide.heading, kind === "cover" ? 5 : 3),
       body: toLines(slide.body, kind === "cover" ? 2 : 4),
+      note: kind === "detail" ? toLines(slide.note, 2) : [],
     };
   });
 

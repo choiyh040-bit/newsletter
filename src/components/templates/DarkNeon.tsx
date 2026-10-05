@@ -33,18 +33,14 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
 
   // 글이 쓸 수 있는 칸. 좌우 여백과, 위아래로 붙는 것들(바·라벨·서명·하단 줄)을
   // 뺀 값이다. 헤드라인은 이 칸을 꽉 채우도록 크기가 정해진다.
+  const isDetail = !isCover && !isOutro;
+  const hasNote = isDetail && slide.note.length > 0;
+
   const contentWidth = CARD_WIDTH - 72 * 2;
   const bodyLines = slide.body.length;
-  const headingRoom =
-    CARD_HEIGHT -
-    84 * 2 - // 위아래 여백
-    130 - // 바 + 카테고리 라벨
-    60 - // 하단 출처·장수
-    (bodyLines > 0 ? bodyLines * (isCover ? 60 : 85) + 50 : 0) -
-    (isCover && slide.sub ? 82 : 0) -
-    (isOutro ? 128 : 0);
 
   const bodyLineHeight = 1.62;
+  const bodyGap = 44;
   // 본문도 칸에 맞춘다. 숫자로 박아 두면 줄이 짧은 장에서 혼자 작게 남는다.
   const bodySize = fitFontSize({
     lines: slide.body,
@@ -55,13 +51,36 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
     lineHeight: bodyLineHeight,
   });
 
+  // 결론 상자 높이. 글줄 + 안쪽 여백 + 테두리 + 위 간격.
+  const NOTE_SIZE = 38;
+  const noteHeight = hasNote ? slide.note.length * NOTE_SIZE * 1.5 + 60 + 4 + 44 : 0;
+
+  /**
+   * 헤드라인이 쓸 수 있는 높이.
+   *
+   * 본문과 결론 상자의 높이를 **어림하지 않고 실제 값으로** 뺀다. 한 번
+   * 어림짐작으로 뒀다가 본문이 상한까지 찼을 때 80px 쯤 모자랐고, 넘친 만큼
+   * 하단의 출처·장수가 카드 밖으로 밀려 나갔다. 넘치는 것이 글자가 아니라
+   * 다른 요소라서 눈에 잘 안 띄었다.
+   */
+  const headingRoom =
+    CARD_HEIGHT -
+    84 * 2 - // 위아래 여백
+    130 - // 바 + 카테고리 라벨
+    60 - // 하단 출처·장수
+    (isDetail ? 150 : 0) - // 큰 번호
+    (bodyLines > 0 ? bodyLines * bodySize * bodyLineHeight + bodyGap : 0) -
+    noteHeight -
+    (isCover && slide.sub ? 82 : 0) -
+    (isOutro ? 128 : 0);
+
   const headingLineHeight = isCover ? 1.08 : 1.24;
   const headingSize = fitFontSize({
     lines: slide.heading,
     width: contentWidth,
     height: headingRoom,
     // 표지는 글줄이 서너 자까지 짧아지므로 상한을 높게 연다.
-    max: isCover ? 168 : isOutro ? 118 : 104,
+    max: isCover ? 168 : isOutro ? 118 : 96,
     min: isCover ? 72 : 52,
     lineHeight: headingLineHeight,
   });
@@ -120,17 +139,45 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
         }}
       >
         <div style={{ width: 96, height: 10, borderRadius: 2, background: neon }} />
-        {slide.badge && (
+        {/* 라벨을 두 조각으로 나눈다. 분류는 포인트 컬러로, 그 장이 무엇을
+            다루는지는 흐린 글씨로. 참고 자료 E 가 "TYPE 01 + 샹년의 특징"
+            처럼 쓰는 방식이다. 배지 하나만 두면 모든 장에 같은 글자가
+            박혀서 장을 구분하는 일을 전혀 못 한다. */}
+        {(slide.badge || (isDetail && slide.sub)) && (
           <div
             style={{
               marginTop: 32,
-              fontSize: 32,
-              fontWeight: 700,
-              color: neon,
-              letterSpacing: "0.09em",
+              display: "flex",
+              alignItems: "baseline",
+              gap: 18,
+              flexWrap: "wrap",
+              justifyContent: centered ? "center" : "flex-start",
             }}
           >
-            {slide.badge}
+            {slide.badge && (
+              <span
+                style={{
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color: neon,
+                  letterSpacing: "0.09em",
+                }}
+              >
+                {slide.badge}
+              </span>
+            )}
+            {isDetail && slide.sub && (
+              <span
+                style={{
+                  fontSize: 28,
+                  fontWeight: 500,
+                  color: ink.faint,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {slide.sub}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -152,10 +199,41 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
           flexDirection: "column",
           justifyContent: isCover || isOutro ? "center" : "flex-start",
           paddingTop: isCover || isOutro ? 0 : 36,
+          // 계산이 빗나가더라도 하단 출처·장수를 밀어내지는 않게 한다.
+          minHeight: 0,
+          overflow: "hidden",
           alignItems: centered ? "center" : "stretch",
           textAlign: centered ? "center" : "left",
         }}
       >
+        {/* 큰 번호. 글자만 있는 화면에서 숫자가 도형 노릇을 한다.
+            참고 자료 E 의 정보 장은 전부 이걸 앵커로 쓴다. 데이터는
+            이미 있던 것(장 번호)이라 새로 받을 것이 없다. */}
+        {isDetail && (
+          <div style={{ marginBottom: 26 }}>
+            <div
+              style={{
+                fontSize: 128,
+                fontWeight: 800,
+                lineHeight: 0.92,
+                letterSpacing: "-0.04em",
+              }}
+            >
+              {String(slide.slideNumber).padStart(2, "0")}
+            </div>
+            <div
+              style={{
+                width: 108,
+                height: 8,
+                background: neon,
+                marginTop: 14,
+                marginLeft: centered ? "auto" : 0,
+                marginRight: centered ? "auto" : 0,
+              }}
+            />
+          </div>
+        )}
+
         <div
           style={{
             fontSize: headingSize,
@@ -175,7 +253,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
         {slide.body.length > 0 && (
           <div
             style={{
-              marginTop: isCover ? 44 : 50,
+              marginTop: isCover ? 44 : bodyGap,
               fontSize: bodySize,
               fontWeight: 400,
               lineHeight: bodyLineHeight,
@@ -189,6 +267,53 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
               markBackground={neon}
               markColor={readableOn(neon)}
             />
+          </div>
+        )}
+
+        {/* 결론 상자.
+            데이터를 늘어놓고 끝내지 않고, 그 장에서 남길 한 마디를 테두리
+            안에 따로 둔다. body 안에 섞으면 같은 무게로 깔려서 결론이
+            아니라 넷째 줄이 된다. 참고 자료 E 의 정보 장이 거의 다 이렇게
+            끝났다. */}
+        {hasNote && (
+          <div
+            style={{
+              marginTop: 44,
+              border: `2px solid ${withAlpha(neon, 0.55)}`,
+              borderRadius: 10,
+              padding: "30px 34px",
+              display: "flex",
+              gap: 22,
+              alignItems: "flex-start",
+              textAlign: "left",
+            }}
+          >
+            {/* 작은 네모 하나. 상자가 그냥 테두리로만 끝나지 않게 한다. */}
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                background: neon,
+                flexShrink: 0,
+                marginTop: 12,
+              }}
+            />
+            <div
+              style={{
+                fontSize: 38,
+                fontWeight: 600,
+                lineHeight: 1.5,
+                letterSpacing: "-0.01em",
+                color: ink.strong,
+              }}
+            >
+              <TextLines
+                lines={slide.note}
+                accentColor={neon}
+                markBackground={neon}
+                markColor={readableOn(neon)}
+              />
+            </div>
           </div>
         )}
 

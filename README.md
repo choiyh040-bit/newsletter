@@ -41,6 +41,7 @@ PNG로 내려받는 웹앱입니다.
 | 한글 줄바꿈을 직접 끊기 | 헤드라인·본문을 **줄 배열**로 받음 (`CardSlide.heading`, `.body`) |
 | (규칙 밖) 낱말 강조 | `*색만*`과 `==형광펜==` 두 가지. `parseSpans`가 조각으로 쪼갠다 |
 | 캡션 3~5줄 + 출처 표기 | 프롬프트 JSON 구조의 `caption`, `source` |
+| (규칙 밖) 상세 장 결론 상자 | `CardSlide.note` — 데이터와 결론을 눈으로 분리 |
 | 저장 위치 `YYYY-MM-DD-제목` | `preview/page.tsx`의 `baseName` (PNG/ZIP 파일명) |
 
 SKILL.md는 `<br>` 태그로 줄을 끊으라고 하지만, 여기서는 **줄 배열**을 씁니다.

@@ -211,7 +211,7 @@ export function normalizeCardNews(raw: unknown): CardNews {
       kind,
       badge: toText(slide.badge, "뉴스"),
       sub: toText(slide.sub),
-      heading: toLines(slide.heading, kind === "cover" ? 3 : 2),
+      heading: toLines(slide.heading, kind === "cover" ? 5 : 3),
       body: toLines(slide.body, kind === "cover" ? 2 : 4),
     };
   });

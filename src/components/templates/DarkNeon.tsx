@@ -1,5 +1,6 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
 import { inkFor, readableOn, withAlpha } from "@/lib/templates/color";
+import { fitFontSize } from "@/lib/templates/fit";
 import { NEON_VARIANTS } from "@/lib/templates/variants";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
@@ -29,6 +30,41 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
   const isCover = slide.kind === "cover";
   const isOutro = slide.kind === "outro";
   const index = slide.slideNumber - 1;
+
+  // 글이 쓸 수 있는 칸. 좌우 여백과, 위아래로 붙는 것들(바·라벨·서명·하단 줄)을
+  // 뺀 값이다. 헤드라인은 이 칸을 꽉 채우도록 크기가 정해진다.
+  const contentWidth = CARD_WIDTH - 72 * 2;
+  const bodyLines = slide.body.length;
+  const headingRoom =
+    CARD_HEIGHT -
+    84 * 2 - // 위아래 여백
+    130 - // 바 + 카테고리 라벨
+    60 - // 하단 출처·장수
+    (bodyLines > 0 ? bodyLines * (isCover ? 60 : 85) + 50 : 0) -
+    (isCover && slide.sub ? 82 : 0) -
+    (isOutro ? 128 : 0);
+
+  const bodyLineHeight = 1.62;
+  // 본문도 칸에 맞춘다. 숫자로 박아 두면 줄이 짧은 장에서 혼자 작게 남는다.
+  const bodySize = fitFontSize({
+    lines: slide.body,
+    width: contentWidth,
+    height: 520,
+    max: isCover ? 54 : 64,
+    min: 34,
+    lineHeight: bodyLineHeight,
+  });
+
+  const headingLineHeight = isCover ? 1.08 : 1.24;
+  const headingSize = fitFontSize({
+    lines: slide.heading,
+    width: contentWidth,
+    height: headingRoom,
+    // 표지는 글줄이 서너 자까지 짧아지므로 상한을 높게 연다.
+    max: isCover ? 168 : isOutro ? 118 : 104,
+    min: isCover ? 72 : 52,
+    lineHeight: headingLineHeight,
+  });
 
   return (
     <div
@@ -99,26 +135,32 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
         )}
       </div>
 
-      {/* 본문. 장 종류와 무관하게 남은 공간의 가운데에 둔다.
-          처음에는 상세만 위에서부터 쌓아 시작 높이를 맞췄는데, 본문이 짧은
-          장에서 아래쪽 절반이 통째로 비어 실수처럼 보였다. 넘길 때 글이 조금
-          움직이는 편이 빈 화면보다 낫다. */}
+      {/* 본문.
+          표지와 마무리는 가운데, 상세는 **위에서부터** 쌓는다.
+
+          한동안 상세도 가운데에 뒀다. 본문이 짧은 장에서 아래 절반이 비는
+          것이 싫어서였다. 그런데 그렇게 하면 위아래로 빈 자리가 반씩 쪼개져
+          **양쪽 다 어중간하게** 빈다. 참고 자료를 재 보니 그쪽은 라벨 바로
+          아래부터 글이 시작하고, 남는 자리는 아래 한 군데로 몰려 있었다.
+          빈 자리는 나누지 말고 한쪽으로 몰아야 덜 비어 보인다. 아래쪽은
+          글로우가 받쳐 준다. */}
       <div
         style={{
           position: "relative",
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: isCover || isOutro ? "center" : "flex-start",
+          paddingTop: isCover || isOutro ? 0 : 36,
           alignItems: centered ? "center" : "stretch",
           textAlign: centered ? "center" : "left",
         }}
       >
         <div
           style={{
-            fontSize: isCover ? 92 : isOutro ? 82 : 70,
+            fontSize: headingSize,
             fontWeight: 800,
-            lineHeight: isCover ? 1.3 : 1.36,
+            lineHeight: headingLineHeight,
             letterSpacing: "-0.035em",
           }}
         >
@@ -134,9 +176,9 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
           <div
             style={{
               marginTop: isCover ? 44 : 50,
-              fontSize: isCover ? 38 : 42,
+              fontSize: bodySize,
               fontWeight: 400,
-              lineHeight: 1.72,
+              lineHeight: bodyLineHeight,
               letterSpacing: "-0.01em",
               color: ink.muted,
             }}

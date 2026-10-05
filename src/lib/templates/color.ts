@@ -43,7 +43,22 @@ export function solidFor(accent: string, index: number, total: number): string {
  */
 export function accentText(accent: string): string {
   const { h } = hexToHsl(accent);
-  return `hsl(${Math.round(h)}, 88%, 68%)`;
+  // hsl() 문자열이 아니라 #rrggbb 로 돌려준다. 이 색은 형광펜 바탕으로도
+  // 쓰이는데, 그 위에 올릴 글자색을 `readableOn` 이 밝기로 고르기 때문이다.
+  // 문자열로 두면 밝기를 다시 재지 못한다.
+  return hslToHex(h, 88, 68);
+}
+
+/** 색상·채도·밝기를 #rrggbb 로. `accentText` 전용이다. */
+function hslToHex(h: number, s: number, l: number): string {
+  const sat = s / 100;
+  const lig = l / 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = sat * Math.min(lig, 1 - lig);
+  const f = (n: number) =>
+    Math.round(255 * (lig - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
+  const hex = (v: number) => v.toString(16).padStart(2, "0");
+  return `#${hex(f(0))}${hex(f(8))}${hex(f(4))}`;
 }
 
 /** #rrggbb 를 색상·채도·밝기로 바꾼다. 강조색을 만들 때만 쓴다. */
@@ -75,6 +90,26 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
 export function withAlpha(hex: string, alpha: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 0xff}, ${(n >> 8) & 0xff}, ${n & 0xff}, ${alpha})`;
+}
+
+/**
+ * 어떤 색 위에 글자를 올릴 때 읽히는 글자색.
+ *
+ * 형광펜 색이 노랑·연두처럼 밝으면 검은 글자가, 빨강·보라처럼 어두우면
+ * 흰 글자가 읽힌다. 참고 자료 E 도 빨간 블록에는 흰 글자를, 노란 블록에는
+ * 검은 글자를 썼다. 색을 열어 둔 이상 이것도 계산해야 한다.
+ */
+export function readableOn(hex: string): string {
+  // 기준을 0.3 으로 둔 것은 타협이다.
+  //
+  // 대비만 따지면 경계는 0.18 쯤이다. 그런데 그 값을 쓰면 핫핑크 위에도
+  // 검은 글자가 올라간다. 참고 자료 E 는 빨강·분홍 블록에 흰 글자를 썼고
+  // 그게 이 계열의 인상이다. 반대로 기준을 0.45 까지 올리면 파랑 계열에서
+  // 흰 글자가 나와 대비가 2.8:1 로 떨어진다.
+  //
+  // 0.3 이면 분홍·진홍·보라는 흰 글자(= 참고 자료와 같은 인상), 노랑·연두·
+  // 시안·주황·파랑은 검은 글자가 되어 둘 다 지킨다.
+  return luminance(hex) > 0.3 ? "#0A0A0C" : "#ffffff";
 }
 
 /** 사람 눈이 느끼는 밝기. 바탕이 밝은지 어두운지 판단할 때만 쓴다. */

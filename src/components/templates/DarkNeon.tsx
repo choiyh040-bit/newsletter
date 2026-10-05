@@ -1,5 +1,5 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { inkFor, withAlpha } from "@/lib/templates/color";
+import { inkFor, readableOn, withAlpha } from "@/lib/templates/color";
 import { NEON_VARIANTS } from "@/lib/templates/variants";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
@@ -122,7 +122,12 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
             letterSpacing: "-0.035em",
           }}
         >
-          <TextLines lines={slide.heading} accentColor={neon} />
+          <TextLines
+            lines={slide.heading}
+            accentColor={neon}
+            markBackground={neon}
+            markColor={readableOn(neon)}
+          />
         </div>
 
         {slide.body.length > 0 && (
@@ -136,7 +141,12 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
               color: ink.muted,
             }}
           >
-            <TextLines lines={slide.body} accentColor={neon} />
+            <TextLines
+              lines={slide.body}
+              accentColor={neon}
+              markBackground={neon}
+              markColor={readableOn(neon)}
+            />
           </div>
         )}
 

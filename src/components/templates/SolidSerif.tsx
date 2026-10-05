@@ -1,5 +1,5 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { accentText, shade, solidFor } from "@/lib/templates/color";
+import { accentText, shade, solidFor, readableOn } from "@/lib/templates/color";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
 
@@ -75,7 +75,17 @@ export default function SolidSerif({ slide, accent, total, source }: TemplatePro
             letterSpacing: "-0.02em",
           }}
         >
-          <TextLines lines={slide.heading} accentColor={accentText(accent)} />
+          <TextLines
+
+            lines={slide.heading}
+
+            accentColor={accentText(accent)}
+
+            markBackground={accentText(accent)}
+
+            markColor={readableOn(accentText(accent))}
+
+          />
         </div>
 
         {slide.body.length > 0 && (
@@ -89,7 +99,17 @@ export default function SolidSerif({ slide, accent, total, source }: TemplatePro
                 color: "rgba(255,255,255,0.86)",
               }}
             >
-              <TextLines lines={slide.body} accentColor={accentText(accent)} />
+              <TextLines
+
+                lines={slide.body}
+
+                accentColor={accentText(accent)}
+
+                markBackground={accentText(accent)}
+
+                markColor={readableOn(accentText(accent))}
+
+              />
             </div>
           </>
         )}

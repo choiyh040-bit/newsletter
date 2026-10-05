@@ -23,10 +23,18 @@ export type SlideKind = "cover" | "detail" | "outro";
  * 한 줄 안에서 일부 단어만 색을 달리하려면 줄을 통째로 다룰 수 없다.
  * 그래서 줄을 조각으로 쪼개 두고, 강조할 조각에만 표시를 남긴다.
  */
+/**
+ * 조각을 어떻게 꾸밀지.
+ *
+ * 색 바꾸기 하나로는 폭이 안 나온다. 같은 기법을 반복하면 결국 다 비슷해
+ * 보여서 강조가 묻힌다. 참고 자료 E·F·G 가 공통으로 쓰던 **형광펜**을
+ * 한 단계 더 센 기법으로 둔다.
+ */
+export type SpanStyle = "plain" | "accent" | "mark";
+
 export interface TextSpan {
   text: string;
-  /** 참이면 템플릿이 포인트 컬러로 그린다. */
-  accent: boolean;
+  style: SpanStyle;
 }
 
 /** 화면의 한 줄. 조각들이 옆으로 이어 붙는다. */
@@ -74,32 +82,56 @@ export interface CardNewsMeta {
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 /**
- * 강조 표시. `*이렇게*` 감싼 부분이 포인트 컬러로 칠해진다.
+ * 강조 표시 두 가지.
+ *
+ * - `*이렇게*` — 글자 색만 포인트 컬러로 바꾼다. 가벼운 쪽.
+ * - `==이렇게==` — 형광펜처럼 뒤에 색을 깐다. 센 쪽. 한 세트에 몇 번 안 쓴다.
  *
  * 모델에게 중첩 객체 배열을 받는 대신 문자열 안에 표시를 넣게 했다. 응답
  * 형식이 지금까지와 같은 문자열 배열로 유지되어, 이미 저장해 둔 결과도
  * 그대로 읽힌다. 모델 입장에서도 배열을 겹쳐 만드는 것보다 훨씬 쉽다.
+ *
+ * `==` 를 고른 이유는 한국어 기사 본문에 거의 나오지 않기 때문이다. 별표는
+ * 이미 쓰고 있고, 밑줄(`_`)이나 별표 둘(`**`)은 짝이 어긋날 여지가 많다.
  */
-const ACCENT_MARK = /\*([^*]+)\*/g;
+const MARKS = /==([^=]+)==|\*([^*]+)\*/g;
 
-/** 한 줄 문자열을 조각으로 쪼갠다. 짝이 맞지 않는 별표는 그냥 글자로 둔다. */
+/** 한 줄 문자열을 조각으로 쪼갠다. 짝이 맞지 않는 표시는 그냥 글자로 둔다. */
 function parseSpans(line: string): TextLine {
   const spans: TextLine = [];
   let cursor = 0;
 
-  for (const match of line.matchAll(ACCENT_MARK)) {
+  for (const match of line.matchAll(MARKS)) {
     const start = match.index;
     if (start > cursor) {
-      spans.push({ text: line.slice(cursor, start), accent: false });
+      spans.push({ text: line.slice(cursor, start), style: "plain" });
     }
-    spans.push({ text: match[1], accent: true });
+    // 겹쳐 쓰는 것은 지원하지 않는다. 먼저 걸린 쪽을 쓴다.
+    spans.push(
+      match[1] !== undefined
+        ? { text: match[1], style: "mark" }
+        : { text: match[2], style: "accent" }
+    );
     cursor = start + match[0].length;
   }
 
   if (cursor < line.length) {
-    spans.push({ text: line.slice(cursor), accent: false });
+    spans.push({ text: line.slice(cursor), style: "plain" });
   }
-  return spans.length > 0 ? spans : [{ text: line, accent: false }];
+  return spans.length > 0 ? spans : [{ text: line, style: "plain" }];
+}
+
+/**
+ * 보관해 둔 조각의 꾸밈을 읽는다.
+ *
+ * 형광펜이 생기기 전에는 조각이 `accent: boolean` 이었다. 꺼낼 때 지금
+ * 형식으로 옮긴다.
+ */
+function toSpanStyle(raw: Record<string, unknown>): SpanStyle {
+  if (raw.style === "mark" || raw.style === "accent" || raw.style === "plain") {
+    return raw.style;
+  }
+  return raw.accent === true ? "accent" : "plain";
 }
 
 /** 한 줄의 글자만 이어 붙인다. 제목처럼 꾸밈이 필요 없는 곳에서 쓴다. */
@@ -132,7 +164,10 @@ function toLines(value: unknown, maxLines: number): TextLine[] {
             (span): span is TextSpan =>
               typeof span === "object" && span !== null && typeof span.text === "string"
           )
-          .map((span) => ({ text: span.text, accent: span.accent === true }));
+          .map((span) => ({
+            text: span.text,
+            style: toSpanStyle(span as unknown as Record<string, unknown>),
+          }));
         return lineText(spans).trim() ? [spans] : [];
       }
       return [];

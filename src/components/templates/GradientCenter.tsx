@@ -1,5 +1,5 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { accentText, gradientFor, shade } from "@/lib/templates/color";
+import { accentText, gradientFor, shade, readableOn } from "@/lib/templates/color";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
 
@@ -115,7 +115,17 @@ export default function GradientCenter({ slide, accent, total, source }: Templat
               letterSpacing: "-0.035em",
             }}
           >
-            <TextLines lines={slide.heading} accentColor={accentText(accent)} />
+            <TextLines
+
+              lines={slide.heading}
+
+              accentColor={accentText(accent)}
+
+              markBackground={accentText(accent)}
+
+              markColor={readableOn(accentText(accent))}
+
+            />
           </div>
 
           {slide.body.length > 0 && (
@@ -128,7 +138,17 @@ export default function GradientCenter({ slide, accent, total, source }: Templat
                 letterSpacing: "-0.01em",
               }}
             >
-              <TextLines lines={slide.body} accentColor={accentText(accent)} />
+              <TextLines
+
+                lines={slide.body}
+
+                accentColor={accentText(accent)}
+
+                markBackground={accentText(accent)}
+
+                markColor={readableOn(accentText(accent))}
+
+              />
             </div>
           )}
         </div>

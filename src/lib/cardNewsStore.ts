@@ -183,6 +183,21 @@ export function setCardNewsAlign(id: string, align: TextAlign): void {
   notify();
 }
 
+/**
+ * 사람이 고친 내용을 저장한다.
+ *
+ * 들어온 값을 `normalizeCardNews` 로 한 번 통과시킨다. 편집기가 보내는
+ * 것도 결국 사람이 친 글자라, 생성 결과와 같은 문을 지나게 해야 줄 수
+ * 상한 같은 규칙이 한 곳에서만 지켜진다.
+ */
+export function updateCardNewsData(id: string, data: CardNews): void {
+  const next = parseHistory(readRaw()).map((entry) =>
+    entry.id === id ? { ...entry, data: normalizeCardNews(data) } : entry
+  );
+  writeRaw(JSON.stringify(next));
+  notify();
+}
+
 export function deleteCardNews(id: string): void {
   const next = parseHistory(readRaw()).filter((entry) => entry.id !== id);
   writeRaw(JSON.stringify(next));

@@ -3,12 +3,14 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
+import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, type CardNews, type CardSlide } from "@/lib/cardnews";
+import SlideEditor from "@/components/SlideEditor";
 import {
   deleteCardNews,
   setCardNewsTemplate,
   setCardNewsVariant,
   setCardNewsAlign,
+  updateCardNewsData,
   useCardNewsHistory,
   useIsHydrated,
 } from "@/lib/cardNewsStore";
@@ -62,6 +64,7 @@ function PreviewContent() {
   const align: TextAlign = entry?.align ?? DEFAULT_ALIGN;
   const Render = template.Render;
 
+  const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState<CopyTarget | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -139,6 +142,35 @@ function PreviewContent() {
     } finally {
       setExporting(null);
     }
+  };
+
+  const saveEdit = (next: CardNews) => {
+    if (entry) updateCardNewsData(entry.id, next);
+  };
+
+  /** 지금 장 바로 뒤에 빈 장을 끼운다. 사람이 채우라고 안내 문구만 넣어 둔다. */
+  const addSlide = () => {
+    if (!data || !entry || data.slides.length >= MAX_SLIDES) return;
+    const blank: CardSlide = {
+      slideNumber: 0, // normalizeCardNews 가 다시 매긴다
+      kind: "detail",
+      badge: data.slides[current]?.badge ?? "뉴스",
+      sub: "",
+      heading: [[{ text: "새 장 헤드라인", style: "plain" }]],
+      body: [],
+      note: [],
+    };
+    const slides = [...data.slides];
+    slides.splice(current + 1, 0, blank);
+    saveEdit({ ...data, slides });
+    goTo(() => current + 1);
+  };
+
+  const deleteSlide = () => {
+    if (!data || !entry || data.slides.length <= 2) return;
+    const slides = data.slides.filter((_, i) => i !== current);
+    saveEdit({ ...data, slides });
+    goTo(() => Math.max(0, current - 1));
   };
 
   /** 지금 보고 있는 것을 지우면 남은 것 중 최신으로 옮긴다. */
@@ -289,6 +321,32 @@ function PreviewContent() {
 
           {/* 오른쪽 패널 */}
           <div className="lg:col-span-5 space-y-5">
+            {/* 고치기. 모델이 쓴 문장을 그대로 올릴 일은 거의 없으므로
+                미리보기 옆에 둔다. 고치는 즉시 왼쪽 카드에 반영된다. */}
+            <button
+              onClick={() => setEditing((v) => !v)}
+              className={`w-full py-3 rounded-2xl border text-sm font-korean-bold transition-colors ${
+                editing
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-white/10 text-white/80 hover:bg-white/5"
+              }`}
+            >
+              {editing ? "고치기 닫기" : "내용 고치기"}
+            </button>
+
+            {editing && data && entry && (
+              <SlideEditor
+                // 장이 바뀌면 편집기를 새로 단다. 줄 수 경고 같은 상태가
+                // 앞 장의 것을 물고 넘어오지 않게 한다.
+                key={current}
+                data={data}
+                index={current}
+                onChange={saveEdit}
+                onAddSlide={addSlide}
+                onDeleteSlide={deleteSlide}
+              />
+            )}
+
             <div className="glass-panel p-5 rounded-2xl">
               <h4 className="text-white font-korean-bold text-sm mb-1 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-sm">palette</span>

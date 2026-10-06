@@ -8,9 +8,15 @@
 export const CARD_WIDTH = 1080;
 export const CARD_HEIGHT = 1350;
 
-/** 슬라이드 장수 범위. 표지 1장 + 상세 3~4장. */
+/**
+ * 슬라이드 장수 범위.
+ *
+ * 모델에게는 4~5장을 만들라고 한다(프롬프트 [구성]). 상한을 8로 둔 것은
+ * **사람이 편집기에서 장을 더 붙일 수 있게** 하기 위해서다. 생성 분량과
+ * 사람이 손볼 수 있는 분량은 다른 값이다.
+ */
 export const MIN_SLIDES = 4;
-export const MAX_SLIDES = 5;
+export const MAX_SLIDES = 8;
 
 /** 포인트 컬러를 못 고르거나 형식이 틀렸을 때 쓰는 기본값. */
 export const DEFAULT_ACCENT = "#0f5b8c";
@@ -148,6 +154,38 @@ function toSpanStyle(raw: Record<string, unknown>): SpanStyle {
 /** 한 줄의 글자만 이어 붙인다. 제목처럼 꾸밈이 필요 없는 곳에서 쓴다. */
 export function lineText(line: TextLine): string {
   return line.map((span) => span.text).join("");
+}
+
+/**
+ * 조각 배열을 다시 표시가 붙은 글자로 되돌린다. `parseSpans` 의 반대다.
+ *
+ * 편집기가 필요로 한다. 사람이 고칠 때는 조각 배열이 아니라 글자를 보고
+ * 고치기 때문이다. 쓰기(사람 → 조각)는 이미 `toLines` 가 하고 있었고,
+ * 읽기(조각 → 사람) 쪽이 없었다.
+ *
+ * 글 안에 별표나 등호가 원래 들어 있으면 되돌릴 때 표시로 오해될 수 있다.
+ * 한국어 기사 본문에 그런 글자가 거의 없어 지금은 그대로 두지만, 문제가
+ * 생기면 여기서 escape 를 넣어야 한다.
+ */
+export function linesToMarkup(lines: TextLine[]): string {
+  return lines
+    .map((line) =>
+      line
+        .map((span) =>
+          span.style === "mark"
+            ? `==${span.text}==`
+            : span.style === "accent"
+              ? `*${span.text}*`
+              : span.text
+        )
+        .join("")
+    )
+    .join("\n");
+}
+
+/** 편집기가 쓴 글자를 줄 배열로 되돌린다. 줄바꿈 하나가 카드의 한 줄이다. */
+export function parseLines(text: string, maxLines: number): TextLine[] {
+  return toLines(text, maxLines);
 }
 
 /**

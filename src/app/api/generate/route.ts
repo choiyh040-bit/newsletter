@@ -12,7 +12,53 @@ import {
  */
 export const maxDuration = 60;
 
-const MODEL = "gemini-3-flash-preview";
+/**
+ * 쓸 모델을 **차례로** 적는다. 앞의 것이 안 되면 다음 것으로 넘어간다.
+ *
+ * 하나만 박아 두면 그 모델이 붐비는 순간 서비스 전체가 멈춘다. 실제로
+ * "AI 서버가 혼잡합니다"가 떴고, 돌려 보면 같은 모델이 1분 사이에 200과
+ * 503을 오갔다. **모델 한 개의 가용성에 기능 전체를 걸 이유가 없다.**
+ *
+ * 순서는 "품질을 확인한 것 먼저, 살아 있을 확률이 높은 것 나중"이다.
+ * 실제로 재 보면 같은 시각에도 모델마다 갈린다 — 2026-10-07 에는 3-flash,
+ * 3.8, 3.6, 3.5 가 503 이고 3.7 과 lite 계열은 200 이었다.
+ *
+ * 뒤쪽에 별칭(`-latest`)과 lite 를 둔 것은 **의도적인 말 바꾸기**다. 9월 29일
+ * 에는 "별칭은 어느 날 모델이 바뀌어도 아무도 모른다"며 고정을 골랐다. 그
+ * 걱정은 **주 모델일 때** 유효하다. 앞의 것들이 전부 막혔을 때 쓰는
+ * 자리에서는, 조용히 바뀌는 위험보다 **아무것도 못 만드는 쪽이 더 나쁘다.**
+ * 어느 모델이 응답했는지는 로그에 남긴다.
+ */
+const MODELS = [
+  "gemini-3-flash-preview", // 결과 품질을 직접 확인한 것
+  "gemini-3.7-flash",
+  "gemini-flash-latest", // 별칭. 구글이 현재 모델로 유지한다
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite", // 여기부터는 가벼운 쪽. 품질은 떨어져도 살아 있다
+  "gemini-flash-lite-latest",
+] as const;
+
+/** 한 모델을 시도하려면 최소 이만큼 남아 있어야 한다. */
+const ATTEMPT_NEEDS_MS = 12_000;
+
+/**
+ * 다음 모델로 넘어갈 만한 실패인지.
+ *
+ * 넘어갈 것: 용량 부족(503), 쿼터(429 — 모델마다 따로 걸린다), 단종(404).
+ * 넘어가지 않을 것: 인증(401·403)과 잘못된 요청(400). 모델을 바꿔도 같다.
+ * 우리가 던지는 형식 오류도 여기 해당하지 않는다. 그건 바깥의 재시도가
+ * 더 엄한 프롬프트로 다시 부른다.
+ */
+function isModelUnavailable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("UNAVAILABLE") ||
+    message.includes("RESOURCE_EXHAUSTED") ||
+    message.includes("NOT_FOUND") ||
+    message.includes("overloaded") ||
+    message.includes("high demand")
+  );
+}
 
 /** 기사 본문을 읽어올 때 기다릴 시간. 이보다 오래 걸리면 검색으로만 만든다. */
 const ARTICLE_FETCH_TIMEOUT_MS = 6_000;
@@ -195,12 +241,13 @@ ${
  * 기사 본문을 이미 읽어 온 경우에는 근거가 손에 있으므로 붙이지 않는다.
  */
 async function generateOnce(
+  model: string,
   prompt: string,
   useSearch: boolean,
   signal?: AbortSignal
 ): Promise<CardNews> {
   const response = await client().models.generateContent({
-    model: MODEL,
+    model,
     contents: prompt,
     config: {
       ...(useSearch ? { tools: [{ googleSearch: {} }] } : {}),
@@ -210,6 +257,40 @@ async function generateOnce(
     },
   });
   return normalizeCardNews(extractJson(response.text ?? ""));
+}
+
+/**
+ * 모델을 차례로 시도한다. 붐비는 모델을 만나면 다음으로 넘어간다.
+ *
+ * 붐비는 응답은 1~3초 만에 돌아오므로 여러 개를 시도해도 시간을 크게
+ * 쓰지 않는다. 시간을 쓰는 것은 성공하는 호출뿐이다.
+ */
+async function generateWithFallback(
+  prompt: string,
+  useSearch: boolean,
+  left: () => number,
+  label: string
+): Promise<CardNews> {
+  let lastError: unknown = new Error("쓸 수 있는 모델이 없습니다.");
+
+  for (const model of MODELS) {
+    if (left() < ATTEMPT_NEEDS_MS) break;
+    try {
+      const result = await generateOnce(
+        model,
+        prompt,
+        useSearch,
+        AbortSignal.timeout(Math.max(left(), 1_000))
+      );
+      console.info(`[generate] ${label} 성공 · ${model}`);
+      return result;
+    } catch (error) {
+      if (!isModelUnavailable(error)) throw error;
+      console.warn(`[generate] ${model} 사용 불가, 다음 모델로:`, error);
+      lastError = error;
+    }
+  }
+  throw lastError;
 }
 
 export async function POST(request: Request) {
@@ -250,13 +331,12 @@ export async function POST(request: Request) {
   );
 
   const left = () => BUDGET_MS - (Date.now() - startedAt);
-  const deadline = (ms: number) => AbortSignal.timeout(Math.max(ms, 1_000));
 
   // 검색 도구를 켜면 응답 스키마를 강제할 수 없어 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    const result = await generateOnce(prompt, useSearch, deadline(left()));
-    console.info(`[generate] 1차 성공, ${Date.now() - startedAt}ms`);
+    const result = await generateWithFallback(prompt, useSearch, left, "1차");
+    console.info(`[generate] 1차 완료, ${Date.now() - startedAt}ms`);
     return Response.json(result);
   } catch (firstError) {
     console.warn(`[generate] 1차 실패 (${Date.now() - startedAt}ms):`, firstError);
@@ -276,8 +356,8 @@ export async function POST(request: Request) {
 
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요.`;
-      const result = await generateOnce(stricter, useSearch, deadline(left()));
-      console.info(`[generate] 재시도 성공, ${Date.now() - startedAt}ms`);
+      const result = await generateWithFallback(stricter, useSearch, left, "재시도");
+      console.info(`[generate] 재시도 완료, ${Date.now() - startedAt}ms`);
       return Response.json(result);
     } catch (error) {
       console.error(`[generate] 최종 실패 (${Date.now() - startedAt}ms):`, error);

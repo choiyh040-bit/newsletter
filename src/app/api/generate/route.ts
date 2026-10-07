@@ -15,7 +15,20 @@ export const maxDuration = 60;
 const MODEL = "gemini-3-flash-preview";
 
 /** 기사 본문을 읽어올 때 기다릴 시간. 이보다 오래 걸리면 검색으로만 만든다. */
-const ARTICLE_FETCH_TIMEOUT_MS = 10_000;
+const ARTICLE_FETCH_TIMEOUT_MS = 6_000;
+
+/**
+ * 이 요청에 쓸 수 있는 시간.
+ *
+ * `maxDuration` 보다 짧게 잡는다. 상한을 넘기면 Vercel 이 함수를 죽이는데,
+ * 그때 돌아오는 것은 **우리 JSON 이 아니라 플랫폼의 오류 페이지**다. 화면은
+ * 그걸 JSON 으로 읽으려다 엉뚱한 구문 오류를 띄우고, 진짜 원인(시간 초과)은
+ * 어디에도 안 남는다. 죽기 전에 우리가 먼저 끝내고 제대로 된 오류를 돌려준다.
+ */
+const BUDGET_MS = 55_000;
+
+/** 재시도를 시작하려면 최소 이만큼 남아 있어야 한다. */
+const RETRY_NEEDS_MS = 22_000;
 const ARTICLE_MAX_CHARS = 6_000;
 
 function client() {
@@ -181,16 +194,26 @@ ${
  * 일반 생성과 **할당량이 따로**라, 붙이는 것만으로 429 가 날 수 있다.
  * 기사 본문을 이미 읽어 온 경우에는 근거가 손에 있으므로 붙이지 않는다.
  */
-async function generateOnce(prompt: string, useSearch: boolean): Promise<CardNews> {
+async function generateOnce(
+  prompt: string,
+  useSearch: boolean,
+  signal?: AbortSignal
+): Promise<CardNews> {
   const response = await client().models.generateContent({
     model: MODEL,
     contents: prompt,
-    config: useSearch ? { tools: [{ googleSearch: {} }] } : {},
+    config: {
+      ...(useSearch ? { tools: [{ googleSearch: {} }] } : {}),
+      // 남은 시간이 다 되면 호출 자체를 끊는다. 안 끊으면 플랫폼이 함수를
+      // 죽일 때까지 기다리게 되고, 그러면 우리가 오류를 만들 기회가 없다.
+      ...(signal ? { abortSignal: signal } : {}),
+    },
   });
   return normalizeCardNews(extractJson(response.text ?? ""));
 }
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   let keyword: string;
   let url: string;
 
@@ -222,22 +245,50 @@ export async function POST(request: Request) {
   // 자체를 준다. "입력된 기사 내용 요약" 같은 문구로는 아무것도 못 찾는다.
   const subject = keyword || (article ? "아래 기사 본문의 내용" : url);
   const prompt = buildPrompt(subject, article);
+  console.info(
+    `[generate] 본문 ${article.length}자, 검색 ${useSearch ? "사용" : "안 함"}, 읽기 ${Date.now() - startedAt}ms`
+  );
+
+  const left = () => BUDGET_MS - (Date.now() - startedAt);
+  const deadline = (ms: number) => AbortSignal.timeout(Math.max(ms, 1_000));
 
   // 검색 도구를 켜면 응답 스키마를 강제할 수 없어 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    return Response.json(await generateOnce(prompt, useSearch));
+    const result = await generateOnce(prompt, useSearch, deadline(left()));
+    console.info(`[generate] 1차 성공, ${Date.now() - startedAt}ms`);
+    return Response.json(result);
   } catch (firstError) {
-    console.warn("첫 생성 실패, 재시도합니다:", firstError);
+    console.warn(`[generate] 1차 실패 (${Date.now() - startedAt}ms):`, firstError);
+
+    // 남은 시간이 모자라면 재시도하지 않는다. 시작해 봐야 중간에 잘리고,
+    // 그러면 플랫폼이 함수를 죽여 오류조차 제대로 못 돌려준다.
+    if (left() < RETRY_NEEDS_MS) {
+      console.error(`[generate] 시간이 모자라 재시도를 건너뜀 (${Date.now() - startedAt}ms)`);
+      return Response.json(
+        {
+          error: "생성이 제한 시간을 넘었습니다.",
+          detail: `TIMEOUT: ${Math.round((Date.now() - startedAt) / 1000)}초 걸렸습니다. 기사가 길거나 서버가 느린 경우입니다.`,
+        },
+        { status: 504 }
+      );
+    }
+
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요.`;
-      return Response.json(await generateOnce(stricter, useSearch));
+      const result = await generateOnce(stricter, useSearch, deadline(left()));
+      console.info(`[generate] 재시도 성공, ${Date.now() - startedAt}ms`);
+      return Response.json(result);
     } catch (error) {
-      console.error("카드뉴스 생성 실패:", error);
+      console.error(`[generate] 최종 실패 (${Date.now() - startedAt}ms):`, error);
       const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      const timedOut = message.includes("abort") || message.includes("timed out");
       return Response.json(
-        { error: "카드뉴스 생성에 실패했습니다.", detail: message },
-        { status: 500 }
+        {
+          error: timedOut ? "생성이 제한 시간을 넘었습니다." : "카드뉴스 생성에 실패했습니다.",
+          detail: timedOut ? `TIMEOUT: ${message}` : message,
+        },
+        { status: timedOut ? 504 : 500 }
       );
     }
   }

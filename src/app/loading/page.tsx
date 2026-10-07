@@ -14,6 +14,31 @@ const STATUS_MESSAGES = [
   "마무리 정리 중...",
 ];
 
+/**
+ * 응답 본문이 JSON 이 아닐 때 사람이 읽을 수 있는 설명으로 바꾼다.
+ *
+ * 상태 코드가 원인을 가장 잘 말해 준다. 504 와 502 는 거의 언제나
+ * "함수가 제한 시간을 넘겨 플랫폼이 끊었다"는 뜻이다.
+ */
+function describeNonJson(res: Response, body: string): string {
+  const head = body.trim().slice(0, 120).replace(/\s+/g, " ");
+  if (res.status === 504 || res.status === 502) {
+    return `TIMEOUT: 서버가 응답하기 전에 제한 시간을 넘겼습니다. (${res.status})\n\n${head}`;
+  }
+  return `서버가 예상과 다른 응답을 보냈습니다. (${res.status})\n\n${head}`;
+}
+
+/** 오류 응답에서 쓸 만한 설명을 꺼낸다. JSON 이 아니어도 깨지지 않는다. */
+async function readError(res: Response): Promise<string> {
+  const text = await res.text().catch(() => "");
+  try {
+    const err = JSON.parse(text);
+    return [err.error, err.detail].filter(Boolean).join("\n\n") || `생성 실패 (${res.status})`;
+  } catch {
+    return describeNonJson(res, text);
+  }
+}
+
 function LoadingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,6 +47,7 @@ function LoadingContent() {
 
   const [progress, setProgress] = useState(0);
   const [statusIdx, setStatusIdx] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const hasFetched = useRef(false);
 
@@ -30,9 +56,16 @@ function LoadingContent() {
     hasFetched.current = true;
 
     let currentProgress = 0;
-    const totalDuration = 12000;
+    // 실제 생성은 15~45초쯤 걸린다. 전에는 12초에 95% 에 닿고 그 뒤로는
+    // 멈춰 있어서, **기다리는 시간의 대부분을 95% 에서 보냈다.** 막대가
+    // 사실과 너무 달랐다. 실제에 가깝게 늘리고, 그래도 남으면 아래에
+    // 흐른 시간을 보여 준다.
+    const totalDuration = 45000;
     const intervalMs = 80;
     const increment = 100 / (totalDuration / intervalMs);
+
+    const startedAt = Date.now();
+    const tick = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 500);
 
     const animInterval = setInterval(() => {
       currentProgress = Math.min(currentProgress + increment, 95);
@@ -49,20 +82,23 @@ function LoadingContent() {
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          // 서버가 붙여 보낸 detail 까지 함께 올린다. 이게 없으면 화면에는
-          // "생성에 실패했습니다" 한 줄만 남아, 모델이 단종된 것인지 쿼터가
-          // 떨어진 것인지 구분할 수 없다. 아래 분기들도 detail 안의 코드를
-          // 보고 갈린다.
-          throw new Error([err.error, err.detail].filter(Boolean).join("\n\n") || "생성 실패");
+          // **먼저 글자로 읽는다.** 응답이 늘 우리 JSON 인 것은 아니다.
+          // 함수가 제한 시간을 넘기면 Vercel 이 함수를 죽이고 자기 오류
+          // 페이지를 돌려주는데, 그걸 바로 json() 으로 읽으면 구문 오류가
+          // 나고 **그 구문 오류가 화면에 뜬다.** 진짜 원인(시간 초과)은
+          // 어디에도 안 남는다. 실제로 그렇게 한 번 헤맸다.
+          throw new Error(await readError(res));
         }
 
-        const data = await res.json();
+        const text = await res.text();
+        if (!text.trim().startsWith("{")) throw new Error(describeNonJson(res, text));
+        const data = JSON.parse(text);
         // 결과에 고유 주소를 준다. /preview?id=... 로 넘기면 새로고침해도
         // 같은 카드뉴스가 다시 열리고, 주소를 북마크해 둘 수도 있다.
         const id = saveCardNews(keyword, data);
 
         clearInterval(animInterval);
+        clearInterval(tick);
 
         let p = currentProgress;
         const finishInterval = setInterval(() => {
@@ -76,13 +112,17 @@ function LoadingContent() {
         }, 30);
       } catch (err: unknown) {
         clearInterval(animInterval);
+        clearInterval(tick);
         const msg = err instanceof Error ? err.message : "알 수 없는 오류";
         setError(msg);
       }
     };
 
     generate();
-    return () => clearInterval(animInterval);
+    return () => {
+      clearInterval(animInterval);
+      clearInterval(tick);
+    };
   }, [keyword, url, router]);
 
   const circumference = 508;
@@ -101,13 +141,20 @@ function LoadingContent() {
       error.includes("no longer available") || error.includes("NOT_FOUND");
     const isBusy = error.includes("UNAVAILABLE") || error.includes("high demand");
     // 키가 서버까지 제대로 전달되지 않은 경우. 할당량이나 모델과는 무관하다.
+    const isTimeout =
+      error.includes("TIMEOUT") ||
+      error.includes("제한 시간") ||
+      error.includes("504") ||
+      error.includes("DEADLINE_EXCEEDED");
     const isAuth =
       error.includes("UNAUTHENTICATED") ||
       error.includes("API_KEY_INVALID") ||
       error.includes("PERMISSION_DENIED") ||
       error.includes("GEMINI_API_KEY가 설정되지");
 
-    const displayError = isAuth
+    const displayError = isTimeout
+      ? "생성이 제한 시간을 넘겼습니다.\n\n기사가 길거나 서버가 붐빌 때 생깁니다. 다시 시도해 보시고, 계속 같으면 기사 본문이 아주 긴 경우이니 다른 기사로 한 번 확인해 주세요."
+      : isAuth
       ? "API 키가 서버에 제대로 전달되지 않았습니다.\n\nVercel의 환경변수 GEMINI_API_KEY 값을 확인하세요. 따옴표나 공백이 섞여 있지 않아야 하고, Google AI Studio에서 만든 키여야 합니다(클라우드 콘솔의 OAuth 자격증명이 아닙니다). 값을 고친 뒤에는 반드시 재배포해야 반영됩니다."
       : isModelGone
       ? "AI 모델이 단종되어 더 이상 호출되지 않습니다.\n다시 시도해도 같은 결과입니다. src/app/api/generate/route.ts 의 MODEL 값을 현재 쓸 수 있는 모델로 바꿔야 합니다."
@@ -123,7 +170,9 @@ function LoadingContent() {
           <span className="material-symbols-outlined text-red-400 text-4xl">error</span>
         </div>
         <h2 className="font-korean-bold text-2xl text-white">
-          {isAuth
+          {isTimeout
+            ? "시간이 초과됐습니다"
+            : isAuth
             ? "API 키 설정을 확인해주세요"
             : isModelGone
             ? "AI 모델 설정을 고쳐야 합니다"
@@ -260,6 +309,12 @@ function LoadingContent() {
             <div className="flex items-center justify-center gap-3 text-white/60">
               <span className="inline-block w-2 h-2 rounded-full bg-primary animate-ping" />
               <p className="font-korean-reg text-white/80 text-sm">{statusMessage}</p>
+              {/* 흐른 시간. 막대만 보면 멈춘 것처럼 느껴지는데, 초가 올라가면
+                  적어도 돌아가고 있다는 것은 알 수 있다. */}
+              <p className="font-korean-reg text-white/35 text-xs mt-1.5 tabular-nums">
+                {elapsed}초 지남
+                {elapsed >= 40 && " · 기사가 길면 1분 가까이 걸립니다"}
+              </p>
             </div>
           </div>
 

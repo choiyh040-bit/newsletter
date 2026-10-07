@@ -105,13 +105,21 @@ async function usableModels(): Promise<string[]> {
 const ATTEMPT_NEEDS_MS = 12_000;
 
 /**
- * 한 번의 생성에 줄 수 있는 최대 시간.
+ * 응답을 만들어 돌려주려고 남겨 두는 시간.
  *
- * 남은 시간을 통째로 주면 **느린 모델 하나가 예산을 다 먹는다.** 실제로
- * 그랬다 — 앞의 넷이 503 으로 빠르게 떨어진 뒤 다섯 번째가 48초를 쓰고도
- * 안 끝나서, 다른 모델을 써 볼 기회가 없었다.
+ * 한때 "한 번에 42초"라는 상한을 뒀다. 느린 모델 하나가 예산을 다 먹는
+ * 것을 막으려는 것이었는데, **재 보니 그 상한이 멀쩡한 생성을 죽이고
+ * 있었다** — 세 번 중 두 번이 정확히 42초에 잘렸다.
+ *
+ * 예산이 55초인데 생성 한 번이 19~45초다. **"한 번을 짧게 끊는 것"과
+ * "느린 성공을 기다려 주는 것"을 둘 다 할 수 있는 시간이 애초에 없다.**
+ * 둘 중에는 기다려 주는 쪽이 낫다. 늘어지는 모델은 가끔이지만, 상한은
+ * 매번 걸린다.
+ *
+ * 그래서 한 번에 **남은 시간을 거의 다** 준다. 전체 예산이 플랫폼에
+ * 죽임당하는 것은 이미 막고 있다.
  */
-const ATTEMPT_MAX_MS = 42_000;
+const RESPONSE_RESERVE_MS = 3_000;
 
 /**
  * 다음 모델로 넘어갈 만한 실패인지.
@@ -335,11 +343,12 @@ async function generateOnce(
  * 모델을 차례로 시도한다. 붐비는 모델을 만나면 다음으로 넘어간다.
  *
  * 붐비는 응답은 1초 안쪽에 돌아오므로 여러 개를 거쳐도 시간을 거의 안 쓴다.
+ * 시간을 쓰는 것은 실제로 글을 짓는 한 번뿐이고, 그 한 번에는 남은 시간을
+ * 거의 다 준다.
  *
  * 한때 "살아 있는지 짧게 찔러 보고 들어가는" 단계를 뒀다가 뺐다. 503 은
  * 어차피 1초 안에 떨어지므로 진짜 요청으로 확인하는 것과 비용이 같고,
- * **멀쩡한 경우에만 왕복이 하나 더 는다.** 늘어지는 모델을 막는 일은
- * `ATTEMPT_MAX_MS` 가 이미 하고 있다.
+ * **멀쩡한 경우에만 왕복이 하나 더 는다.**
  */
 async function generateWithFallback(
   prompt: string,
@@ -358,7 +367,7 @@ async function generateWithFallback(
         model,
         prompt,
         useSearch,
-        AbortSignal.timeout(Math.max(Math.min(left(), ATTEMPT_MAX_MS), 1_000))
+        AbortSignal.timeout(Math.max(left() - RESPONSE_RESERVE_MS, 1_000))
       );
       console.info(`[generate] ${label} 성공 · ${model}`);
       return result;

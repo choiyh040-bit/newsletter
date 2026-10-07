@@ -104,22 +104,24 @@ async function usableModels(): Promise<string[]> {
 /** 한 모델을 시도하려면 최소 이만큼 남아 있어야 한다. */
 const ATTEMPT_NEEDS_MS = 12_000;
 
-/**
- * 응답을 만들어 돌려주려고 남겨 두는 시간.
- *
- * 한때 "한 번에 42초"라는 상한을 뒀다. 느린 모델 하나가 예산을 다 먹는
- * 것을 막으려는 것이었는데, **재 보니 그 상한이 멀쩡한 생성을 죽이고
- * 있었다** — 세 번 중 두 번이 정확히 42초에 잘렸다.
- *
- * 예산이 55초인데 생성 한 번이 19~45초다. **"한 번을 짧게 끊는 것"과
- * "느린 성공을 기다려 주는 것"을 둘 다 할 수 있는 시간이 애초에 없다.**
- * 둘 중에는 기다려 주는 쪽이 낫다. 늘어지는 모델은 가끔이지만, 상한은
- * 매번 걸린다.
- *
- * 그래서 한 번에 **남은 시간을 거의 다** 준다. 전체 예산이 플랫폼에
- * 죽임당하는 것은 이미 막고 있다.
- */
+/** 응답을 만들어 돌려주려고 남겨 두는 시간. */
 const RESPONSE_RESERVE_MS = 3_000;
+
+/**
+ * 한 번의 생성에 줄 수 있는 최대 시간.
+ *
+ * 이 값을 두 번 틀렸다. 처음에는 42초로 뒀다가, 멀쩡한 생성이 잘린다고
+ * 보고 아예 없앴다. 둘 다 진단이 틀렸다.
+ *
+ * **같은 모델에 같은 짧은 기사를 넣고 두 번 재 보니 4.8초와 52초(무응답)
+ * 였다.** 느린 것이 아니라 **가끔 먹통이 된다.** 멀쩡할 때는 3~28초면
+ * 끝난다. 그러니 상한은 "느린 성공을 기다려 주는 선"이 아니라 "먹통을
+ * 알아채는 선"으로 잡아야 한다.
+ *
+ * 32초면 멀쩡한 생성은 다 통과하고, 먹통은 끊고 나서 **다음 모델을 써 볼
+ * 시간이 20초쯤 남는다.** 건강한 모델은 5초면 끝나므로 충분하다.
+ */
+const ATTEMPT_MAX_MS = 32_000;
 
 /**
  * 다음 모델로 넘어갈 만한 실패인지.
@@ -129,6 +131,16 @@ const RESPONSE_RESERVE_MS = 3_000;
  * 우리가 던지는 형식 오류도 여기 해당하지 않는다. 그건 바깥의 재시도가
  * 더 엄한 프롬프트로 다시 부른다.
  */
+/** 시간이 다해 끊긴 호출인지. */
+function isAbort(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    (error instanceof Error && error.name === "AbortError") ||
+    message.includes("abort") ||
+    message.includes("timed out")
+  );
+}
+
 function isModelUnavailable(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (
@@ -367,13 +379,25 @@ async function generateWithFallback(
         model,
         prompt,
         useSearch,
-        AbortSignal.timeout(Math.max(left() - RESPONSE_RESERVE_MS, 1_000))
+        AbortSignal.timeout(
+          Math.max(Math.min(left() - RESPONSE_RESERVE_MS, ATTEMPT_MAX_MS), 1_000)
+        )
       );
       console.info(`[generate] ${label} 성공 · ${model}`);
       return result;
     } catch (error) {
-      if (!isModelUnavailable(error)) throw error;
-      console.warn(`[generate] ${model} 사용 불가, 다음 모델로:`, error);
+      // 상한에 걸려 끊긴 것(먹통)도 다음 모델로 넘어갈 일이다. 예전에는
+      // 이걸 안 가려서, 먹통 하나를 만나면 **남은 모델을 하나도 안 써 보고**
+      // 그대로 실패했다. 전체 예산이 다한 것인지 이 시도만 끊긴 것인지는
+      // 남은 시간으로 구분한다.
+      const abortedThisAttempt =
+        isAbort(error) && left() > ATTEMPT_NEEDS_MS + RESPONSE_RESERVE_MS;
+
+      if (!isModelUnavailable(error) && !abortedThisAttempt) throw error;
+      console.warn(
+        `[generate] ${model} ${abortedThisAttempt ? "응답 없음(끊음)" : "사용 불가"}, 다음 모델로:`,
+        error
+      );
       lastError = error;
     }
   }

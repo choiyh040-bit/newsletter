@@ -13,33 +13,105 @@ import {
 export const maxDuration = 60;
 
 /**
- * 쓸 모델을 **차례로** 적는다. 앞의 것이 안 되면 다음 것으로 넘어간다.
+ * 모델 목록을 **실행할 때 받아 온다.**
  *
- * 하나만 박아 두면 그 모델이 붐비는 순간 서비스 전체가 멈춘다. 실제로
- * "AI 서버가 혼잡합니다"가 떴고, 돌려 보면 같은 모델이 1분 사이에 200과
- * 503을 오갔다. **모델 한 개의 가용성에 기능 전체를 걸 이유가 없다.**
+ * 처음에는 쓸 모델 이름을 코드에 박아 뒀다. 그런데 그 목록이 두 번 낡았다.
+ * 한 번은 단종(`gemini-2.5-flash` 가 404)으로, 한 번은 용량(적어 둔 것이
+ * 전부 503)으로. **구글 쪽 사정은 우리가 배포할 때마다 바뀌지 않는다.**
+ * 그래서 이름을 고정하지 않고, 지금 계정이 쓸 수 있는 것을 받아서 고른다.
  *
- * 순서는 "품질을 확인한 것 먼저, 살아 있을 확률이 높은 것 나중"이다.
- * 실제로 재 보면 같은 시각에도 모델마다 갈린다 — 2026-10-07 에는 3-flash,
- * 3.8, 3.6, 3.5 가 503 이고 3.7 과 lite 계열은 200 이었다.
- *
- * 뒤쪽에 별칭(`-latest`)과 lite 를 둔 것은 **의도적인 말 바꾸기**다. 9월 29일
- * 에는 "별칭은 어느 날 모델이 바뀌어도 아무도 모른다"며 고정을 골랐다. 그
- * 걱정은 **주 모델일 때** 유효하다. 앞의 것들이 전부 막혔을 때 쓰는
- * 자리에서는, 조용히 바뀌는 위험보다 **아무것도 못 만드는 쪽이 더 나쁘다.**
- * 어느 모델이 응답했는지는 로그에 남긴다.
+ * 다만 **아무거나 쓰면 안 된다.** 목록에는 글을 짓는 모델만 있는 것이 아니라
+ * 음악(lyria), 이미지(nano-banana), 음성(tts·transcribe), 로봇, 임베딩이
+ * 섞여 있다. 그런 것에 카드뉴스를 시키면 30초를 버리고 쓰레기를 받는다.
+ * 이름으로 걸러 내고 순서를 매긴다.
  */
-const MODELS = [
-  "gemini-3-flash-preview", // 결과 품질을 직접 확인한 것
-  "gemini-3.7-flash",
-  "gemini-flash-latest", // 별칭. 구글이 현재 모델로 유지한다
-  "gemini-3.5-flash",
-  "gemini-3.5-flash-lite", // 여기부터는 가벼운 쪽. 품질은 떨어져도 살아 있다
-  "gemini-flash-lite-latest",
-] as const;
+
+/** 글을 짓는 데 못 쓰는 것들. 이름에 이게 들어가면 뺀다. */
+const NOT_FOR_TEXT =
+  /(image|tts|transcribe|audio|live|computer-use|robotics|omni|embedding|customtools|nano-banana|lyria|antigravity|deep-research)/;
+
+/** 목록을 못 받아 왔을 때 쓸 최소한의 이름. */
+const FALLBACK_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
+
+/**
+ * 등급마다 몇 개씩 담을지.
+ *
+ * 그냥 상위 N 개를 자르면 안 된다. 실제로 한 번 그렇게 했다가, 상위 여섯
+ * 개가 전부 같은 등급(flash)이라 **그때 유일하게 살아 있던 lite 가 잘려
+ * 나갔다.** 등급이 통째로 막히는 일이 실제로 일어나므로, 각 등급에서 몇
+ * 개씩 가져와 **반드시 아래 등급까지 닿게** 한다.
+ */
+const PICK_PER_TIER = { flash: 4, lite: 3, pro: 1 } as const;
+
+/**
+ * 순위를 매긴다. 작을수록 먼저 쓴다. null 이면 안 쓴다.
+ *
+ * 등급(flash → flash-lite → pro)을 먼저 보고, 같은 등급에서는 버전이 높은
+ * 것을 먼저 쓴다. pro 를 뒤로 보낸 것은 품질이 아니라 **시간** 때문이다.
+ * 느려서 제한 시간을 넘길 위험이 크다. 앞이 다 막혔을 때만 간다.
+ */
+function rankModel(name: string): number | null {
+  if (!name.startsWith("gemini-")) return null;
+  if (NOT_FOR_TEXT.test(name)) return null;
+
+  const isFlash = name.includes("flash");
+  const isPro = name.includes("pro");
+  if (!isFlash && !isPro) return null;
+
+  const tier = isPro ? 200 : name.includes("lite") ? 100 : 0;
+  // 버전 없는 별칭(gemini-flash-latest)은 0 이 되어 같은 등급의 맨 뒤로 간다.
+  const version = Number(/gemini-(\d+(?:\.\d+)?)/.exec(name)?.[1] ?? 0);
+  return tier - version;
+}
+
+/**
+ * 목록은 자주 바뀌지 않으므로 잠깐 재사용한다. 서버리스 인스턴스가 살아
+ * 있는 동안만 유효하고, 사라지면 그냥 다시 받는다.
+ */
+let modelCache: { at: number; models: string[] } | null = null;
+const MODEL_CACHE_MS = 10 * 60_000;
+
+async function usableModels(): Promise<string[]> {
+  if (modelCache && Date.now() - modelCache.at < MODEL_CACHE_MS) {
+    return modelCache.models;
+  }
+  try {
+    const names: string[] = [];
+    for await (const model of await client().models.list()) {
+      const name = (model.name ?? "").replace(/^models\//, "");
+      // 글을 짓는 데 쓸 수 있다고 스스로 밝힌 것만 본다.
+      if (!model.supportedActions?.includes("generateContent")) continue;
+      if (rankModel(name) !== null) names.push(name);
+    }
+    const tierOf = (n: string) =>
+      n.includes("pro") ? "pro" : n.includes("lite") ? "lite" : "flash";
+
+    const sorted = names.sort((a, b) => rankModel(a)! - rankModel(b)!);
+    const ranked = (["flash", "lite", "pro"] as const).flatMap((tier) =>
+      sorted.filter((n) => tierOf(n) === tier).slice(0, PICK_PER_TIER[tier])
+    );
+
+    if (ranked.length === 0) return FALLBACK_MODELS;
+    modelCache = { at: Date.now(), models: ranked };
+    console.info(`[generate] 쓸 수 있는 모델 ${ranked.length}개: ${ranked.join(", ")}`);
+    return ranked;
+  } catch (error) {
+    console.warn("[generate] 모델 목록을 못 받아 왔습니다. 기본값을 씁니다:", error);
+    return FALLBACK_MODELS;
+  }
+}
 
 /** 한 모델을 시도하려면 최소 이만큼 남아 있어야 한다. */
 const ATTEMPT_NEEDS_MS = 12_000;
+
+/**
+ * 한 번의 생성에 줄 수 있는 최대 시간.
+ *
+ * 남은 시간을 통째로 주면 **느린 모델 하나가 예산을 다 먹는다.** 실제로
+ * 그랬다 — 앞의 넷이 503 으로 빠르게 떨어진 뒤 다섯 번째가 48초를 쓰고도
+ * 안 끝나서, 다른 모델을 써 볼 기회가 없었다.
+ */
+const ATTEMPT_MAX_MS = 42_000;
 
 /**
  * 다음 모델로 넘어갈 만한 실패인지.
@@ -262,8 +334,12 @@ async function generateOnce(
 /**
  * 모델을 차례로 시도한다. 붐비는 모델을 만나면 다음으로 넘어간다.
  *
- * 붐비는 응답은 1~3초 만에 돌아오므로 여러 개를 시도해도 시간을 크게
- * 쓰지 않는다. 시간을 쓰는 것은 성공하는 호출뿐이다.
+ * 붐비는 응답은 1초 안쪽에 돌아오므로 여러 개를 거쳐도 시간을 거의 안 쓴다.
+ *
+ * 한때 "살아 있는지 짧게 찔러 보고 들어가는" 단계를 뒀다가 뺐다. 503 은
+ * 어차피 1초 안에 떨어지므로 진짜 요청으로 확인하는 것과 비용이 같고,
+ * **멀쩡한 경우에만 왕복이 하나 더 는다.** 늘어지는 모델을 막는 일은
+ * `ATTEMPT_MAX_MS` 가 이미 하고 있다.
  */
 async function generateWithFallback(
   prompt: string,
@@ -272,15 +348,17 @@ async function generateWithFallback(
   label: string
 ): Promise<CardNews> {
   let lastError: unknown = new Error("쓸 수 있는 모델이 없습니다.");
+  const models = await usableModels();
 
-  for (const model of MODELS) {
+  for (const model of models) {
     if (left() < ATTEMPT_NEEDS_MS) break;
+
     try {
       const result = await generateOnce(
         model,
         prompt,
         useSearch,
-        AbortSignal.timeout(Math.max(left(), 1_000))
+        AbortSignal.timeout(Math.max(Math.min(left(), ATTEMPT_MAX_MS), 1_000))
       );
       console.info(`[generate] ${label} 성공 · ${model}`);
       return result;

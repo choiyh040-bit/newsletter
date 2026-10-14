@@ -354,9 +354,10 @@ async function generateOnce(
 /**
  * 모델을 차례로 시도한다. 붐비는 모델을 만나면 다음으로 넘어간다.
  *
- * 붐비는 응답은 1초 안쪽에 돌아오므로 여러 개를 거쳐도 시간을 거의 안 쓴다.
- * 시간을 쓰는 것은 실제로 글을 짓는 한 번뿐이고, 그 한 번에는 남은 시간을
- * 거의 다 준다.
+ * 붐비는 응답은 대개 1초 안쪽에 돌아오므로 여러 개를 거쳐도 시간을 거의 안
+ * 쓴다. 다만 **늘 그렇지는 않다** — 재 보니 503 하나가 3.9초 걸린 적이 있다.
+ * 시간을 쓰는 것은 주로 실제로 글을 짓는 한 번이고, 그 한 번에는 남은
+ * 시간을 거의 다 준다.
  *
  * 한때 "살아 있는지 짧게 찔러 보고 들어가는" 단계를 뒀다가 뺐다. 503 은
  * 어차피 1초 안에 떨어지므로 진짜 요청으로 확인하는 것과 비용이 같고,
@@ -374,16 +375,16 @@ async function generateWithFallback(
   for (const model of models) {
     if (left() < ATTEMPT_NEEDS_MS) break;
 
+    // 시도마다 몇 초 걸렸는지 남긴다. 이게 없어서 "46초가 걸렸다"를 놓고
+    // 503 을 거친 시간인지 한 번의 생성이 느린 것인지 세 번이나 추정만 했다.
+    // 합계만 있으면 어디를 고쳐야 할지 알 수 없다.
+    const cap = Math.max(Math.min(left() - RESPONSE_RESERVE_MS, ATTEMPT_MAX_MS), 1_000);
+    const attemptAt = Date.now();
+    const took = () => `${Date.now() - attemptAt}ms/상한 ${cap}ms`;
+
     try {
-      const result = await generateOnce(
-        model,
-        prompt,
-        useSearch,
-        AbortSignal.timeout(
-          Math.max(Math.min(left() - RESPONSE_RESERVE_MS, ATTEMPT_MAX_MS), 1_000)
-        )
-      );
-      console.info(`[generate] ${label} 성공 · ${model}`);
+      const result = await generateOnce(model, prompt, useSearch, AbortSignal.timeout(cap));
+      console.info(`[generate] ${label} 성공 · ${model} (${took()})`);
       return result;
     } catch (error) {
       // 상한에 걸려 끊긴 것(먹통)도 다음 모델로 넘어갈 일이다. 예전에는
@@ -395,7 +396,7 @@ async function generateWithFallback(
 
       if (!isModelUnavailable(error) && !abortedThisAttempt) throw error;
       console.warn(
-        `[generate] ${model} ${abortedThisAttempt ? "응답 없음(끊음)" : "사용 불가"}, 다음 모델로:`,
+        `[generate] ${model} ${abortedThisAttempt ? "응답 없음(끊음)" : "사용 불가"} (${took()}), 다음 모델로:`,
         error
       );
       lastError = error;

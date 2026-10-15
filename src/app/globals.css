@@ -26,6 +26,14 @@
     font-family: 'HangamePoker', sans-serif;
     font-weight: 800;
   }
+  /* 한국어는 기본값이면 글자 단위로 끊겨 "카드뉴/스"처럼 낱말이 갈린다.
+     띄어쓰기에서만 끊고, 띄어쓰기 없이 긴 것(URL)만 어디서든 끊는다.
+     body 전체에 걸지 않는다. 카드 템플릿은 줄을 직접 나누고 글자 크기를
+     맞추므로, 같은 설정이 카드 안까지 번지면 그 계산이 달라진다. */
+  .ko-text {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
   .font-korean-reg {
     font-family: 'HangamePoker', sans-serif;
     font-weight: 400;

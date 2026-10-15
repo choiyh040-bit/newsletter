@@ -101,7 +101,7 @@ function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   // 다른 탭에서 생성하거나 지운 것도 반영한다.
   const onStorage = (e: StorageEvent) => {
-    if (e.key === KEY || e.key === null) listener();
+    if (e.key === KEY || e.key === DESIGN_KEY || e.key === null) listener();
   };
   window.addEventListener("storage", onStorage);
   return () => {
@@ -130,19 +130,104 @@ const EMPTY: CardNewsEntry[] = [];
 /** 서버에서는 localStorage 를 읽을 수 없으므로 빈 목록으로 그린다. */
 const getServerSnapshot = () => EMPTY;
 
+// ─── 마지막에 고른 디자인 ────────────────────────────────────────────────────
+
+/**
+ * 다음 생성에 쓸 디자인. 홈에서 고르거나 미리보기에서 바꾼 것을 기억한다.
+ *
+ * 결과마다 붙는 선택(`CardNewsEntry.templateId` 등)과 따로 둔다. 결과의 선택은
+ * 그 결과를 다시 열 때 쓰고, 이것은 **새로 만들 때** 쓴다. 늘 같은 디자인을
+ * 쓰는 사람이 매번 다시 고르지 않게 하려는 것이다.
+ */
+const DESIGN_KEY = "cardNewsDesign";
+
+export interface DesignChoice {
+  templateId?: string;
+  variantId?: string;
+  align?: TextAlign;
+}
+
+const NO_DESIGN: DesignChoice = {};
+
+function readDesignRaw(): string {
+  try {
+    return localStorage.getItem(DESIGN_KEY) ?? "{}";
+  } catch {
+    return "{}";
+  }
+}
+
+function parseDesign(raw: string): DesignChoice {
+  try {
+    const v = JSON.parse(raw);
+    if (typeof v !== "object" || v === null) return NO_DESIGN;
+    const out: DesignChoice = {};
+    if (typeof v.templateId === "string") out.templateId = v.templateId;
+    if (typeof v.variantId === "string") out.variantId = v.variantId;
+    if (v.align === "left" || v.align === "center") out.align = v.align;
+    return out;
+  } catch {
+    return NO_DESIGN;
+  }
+}
+
+export function readDesignChoice(): DesignChoice {
+  return parseDesign(readDesignRaw());
+}
+
+/** 바뀐 칸만 덮어쓴다. 템플릿을 바꿔도 고르던 색은 남는다. */
+function rememberDesign(patch: DesignChoice): void {
+  try {
+    localStorage.setItem(DESIGN_KEY, JSON.stringify({ ...readDesignChoice(), ...patch }));
+  } catch {
+    // 저장이 막힌 환경. 기억만 못 하고 화면은 그대로 둔다.
+  }
+  notify();
+}
+
+/** 홈에서 템플릿을 고른다. */
+export function chooseTemplate(templateId: string): void {
+  rememberDesign({ templateId });
+}
+
+let designCache: { raw: string; value: DesignChoice } | null = null;
+
+function getDesignSnapshot(): DesignChoice {
+  const raw = readDesignRaw();
+  if (!designCache || designCache.raw !== raw) {
+    designCache = { raw, value: parseDesign(raw) };
+  }
+  return designCache.value;
+}
+
+/** 마지막에 고른 디자인을 읽는다. 서버에서는 빈 값(= 기본 템플릿)으로 그린다. */
+export function useDesignChoice(): DesignChoice {
+  return useSyncExternalStore(subscribe, getDesignSnapshot, () => NO_DESIGN);
+}
+
 // ─── 바깥에서 쓰는 함수 ──────────────────────────────────────────────────────
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** 새 결과를 맨 앞에 저장하고 그 id 를 돌려준다. */
-export function saveCardNews(keyword: string, data: CardNews): string {
+/**
+ * 새 결과를 맨 앞에 저장하고 그 id 를 돌려준다.
+ *
+ * 홈에서 고른 디자인(= 마지막에 쓴 디자인)을 결과에 붙여 둔다. 그래야
+ * 미리보기가 처음부터 고른 모양으로 열린다.
+ */
+export function saveCardNews(
+  keyword: string,
+  data: CardNews,
+  design: DesignChoice = readDesignChoice()
+): string {
   const entry: CardNewsEntry = {
     id: newId(),
     keyword,
     createdAt: new Date().toISOString(),
     data,
+    ...design,
   };
 
   const next = [entry, ...parseHistory(readRaw())].slice(0, MAX_ENTRIES);
@@ -158,6 +243,7 @@ export function saveCardNews(keyword: string, data: CardNews): string {
  * 어떤 디자인으로 뽑을지는 결과에 붙은 선택이므로 함께 보관한다.
  */
 export function setCardNewsTemplate(id: string, templateId: string): void {
+  rememberDesign({ templateId });
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, templateId } : entry
   );
@@ -167,6 +253,7 @@ export function setCardNewsTemplate(id: string, templateId: string): void {
 
 /** 고른 색 조합을 기억한다. 이유는 `setCardNewsTemplate` 와 같다. */
 export function setCardNewsVariant(id: string, variantId: string): void {
+  rememberDesign({ variantId });
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, variantId } : entry
   );
@@ -176,6 +263,7 @@ export function setCardNewsVariant(id: string, variantId: string): void {
 
 /** 고른 정렬을 기억한다. 이유는 `setCardNewsTemplate` 와 같다. */
 export function setCardNewsAlign(id: string, align: TextAlign): void {
+  rememberDesign({ align });
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, align } : entry
   );

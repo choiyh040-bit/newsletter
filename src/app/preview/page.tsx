@@ -79,8 +79,16 @@ function PreviewContent() {
     previewObserver.current.observe(el);
   }, []);
   // 사진 파이프라인이 아직 없어 색 배경 템플릿만 고를 수 있다.
-  const choices = availableTemplates(false);
+  const choices = availableTemplates();
   const template = templateById(entry?.templateId);
+  // 사진 템플릿일 때만 사진을 넘긴다. 사진은 생성할 때 찾아 둔 것이다.
+  const photo = template.background === "photo" && data?.photo ? data.photo : null;
+  // 사진을 쓰면 캡션 끝에 작가 표기를 붙인다(CC BY 계열은 의무). 사진을 안 쓰는
+  // 템플릿이면 붙이지 않는다. 템플릿을 바꿀 때마다 따라 바뀌어야 해서 저장된
+  // 캡션에 넣지 않고 보여 줄 때·복사할 때 만든다.
+  const captionText =
+    (data?.caption ?? "") +
+    (photo && data?.photo ? `\n사진: ${data.photo.credit} · Wikimedia Commons ${data.photo.pageUrl}` : "");
   // 색 조합에 직접 고른 강조색을 덮은 실제 색.
   const variant = resolveColors(
     template,
@@ -133,7 +141,7 @@ function PreviewContent() {
     if (!data) return;
     const text =
       target === "caption"
-        ? data.caption
+        ? captionText
         : target === "sources"
           ? sourceList.map((s) => `출처: ${s.name} ${s.url}`.trim()).join("\n")
           : data.hashtags.map((tag) => `#${tag}`).join(" ");
@@ -259,7 +267,7 @@ function PreviewContent() {
               accent={data.accent}
               total={total}
               source={data.source}
-              photo={null}
+              photo={photo}
               variant={variant}
               align={align}
             />
@@ -323,7 +331,7 @@ function PreviewContent() {
                   accent={data.accent}
                   total={total}
                   source={data.source}
-                  photo={null}
+                  photo={photo}
               variant={variant}
               align={align}
                 />
@@ -459,9 +467,23 @@ function PreviewContent() {
                 </div>
               )}
 
-              <p className="text-white/30 text-xs mt-3 font-korean-reg">
-                사진 배경 디자인은 사진 기능이 붙으면 여기에 함께 나옵니다.
-              </p>
+              {/* 사진 템플릿이면 쓴 사진의 출처를, 못 찾았으면 그렇다고 알린다. */}
+              {template.background === "photo" && (
+                <p className="text-white/40 text-xs mt-3 font-korean-reg leading-relaxed break-all">
+                  {data?.photo ? (
+                    <>
+                      사진: {data.photo.credit} ·{" "}
+                      <a href={data.photo.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Wikimedia Commons
+                      </a>
+                      <br />
+                      상업적 사용이 허용된 라이선스의 사진입니다. 작가 표기는 카드와 캡션에 자동으로 들어갑니다.
+                    </>
+                  ) : (
+                    "이 기사에 맞는 저작권 안전한 사진을 찾지 못해 그라데이션으로 그렸습니다."
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="glass-panel p-5 rounded-2xl">
@@ -504,7 +526,7 @@ function PreviewContent() {
                   {copied === "caption" ? "복사됨!" : "복사"}
                 </button>
               </div>
-              <p className="text-white/80 text-sm leading-relaxed whitespace-pre-line">{data.caption}</p>
+              <p className="text-white/80 text-sm leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{captionText}</p>
 
               <div className="border-t border-white/5 pt-4">
                 <div className="flex items-center justify-between mb-3">

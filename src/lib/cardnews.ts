@@ -101,6 +101,29 @@ export interface CardNews {
    * 넣은 기사 URL). 모델에게 주소를 받아 적게 하면 지어낸다.
    */
   sources?: CardNewsSource[];
+  /**
+   * 배경 사진(사진 템플릿용). 위키미디어 공용에서 상업적 사용이 되는 라이선스만
+   * 찾아 붙인다(`lib/photo.ts`). 못 찾으면 없다 — 사진 템플릿은 그라데이션으로 그린다.
+   */
+  photo?: CardNewsPhoto;
+}
+
+export interface CardNewsPhoto {
+  /** 우리 서버를 거치는 주소(`/api/photo?src=…`) */
+  url: string;
+  /** "작가 · 라이선스". CC BY 계열은 표기가 의무다. */
+  credit: string;
+  license: string;
+  pageUrl: string;
+}
+
+/** 저장해 둔 사진 정보를 정리한다. 우리 사진 경로가 아니면 버린다. */
+function normalizePhoto(raw: unknown): CardNewsPhoto | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const r = raw as Record<string, unknown>;
+  const url = toText(r.url);
+  if (!url.startsWith("/api/photo?src=")) return undefined;
+  return { url, credit: toText(r.credit), license: toText(r.license), pageUrl: toText(r.pageUrl) };
 }
 
 /** 출처 목록을 정리한다. http(s) 주소만, 최대 3개. */
@@ -317,6 +340,7 @@ export function normalizeCardNews(raw: unknown): CardNews {
       : [],
     source: source && source.name ? source : null,
     ...(Array.isArray(input.sources) ? { sources: normalizeSources(input.sources) } : {}),
+    ...(normalizePhoto(input.photo) ? { photo: normalizePhoto(input.photo) } : {}),
   };
 }
 

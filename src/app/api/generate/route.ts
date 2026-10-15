@@ -8,6 +8,7 @@ import {
   type CardNewsSource,
 } from "@/lib/cardnews";
 import { client, failure, startBudget, THINKING, withFallback } from "@/lib/gemini";
+import { findPhoto } from "@/lib/photo";
 
 /**
  * 모은 자료로 카드뉴스를 짓는다. 두 단계 중 두 번째.
@@ -114,6 +115,12 @@ ${article}
   } 자료에 없는 매체를 지어내지 마세요.
 - **주소(URL)는 쓰지 마세요.** 출처 주소는 캡션 끝에 따로 붙습니다.
 
+[사진 검색어]
+- imageQuery 에 카드 배경 사진을 찾을 **영어** 검색어를 2~4 단어로 적으세요.
+- 기사 속 **장소·건물·도시·행사장** 이름 위주로 적습니다.
+  좋은 예: "BEXCO Busan", "KINTEX Goyang", "Seoul skyline", "Haeundae beach"
+- 사람 이름, 회사 로고, 상품명은 쓰지 마세요. 초상권·상표 문제가 생깁니다.
+
 [디자인]
 - accent는 주제 분위기에 맞는 어두운 계열 포인트 컬러 하나를 "#rrggbb" 형식으로 고르세요.
   이 색 하나로 세트 전체 배경 그라데이션을 만들기 때문에, 흰 글씨가 또렷하게 보일 만큼 충분히 어두워야 합니다.
@@ -142,6 +149,7 @@ ${article}
   ],
   "caption": "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)",
   "hashtags": ["해시태그1", "해시태그2", "해시태그3", "해시태그4", "해시태그5"],
+  "imageQuery": "BEXCO Busan",
   "source": { "name": "출처 매체명", "url": "" }
 }
 
@@ -163,7 +171,7 @@ async function generateOnce(
   model: string,
   prompt: string,
   signal?: AbortSignal
-): Promise<CardNews> {
+): Promise<Generated> {
   const response = await client().models.generateContent({
     model,
     contents: prompt,
@@ -178,14 +186,50 @@ async function generateOnce(
       ...(signal ? { abortSignal: signal } : {}),
     },
   });
-  const result = normalizeCardNews(extractJson(response.text ?? ""));
+  const raw = extractJson(response.text ?? "");
+  const result = normalizeCardNews(raw);
+  // 사진 검색어는 카드 데이터가 아니라서 정리 함수가 버린다. 따로 꺼낸다.
+  const imageQuery =
+    typeof raw === "object" && raw !== null && typeof (raw as { imageQuery?: unknown }).imageQuery === "string"
+      ? ((raw as { imageQuery: string }).imageQuery).slice(0, 80)
+      : "";
   // 장수가 범위를 벗어나면 형식 오류와 같이 다룬다. 바깥의 재시도가 더 엄한
   // 안내로 다시 부른다. 넘친 장을 잘라 내면 마무리 장이 사라진다.
   const count = result.slides.length;
   if (count < MIN_SLIDES || count > GENERATED_MAX_SLIDES) {
     throw new Error(`슬라이드가 ${count}장입니다. ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장이어야 합니다.`);
   }
-  return result;
+  return { result, imageQuery };
+}
+
+interface Generated {
+  result: CardNews;
+  imageQuery: string;
+}
+
+/** 사진 검색에 줄 시간의 상한. 남은 시간이 이보다 적으면 그만큼만 쓴다. */
+const PHOTO_MAX_MS = 6_000;
+
+/**
+ * 출처를 붙이고 배경 사진을 찾아 붙인다. 응답 직전에 한 번.
+ *
+ * 사진은 **어떤 템플릿을 고르든 찾아 둔다.** 생성할 때는 템플릿과 무관한 같은
+ * 데이터를 만들고, 템플릿은 미리보기에서 바로 바꿀 수 있기 때문이다. 못
+ * 찾아도 실패가 아니다. 사진 템플릿이 그라데이션으로 그린다.
+ */
+async function finish(
+  { result, imageQuery }: Generated,
+  links: CardNewsSource[],
+  material: Material,
+  left: () => number
+): Promise<CardNews> {
+  const withSrc = withSources(result, links, material);
+  const room = Math.min(PHOTO_MAX_MS, left() - 3_000);
+  if (room < 1_500) return withSrc;
+  const words = imageQuery.split(/\s+/).filter(Boolean);
+  const photo = await findPhoto([imageQuery, words.slice(0, 2).join(" ")], room);
+  console.info(`[generate] 사진 "${imageQuery}" → ${photo ? photo.credit : "없음"}`);
+  return photo ? { ...withSrc, photo } : withSrc;
 }
 
 /**
@@ -253,8 +297,8 @@ export async function POST(request: Request) {
   // 응답 스키마를 강제하지 않으므로 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    const result = await withFallback(generate(prompt), left, "생성", "flash");
-    return Response.json(withSources(result, links, material));
+    const generated = await withFallback(generate(prompt), left, "생성", "flash");
+    return Response.json(await finish(generated, links, material, left));
   } catch (firstError) {
     console.warn("[generate] 1차 실패:", firstError);
 
@@ -264,8 +308,8 @@ export async function POST(request: Request) {
 
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요. 슬라이드는 반드시 ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장입니다.`;
-      const result = await withFallback(generate(stricter), left, "재시도", "flash");
-      return Response.json(withSources(result, links, material));
+      const generated = await withFallback(generate(stricter), left, "재시도", "flash");
+      return Response.json(await finish(generated, links, material, left));
     } catch (error) {
       console.error("[generate] 최종 실패:", error);
       return failure(error, "카드뉴스 생성");

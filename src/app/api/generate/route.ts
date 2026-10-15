@@ -26,7 +26,12 @@ const MATERIALS = ["기사 본문", "검색 자료"] as const;
 /** 생성에 넘기는 근거가 무엇인지. 문구만 다르고 규칙은 같다. */
 type Material = "기사 본문" | "검색 자료";
 
-function buildPrompt(keyword: string, article: string, material: Material = "기사 본문"): string {
+function buildPrompt(
+  keyword: string,
+  article: string,
+  material: Material = "기사 본문",
+  sourceNames: string[] = []
+): string {
   return `당신은 인스타그램 카드뉴스를 만드는 한국어 에디터입니다.
 아래 규칙을 지켜 카드뉴스 한 세트를 JSON으로 만들어 주세요.
 
@@ -106,6 +111,16 @@ ${article}
   나쁜 예: "국제회의 *47건을 새로* 유치했다"
 - 둘을 겹쳐 쓰지 마세요. 별표와 등호를 함께 감싸면 안 됩니다.
 - 강조할 것이 없으면 쓰지 않아도 됩니다.
+
+[캡션]
+- 캡션은 **어디서 나온 소식인지 밝히며** 시작하세요. 출처를 흐름 안에서
+  자연스럽게 말합니다.
+  좋은 예: "부산일보 보도에 따르면 부산관광공사가 ~를 연다."
+  좋은 예: "부산관광공사가 발표한 내용을 정리했습니다."
+- 출처 이름은 위 자료에 나온 매체·기관 이름을 쓰세요.${
+    sourceNames.length ? ` 참고로 근거 사이트는 ${sourceNames.join(", ")} 입니다.` : ""
+  } 자료에 없는 매체를 지어내지 마세요.
+- **주소(URL)는 쓰지 마세요.** 출처 주소는 캡션 끝에 따로 붙습니다.
 
 [디자인]
 - accent는 주제 분위기에 맞는 어두운 계열 포인트 컬러 하나를 "#rrggbb" 형식으로 고르세요.
@@ -199,7 +214,15 @@ function withSources(result: CardNews, links: CardNewsSource[], material: Materi
   const name = material === "기사 본문" && result.source?.name ? result.source.name : first.name;
   // 목록 첫 줄도 같은 이름으로 맞춘다. 안 그러면 기사 URL 로 만든 결과가
   // 출처 목록에 매체명 대신 사이트 주소(도메인)로 나온다.
-  return { ...result, source: { name, url: first.url }, sources: [{ name, url: first.url }, ...links.slice(1)] };
+  const sources = [{ name, url: first.url }, ...links.slice(1)];
+  // 캡션 끝에 출처 주소를 붙인다. 캡션을 복사해 게시하면 출처까지 함께
+  // 올라가게 하려는 것이다(사용자 요청). 매체명은 모델이 캡션 흐름 안에서
+  // 말하고("부산일보 보도에 따르면"), 주소는 서버가 붙인다. 주소를 모델에게
+  // 쓰게 하면 지어낸다.
+  const caption = [result.caption.trim(), sources.map((s) => `출처: ${s.name} ${s.url}`).join("\n")]
+    .filter(Boolean)
+    .join("\n\n");
+  return { ...result, caption, source: { name, url: first.url }, sources };
 }
 
 export async function POST(request: Request) {
@@ -227,14 +250,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const prompt = buildPrompt(subject, evidence.slice(0, EVIDENCE_MAX_CHARS), material);
+  const prompt = buildPrompt(
+    subject,
+    evidence.slice(0, EVIDENCE_MAX_CHARS),
+    material,
+    links.map((l) => l.name)
+  );
   const generate = (p: string) => (model: string, signal: AbortSignal) =>
     generateOnce(model, p, signal);
 
   // 응답 스키마를 강제하지 않으므로 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    const result = await withFallback(generate(prompt), left, "생성");
+    const result = await withFallback(generate(prompt), left, "생성", "flash");
     return Response.json(withSources(result, links, material));
   } catch (firstError) {
     console.warn("[generate] 1차 실패:", firstError);
@@ -245,7 +273,7 @@ export async function POST(request: Request) {
 
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요. 슬라이드는 반드시 ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장입니다.`;
-      const result = await withFallback(generate(stricter), left, "재시도");
+      const result = await withFallback(generate(stricter), left, "재시도", "flash");
       return Response.json(withSources(result, links, material));
     } catch (error) {
       console.error("[generate] 최종 실패:", error);

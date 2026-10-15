@@ -33,7 +33,7 @@ const PREVIEW_SCALE = 0.42;
 /** 목록이 화면을 다 차지하지 않도록 보여줄 개수를 제한한다. */
 const MAX_VISIBLE_HISTORY = 8;
 
-type CopyTarget = "caption" | "hashtags";
+type CopyTarget = "caption" | "hashtags" | "sources";
 
 /** 오늘 만든 것인지 한눈에 보이게 짧게 적는다. */
 function formatWhen(iso: string): string {
@@ -125,12 +125,18 @@ function PreviewContent() {
     return () => window.removeEventListener("keydown", onKey);
   }, [next, prev, total]);
 
+  // 출처 목록. 예전 결과에는 `sources` 가 없으므로 `source` 하나로 대신한다.
+  const sourceList =
+    data?.sources && data.sources.length > 0 ? data.sources : data?.source ? [data.source] : [];
+
   const copy = async (target: CopyTarget) => {
     if (!data) return;
     const text =
       target === "caption"
         ? data.caption
-        : data.hashtags.map((tag) => `#${tag}`).join(" ");
+        : target === "sources"
+          ? sourceList.map((s) => `출처: ${s.name} ${s.url}`.trim()).join("\n")
+          : data.hashtags.map((tag) => `#${tag}`).join(" ");
     await navigator.clipboard.writeText(text);
     setCopied(target);
     setTimeout(() => setCopied(null), 2000);
@@ -524,21 +530,42 @@ function PreviewContent() {
               </div>
             </div>
 
-            {data.source && (
+            {sourceList.length > 0 && (
               <div className="glass-panel p-5 rounded-2xl">
-                <h4 className="text-white font-korean-bold text-sm mb-2">출처</h4>
-                {data.source.url ? (
-                  <a
-                    href={data.source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary text-sm break-all hover:underline"
-                  >
-                    {data.source.name}
-                  </a>
-                ) : (
-                  <p className="text-white/70 text-sm">{data.source.name}</p>
-                )}
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-korean-bold text-sm">출처</h4>
+                  {sourceList.some((src) => src.url) && (
+                    <button
+                      onClick={() => copy("sources")}
+                      className="text-xs transition-colors"
+                      style={{ color: copied === "sources" ? "#4cd7f6" : "rgba(255,255,255,0.4)" }}
+                    >
+                      {copied === "sources" ? "복사됨!" : "복사"}
+                    </button>
+                  )}
+                </div>
+                {/* 주소를 글자로 다 보여 준다. 게시글에 붙이려면 주소 자체가 필요하다. */}
+                <ul className="space-y-3">
+                  {sourceList.map((src) => (
+                    <li key={src.url || src.name}>
+                      <p className="text-white/80 text-sm">{src.name}</p>
+                      {src.url ? (
+                        <a
+                          href={src.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary text-xs break-all hover:underline"
+                        >
+                          {src.url}
+                        </a>
+                      ) : (
+                        <p className="text-white/40 text-xs font-korean-reg">
+                          출처 주소를 찾지 못했습니다. 매체명으로 검색해 확인하세요.
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
                 <p className="text-white/40 text-xs mt-3 leading-relaxed font-korean-reg">
                   기사 원문을 그대로 옮기지 않고 다시 쓴 내용입니다. 게시 전에 사실 관계를
                   한 번 더 확인하세요.

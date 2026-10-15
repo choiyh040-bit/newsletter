@@ -59,11 +59,58 @@ const RESEARCH_MAX_CHARS = ARTICLE_MAX_CHARS;
  *
  * 검색 도구는 일반 생성과 **할당량이 따로**다. 이 단계만 그 할당량을 쓴다.
  */
+/** 출처 하나. 카드뉴스 결과의 `source` 와 같은 모양이다. */
+interface Link {
+  name: string;
+  url: string;
+}
+
+/** 출처를 몇 개까지 돌려줄지. */
+const MAX_LINKS = 3;
+
+/** 구글 경유 주소 하나를 실제 기사 주소로 바꿀 때 기다릴 시간. */
+const RESOLVE_TIMEOUT_MS = 3_000;
+
+/**
+ * 검색 근거의 주소를 실제 기사 주소로 바꾼다.
+ *
+ * 구글은 기사 주소를 바로 주지 않고 `vertexaisearch.cloud.google.com/
+ * grounding-api-redirect/...` 경유 주소를 준다. 이 주소는 한동안만 살아
+ * 있어서 그대로 게시물에 붙이면 나중에 깨진다. 따라가서(리디렉션) 도착하는
+ * 기사 주소를 쓴다. 못 따라가면 그 출처는 뺀다. 깨질 주소를 주느니 없는 편이
+ * 낫다.
+ */
+async function resolveLinks(
+  chunks: { web?: { uri?: string; title?: string } }[]
+): Promise<Link[]> {
+  const settled = await Promise.all(
+    chunks.slice(0, MAX_LINKS * 2).map(async ({ web }) => {
+      if (!web?.uri) return null;
+      try {
+        const res = await fetch(web.uri, {
+          redirect: "manual",
+          signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
+        });
+        const location = res.headers.get("location");
+        const url = location ? new URL(location, web.uri).toString() : "";
+        if (!/^https?:\/\//.test(url) || url.includes("vertexaisearch.cloud.google.com")) return null;
+        return { name: web.title || new URL(url).hostname, url };
+      } catch {
+        return null;
+      }
+    })
+  );
+  const seen = new Set<string>();
+  return settled
+    .filter((l): l is Link => !!l && !seen.has(l.url) && !!seen.add(l.url))
+    .slice(0, MAX_LINKS);
+}
+
 async function research(
   model: string,
   subject: string,
   signal?: AbortSignal
-): Promise<string> {
+): Promise<{ text: string; links: Link[] }> {
   const response = await client().models.generateContent({
     model,
     contents: `Google 검색으로 다음 주제의 최신 한국 기사를 찾아, 카드뉴스의 근거로 쓸 사실을 정리하세요.
@@ -100,7 +147,11 @@ async function research(
   if (!grounding?.groundingChunks?.length && !grounding?.webSearchQueries?.length) {
     console.warn(`[research] ${model}: 검색 근거 표시 없음 (답은 받음)`);
   }
-  return text.slice(0, RESEARCH_MAX_CHARS);
+  const links = await resolveLinks(grounding?.groundingChunks ?? []);
+  console.info(
+    `[research] ${model}: 출처 주소 ${links.length}개 (근거 ${grounding?.groundingChunks?.length ?? 0}개 중)`
+  );
+  return { text: text.slice(0, RESEARCH_MAX_CHARS), links };
 }
 
 export async function POST(request: Request) {
@@ -130,18 +181,23 @@ export async function POST(request: Request) {
 
   if (article) {
     console.info(`[research] 기사 본문 ${article.length}자를 읽었습니다. 검색하지 않습니다.`);
-    return Response.json({ subject, material: "기사 본문", evidence: article });
+    // 출처 주소는 모델에게 받아 적게 하지 않고 **서버가 아는 주소**를 붙인다.
+    // 모델은 주소를 지어낸다. 기사 URL 로 만든 경우 그 URL 이 곧 출처다.
+    const links: Link[] = [{ name: new URL(url).hostname.replace(/^www\./, ""), url }];
+    return Response.json({ subject, material: "기사 본문", evidence: article, links });
   }
   if (url) console.warn("[research] 기사 본문을 읽지 못해 검색으로 자료를 모읍니다:", url);
 
   try {
-    const evidence = await withFallback(
+    // 검색은 flash 부터 쓴다. lite 는 출처 주소를 주지 않는다(gemini.ts 의 Tier).
+    const { text: evidence, links } = await withFallback(
       (model, signal) => research(model, subject, signal),
       left,
-      "검색"
+      "검색",
+      "flash"
     );
     console.info(`[research] 검색 자료 ${evidence.length}자`);
-    return Response.json({ subject, material: "검색 자료", evidence });
+    return Response.json({ subject, material: "검색 자료", evidence, links });
   } catch (error) {
     console.error("[research] 실패:", error);
     return failure(error, "자료 검색");

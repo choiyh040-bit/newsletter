@@ -3,7 +3,9 @@ import {
   GENERATED_MAX_SLIDES,
   MIN_SLIDES,
   normalizeCardNews,
+  normalizeSources,
   type CardNews,
+  type CardNewsSource,
 } from "@/lib/cardnews";
 import { client, failure, startBudget, THINKING, withFallback } from "@/lib/gemini";
 
@@ -134,7 +136,7 @@ ${article}
   ],
   "caption": "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)",
   "hashtags": ["해시태그1", "해시태그2", "해시태그3", "해시태그4", "해시태그5"],
-  "source": { "name": "출처 매체명", "url": "기사 URL 또는 빈 문자열" }
+  "source": { "name": "출처 매체명", "url": "" }
 }
 
 모든 텍스트는 한국어로 작성하세요.`;
@@ -180,17 +182,39 @@ async function generateOnce(
   return result;
 }
 
+/**
+ * 출처 주소를 붙인다. 모델이 적은 주소는 쓰지 않는다.
+ *
+ * 프롬프트는 모델에게 `source.url` 을 적으라고 하지만 모델은 주소를 모른다
+ * (기사 URL 을 넘기지도 않았다). 그래서 **키워드로 만든 결과도, 기사 URL 로
+ * 만든 결과도 출처 주소가 늘 비어 있었다.** 사용자가 게시하려다 알아챘다.
+ *
+ * 기사 URL 로 만들면 출처 이름은 모델이 기사에서 읽은 매체명을 그대로 둔다
+ * (그 주소가 바로 그 기사다). 키워드 검색이면 모델이 적은 매체명과 첫 주소의
+ * 기사가 서로 다를 수 있어서, 이름도 주소 쪽(검색 근거의 사이트명)을 쓴다.
+ */
+function withSources(result: CardNews, links: CardNewsSource[], material: Material): CardNews {
+  if (links.length === 0) return { ...result, source: result.source && { ...result.source, url: "" } };
+  const [first] = links;
+  const name = material === "기사 본문" && result.source?.name ? result.source.name : first.name;
+  // 목록 첫 줄도 같은 이름으로 맞춘다. 안 그러면 기사 URL 로 만든 결과가
+  // 출처 목록에 매체명 대신 사이트 주소(도메인)로 나온다.
+  return { ...result, source: { name, url: first.url }, sources: [{ name, url: first.url }, ...links.slice(1)] };
+}
+
 export async function POST(request: Request) {
   const left = startBudget();
   let subject: string;
   let evidence: string;
   let material: Material;
+  let links: CardNewsSource[];
 
   try {
     const body = await request.json();
     subject = typeof body.subject === "string" ? body.subject.trim() : "";
     evidence = typeof body.evidence === "string" ? body.evidence.trim() : "";
     material = MATERIALS.includes(body.material) ? body.material : "기사 본문";
+    links = normalizeSources(body.links);
   } catch {
     return Response.json({ error: "요청 본문을 읽을 수 없습니다." }, { status: 400 });
   }
@@ -210,7 +234,8 @@ export async function POST(request: Request) {
   // 응답 스키마를 강제하지 않으므로 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    return Response.json(await withFallback(generate(prompt), left, "생성"));
+    const result = await withFallback(generate(prompt), left, "생성");
+    return Response.json(withSources(result, links, material));
   } catch (firstError) {
     console.warn("[generate] 1차 실패:", firstError);
 
@@ -220,7 +245,8 @@ export async function POST(request: Request) {
 
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요. 슬라이드는 반드시 ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장입니다.`;
-      return Response.json(await withFallback(generate(stricter), left, "재시도"));
+      const result = await withFallback(generate(stricter), left, "재시도");
+      return Response.json(withSources(result, links, material));
     } catch (error) {
       console.error("[generate] 최종 실패:", error);
       return failure(error, "카드뉴스 생성");

@@ -161,6 +161,10 @@ async function generateOnce(
     contents: prompt,
     config: {
       ...THINKING,
+      // JSON 으로만 답하게 한다. 형식이 틀려(따옴표 빠진 키 등) 재시도하느라
+      // 몇 초를 쓰는 일이 있었다. 검색 도구와는 같이 못 거는 설정이라 예전에는
+      // 못 걸었다. 생성 단계에서 검색을 떼어 낸 뒤로 걸 수 있다.
+      responseMimeType: "application/json",
       // 남은 시간이 다 되면 호출 자체를 끊는다. 안 끊으면 플랫폼이 함수를
       // 죽일 때까지 기다리게 되고, 그러면 우리가 오류를 만들 기회가 없다.
       ...(signal ? { abortSignal: signal } : {}),

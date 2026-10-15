@@ -3,6 +3,20 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import TemplatePicker from "@/components/TemplatePicker";
+
+/** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
+function Lines({ lines }: { lines: readonly string[] }) {
+  return (
+    <>
+      {lines.map((line) => (
+        <span key={line} className="block">
+          {line}
+        </span>
+      ))}
+    </>
+  );
+}
 
 export default function LandingPage() {
   const router = useRouter();
@@ -13,7 +27,7 @@ export default function LandingPage() {
   const stats = [
     { value: 1080, label: "카드 가로", suffix: "px" },
     { value: 1350, label: "카드 세로", suffix: "px" },
-    { value: 5, label: "장당 카드 수", suffix: "장" },
+    { value: 7, label: "최대 카드 수", suffix: "장" },
   ];
 
   useEffect(() => {
@@ -81,7 +95,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="pt-16">
+      <main className="pt-16 ko-text">
         {/* ─── Hero Section ────────────────────────────────── */}
         <section ref={heroRef} className="relative min-h-[100svh] flex flex-col items-center justify-center text-center px-6 overflow-hidden">
           {/* Aurora BG */}
@@ -94,11 +108,11 @@ export default function LandingPage() {
               style={{ background: "radial-gradient(ellipse, rgba(76,215,246,0.3) 0%, transparent 70%)", filter: "blur(40px)" }} />
           </div>
 
-          <div className="relative z-10 max-w-4xl mx-auto">
+          <div className="relative z-10 w-full max-w-4xl mx-auto">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel mb-6 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-green-400"></span>
-              <span className="text-white/70 text-xs font-medium">Gemini 2.5 Flash 기반 · 실시간 검색 지원</span>
+              <span className="text-white/70 text-xs font-medium">Gemini 기반 · 실시간 검색 지원</span>
             </div>
 
             <h1 className="font-korean-bold text-[38px] md:text-[72px] leading-[1.15] text-white mb-6">
@@ -108,8 +122,13 @@ export default function LandingPage() {
             </h1>
 
             <p className="font-korean-reg text-white/60 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
-              키워드를 넣으면 최신 뉴스를 검색해서, 기사 URL을 넣으면 그 본문을 읽어서<br className="hidden md:block" />
-              인스타그램 카드뉴스를 한 번에 생성합니다.
+              <Lines
+                lines={[
+                  "키워드를 넣으면 최신 뉴스를 검색하고,",
+                  "기사 URL을 넣으면 그 본문을 읽어",
+                  "인스타그램 카드뉴스를 한 번에 만듭니다.",
+                ]}
+              />
             </p>
 
             {/* Input */}
@@ -136,7 +155,10 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 </button>
               </div>
-              <p className="text-white/30 text-xs mt-2 text-center">예: “국제회의 유치” · 기사 주소를 넣으면 그 기사 내용으로만 만듭니다</p>
+              <p className="text-white/30 text-xs mt-2 text-center leading-relaxed">
+                <Lines lines={["예: “국제회의 유치”", "기사 주소를 넣으면 그 기사 내용으로만 만듭니다"]} />
+              </p>
+              <TemplatePicker />
             </div>
 
             {/* Stats */}
@@ -178,7 +200,7 @@ export default function LandingPage() {
             </div>
             <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">인스타그램에 집중합니다</h2>
             <p className="font-korean-reg text-white/50 text-base max-w-xl mx-auto">
-              카드뉴스 하나만 제대로. 인스타그램 피드에 최적화된 콘텐츠를 생성합니다.
+              <Lines lines={["카드뉴스 하나만 제대로.", "인스타그램 피드에 맞춘 콘텐츠를 만듭니다."]} />
             </p>
           </div>
 
@@ -209,7 +231,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <ul className="space-y-3">
-                {["기사 URL 붙여넣으면 본문까지 읽어옴", "표지 + 상세 + 마무리 구조로 자동 구성", "캡션 + 해시태그 + 출처 자동 작성", "PNG 한 장씩 또는 전체 ZIP으로 저장"].map((item) => (
+                {["키워드로 최신 기사 검색", "기사 URL이면 본문까지 읽어옴", "디자인은 만든 뒤에도 바로 바꾸기", "표지 + 상세 + 마무리 자동 구성", "캡션 + 해시태그 + 출처 자동 작성", "PNG 한 장씩 또는 전체 ZIP으로 저장"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
                       style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b)" }}>
@@ -232,9 +254,9 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { num: "01", icon: "edit", title: "키워드 입력", desc: "뉴스 주제나 URL을 자유롭게 입력하세요. 길게 쓸 필요 없어요.", color: "from-cyan-500 to-blue-600" },
-              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "기사 본문을 읽고 사실을 확인한 뒤 카드 5~7장을 구성합니다.", color: "from-violet-500 to-purple-600" },
-              { num: "03", icon: "download", title: "PNG 저장", desc: "카드를 PNG로 내려받고 캡션을 복사해 그대로 올리면 끝!", color: "from-pink-500 to-rose-600" },
+              { num: "01", icon: "edit", title: "입력하고 디자인 고르기", desc: ["키워드나 기사 URL을 넣고", "카드 디자인을 고르세요."], color: "from-cyan-500 to-blue-600" },
+              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: ["기사를 읽거나 검색해 사실을 확인하고", "카드 5~7장을 구성합니다."], color: "from-violet-500 to-purple-600" },
+              { num: "03", icon: "download", title: "PNG 저장", desc: ["카드를 PNG로 내려받고", "캡션을 복사해 그대로 올리면 끝!"], color: "from-pink-500 to-rose-600" },
             ].map((step) => (
               <div key={step.num} className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-white/15 transition-all text-center group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform shadow-lg`}>
@@ -242,7 +264,7 @@ export default function LandingPage() {
                 </div>
                 <div className="text-primary/40 font-mono text-xs font-bold mb-2">{step.num}</div>
                 <h3 className="font-korean-bold text-white text-xl mb-3">{step.title}</h3>
-                <p className="font-korean-reg text-white/50 text-sm leading-relaxed">{step.desc}</p>
+                <p className="font-korean-reg text-white/50 text-sm leading-relaxed"><Lines lines={step.desc} /></p>
               </div>
             ))}
           </div>
@@ -253,7 +275,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">지키는 규칙</h2>
             <p className="font-korean-reg text-white/50 text-base max-w-xl mx-auto">
-              그럴듯해 보이는 것보다, 올려도 문제 없는 것을 만듭니다.
+              <Lines lines={["그럴듯해 보이는 것보다,", "올려도 문제 없는 것을 만듭니다."]} />
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
@@ -261,22 +283,22 @@ export default function LandingPage() {
               {
                 icon: "edit_note",
                 title: "원문을 베끼지 않습니다",
-                desc: "기사 문장을 그대로 옮기지 않고 새 문장으로 다시 씁니다. 직접인용은 15단어 미만으로 한 번만 씁니다.",
+                desc: ["기사 문장을 그대로 옮기지 않고", "새 문장으로 다시 씁니다.", "직접인용은 15단어 미만, 한 번만 씁니다."],
               },
               {
                 icon: "copyright",
                 title: "저작권 안전한 배경만",
-                desc: "출처가 불분명한 보도용 사진이나 스톡 이미지를 쓰지 않습니다. 기본은 그라데이션과 타이포그래피입니다.",
+                desc: ["출처가 불분명한 보도 사진이나", "스톡 이미지를 쓰지 않습니다.", "기본은 그라데이션과 타이포그래피입니다."],
               },
               {
                 icon: "format_line_spacing",
                 title: "줄바꿈을 직접 끊습니다",
-                desc: "브라우저 자동 줄바꿈에 맡기면 서술어가 혼자 남습니다. 의미 단위로 미리 나눠서 렌더링합니다.",
+                desc: ["자동 줄바꿈에 맡기면", "서술어가 혼자 남습니다.", "의미 단위로 미리 나눠서 그립니다."],
               },
               {
                 icon: "crop_portrait",
                 title: "1080 × 1350 고정",
-                desc: "인스타그램 세로 피드에 잘리지 않고 들어가는 4:5 규격으로 뽑습니다. 미리보기와 저장 결과가 같습니다.",
+                desc: ["인스타그램 세로 피드에 잘리지 않는", "4:5 규격으로 뽑습니다.", "미리보기와 저장 결과가 같습니다."],
               },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="glass-panel p-6 rounded-2xl">
@@ -284,7 +306,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
                 </div>
                 <h4 className="font-korean-bold text-white text-base mb-2">{title}</h4>
-                <p className="text-white/50 text-sm leading-relaxed font-korean-reg">{desc}</p>
+                <p className="text-white/50 text-sm leading-relaxed font-korean-reg"><Lines lines={desc} /></p>
               </div>
             ))}
           </div>
@@ -327,7 +349,7 @@ export default function LandingPage() {
             </div>
             <span className="font-korean-bold text-white text-base">CardGen AI</span>
           </div>
-          <p className="text-white/30 text-xs">© 2025 CardGen AI. Powered by Gemini 2.5 Flash.</p>
+          <p className="text-white/30 text-xs">© 2025 CardGen AI. Powered by Gemini.</p>
           <div className="flex gap-6">
             <a className="text-white/30 hover:text-white/60 transition-colors text-xs" href="#">개인정보처리방침</a>
             <a className="text-white/30 hover:text-white/60 transition-colors text-xs" href="#">이용약관</a>

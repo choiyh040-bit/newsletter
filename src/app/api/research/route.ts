@@ -65,8 +65,22 @@ interface Link {
   url: string;
 }
 
-/** 출처를 몇 개까지 돌려줄지. */
-const MAX_LINKS = 3;
+/**
+ * 출처를 몇 개까지 돌려줄지. **하나로 통일한다**(2026-10-15).
+ *
+ * 처음엔 근거를 최대 3개 붙였는데, 매체가 제각각이라 게시물에 출처가 여럿
+ * 붙어 산만했다(사용자). 가장 앞선 근거 하나만 쓰고, 캡션도 그 한 곳만 밝힌다.
+ */
+const MAX_LINKS = 1;
+
+/**
+ * 출처로 쓰지 않을 곳. 언론사·기관 기사가 아니다.
+ *
+ * 검색 근거에 인스타그램 게시물이 섞여 실제로 출처로 붙었다. 남의 게시물을
+ * 출처로 다는 것은 기사 출처가 아니다. 이런 곳은 건너뛰고 다음 근거를 본다.
+ */
+const NOT_A_SOURCE =
+  /(^|\.)(instagram\.com|facebook\.com|youtube\.com|youtu\.be|x\.com|twitter\.com|threads\.net|tiktok\.com|blog\.naver\.com|cafe\.naver\.com|tistory\.com|brunch\.co\.kr|namu\.wiki|wikipedia\.org)$/;
 
 /** 구글 경유 주소 하나를 실제 기사 주소로 바꿀 때 기다릴 시간. */
 const RESOLVE_TIMEOUT_MS = 3_000;
@@ -84,7 +98,8 @@ async function resolveLinks(
   chunks: { web?: { uri?: string; title?: string } }[]
 ): Promise<Link[]> {
   const settled = await Promise.all(
-    chunks.slice(0, MAX_LINKS * 2).map(async ({ web }) => {
+    // 앞쪽 근거가 걸러질 수 있으니(소셜·블로그) 다섯 개까지 본다.
+    chunks.slice(0, 5).map(async ({ web }) => {
       if (!web?.uri) return null;
       try {
         const res = await fetch(web.uri, {
@@ -94,6 +109,7 @@ async function resolveLinks(
         const location = res.headers.get("location");
         const url = location ? new URL(location, web.uri).toString() : "";
         if (!/^https?:\/\//.test(url) || url.includes("vertexaisearch.cloud.google.com")) return null;
+        if (NOT_A_SOURCE.test(new URL(url).hostname)) return null;
         return { name: web.title || new URL(url).hostname, url };
       } catch {
         return null;

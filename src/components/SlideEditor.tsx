@@ -109,7 +109,8 @@ export default function SlideEditor({
     });
   };
 
-  const fields: Field[] = isDetail ? ["heading", "body", "note"] : ["heading", "body"];
+  // "한 마디"(note)는 카드에서 뺐으므로 편집 칸도 없앤다(2026-10-15).
+  const fields: Field[] = ["heading", "body"];
 
   return (
     <div className="glass-panel p-5 rounded-2xl space-y-5">

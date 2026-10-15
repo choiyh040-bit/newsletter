@@ -55,7 +55,8 @@ export default function DarkNeon({
   // 글이 쓸 수 있는 칸. 좌우 여백과, 위아래로 붙는 것들(바·라벨·서명·하단 줄)을
   // 뺀 값이다. 헤드라인은 이 칸을 꽉 채우도록 크기가 정해진다.
   const isDetail = !isCover && !isOutro;
-  const hasNote = isDetail && slide.note.length > 0;
+  // 결론 상자(note)는 2026-10-15 뺐다. 사용자가 불필요하다고 판단했고, 장이
+  // 길 때 하단 줄 밑으로 잘리는 일이 반복됐다. 옛 결과의 note 는 그리지 않는다.
 
   const contentWidth = CARD_WIDTH - 72 * 2;
   const bodyLines = slide.body.length;
@@ -63,9 +64,6 @@ export default function DarkNeon({
   const bodyLineHeight = 1.62;
   const bodyGap = 44;
 
-  // 결론 상자 높이. 글줄 + 안쪽 여백 + 테두리 + 위 간격.
-  const NOTE_SIZE = 38;
-  const noteHeight = hasNote ? slide.note.length * NOTE_SIZE * 1.5 + 60 + 4 + 44 : 0;
 
   const headingLineHeight = isCover ? 1.08 : 1.24;
   const headingMin = isCover ? 72 : 52;
@@ -77,7 +75,6 @@ export default function DarkNeon({
     130 - // 바 + 카테고리 라벨
     60 - // 하단 출처·장수
     (isDetail ? 150 : 0) - // 큰 번호
-    noteHeight -
     (isCover && slide.sub ? 82 : 0) -
     (isOutro ? 128 : 0);
 
@@ -306,52 +303,6 @@ export default function DarkNeon({
           </div>
         )}
 
-        {/* 결론 상자.
-            데이터를 늘어놓고 끝내지 않고, 그 장에서 남길 한 마디를 테두리
-            안에 따로 둔다. body 안에 섞으면 같은 무게로 깔려서 결론이
-            아니라 넷째 줄이 된다. 참고 자료 E 의 정보 장이 거의 다 이렇게
-            끝났다. */}
-        {hasNote && (
-          <div
-            style={{
-              marginTop: 44,
-              border: `2px solid ${withAlpha(neon, 0.55)}`,
-              borderRadius: 10,
-              padding: "30px 34px",
-              display: "flex",
-              gap: 22,
-              alignItems: "flex-start",
-              textAlign: "left",
-            }}
-          >
-            {/* 작은 네모 하나. 상자가 그냥 테두리로만 끝나지 않게 한다. */}
-            <div
-              style={{
-                width: 18,
-                height: 18,
-                background: neon,
-                flexShrink: 0,
-                marginTop: 12,
-              }}
-            />
-            <div
-              style={{
-                fontSize: 38,
-                fontWeight: weight(600),
-                lineHeight: 1.5,
-                letterSpacing: "-0.01em",
-                color: ink.strong,
-              }}
-            >
-              <TextLines
-                lines={slide.note}
-                accentColor={neonText}
-                markBackground={neon}
-                markColor={readableOn(neon)}
-              />
-            </div>
-          </div>
-        )}
 
         {/* 표지의 작은 서명. 소제목을 헤드라인 위가 아니라 아래에 둔다.
             헤드라인이 첫 줄부터 시작해야 이 계열의 인상이 산다. */}

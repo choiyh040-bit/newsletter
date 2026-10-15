@@ -236,14 +236,16 @@ function LoadingContent() {
     <>
       {/* Navigation */}
       <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/8 h-16">
-        <nav className="flex justify-between items-center px-6 md:px-12 h-full max-w-7xl mx-auto">
+        {/* 휴대폰에서 로고·알약·버튼이 다 두 줄로 접혔다("CardGen / AI").
+            줄바꿈을 막고, 본문 제목과 같은 말인 알약은 휴대폰에서 숨긴다. */}
+        <nav className="flex justify-between items-center gap-3 px-4 md:px-12 h-full max-w-7xl mx-auto whitespace-nowrap">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="w-7 h-7 rounded-lg cta-gradient flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
             </div>
             <span className="font-korean-bold text-white text-base">CardGen AI</span>
           </Link>
-          <div className="flex items-center gap-3 px-4 py-1.5 rounded-full glass-panel">
+          <div className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full glass-panel">
             <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
               photo_camera
             </span>
@@ -329,19 +331,21 @@ function LoadingContent() {
 
           {/* Status */}
           <div className="text-center space-y-3 mb-10 max-w-2xl">
-            <h2 className="font-korean-bold text-2xl md:text-3xl text-white leading-tight">
+            <h2 className="font-korean-bold text-xl md:text-3xl text-white leading-tight whitespace-nowrap">
               인스타그램 카드뉴스 생성 중...
             </h2>
-            <div className="flex items-center justify-center gap-3 text-white/60">
+            {/* 단계와 흐른 시간을 한 줄에 나란히 두면 휴대폰에서 둘 다 두 줄로
+                접혔다. 줄을 나누고 각 줄은 접히지 않게 한다. */}
+            <div className="flex items-center justify-center gap-2 whitespace-nowrap">
               <span className="inline-block w-2 h-2 rounded-full bg-primary animate-ping" />
               <p className="font-korean-reg text-white/80 text-sm">{statusMessage}</p>
-              {/* 흐른 시간. 막대만 보면 멈춘 것처럼 느껴지는데, 초가 올라가면
-                  적어도 돌아가고 있다는 것은 알 수 있다. */}
-              <p className="font-korean-reg text-white/35 text-xs mt-1.5 tabular-nums">
-                {elapsed}초 지남
-                {elapsed >= 40 && " · 길면 1분 넘게 걸립니다"}
-              </p>
             </div>
+            {/* 흐른 시간. 막대만 보면 멈춘 것처럼 느껴지는데, 초가 올라가면
+                적어도 돌아가고 있다는 것은 알 수 있다. */}
+            <p className="font-korean-reg text-white/35 text-xs tabular-nums whitespace-nowrap">
+              {elapsed}초 지남
+              {elapsed >= 40 && " · 1분 넘게 걸릴 수 있어요"}
+            </p>
           </div>
 
 
@@ -352,8 +356,8 @@ function LoadingContent() {
               <div className="w-2 h-2 rounded-full bg-primary" />
               <div className="w-2 h-2 rounded-full bg-primary/40" />
             </div>
-            <div className="flex-1 h-px bg-white/10" />
-            <code className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
+            <div className="hidden md:block flex-1 h-px bg-white/10" />
+            <code className="min-w-0 flex-1 md:flex-none truncate text-[10px] font-mono text-white/30 uppercase tracking-widest">
               cardgen_ai · instagram · {keyword ? <>keyword=&quot;{keyword}&quot;</> : <>url=&quot;{url}&quot;</>}
             </code>
           </div>

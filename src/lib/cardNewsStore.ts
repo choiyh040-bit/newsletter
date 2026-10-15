@@ -219,6 +219,11 @@ export function chooseTemplate(templateId: string): void {
   rememberDesign({ templateId });
 }
 
+/** 홈에서 정렬을 고른다. */
+export function chooseAlign(align: TextAlign): void {
+  rememberDesign({ align });
+}
+
 /** 홈에서 색 조합을 고른다. 그 템플릿의 직접 고른 색은 지운다. */
 export function chooseVariant(templateId: string, variantId: string): void {
   const { customAccents } = readDesignChoice();

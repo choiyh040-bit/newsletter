@@ -2,6 +2,7 @@
 
 import { CARD_HEIGHT, CARD_WIDTH, normalizeCardNews } from "@/lib/cardnews";
 import {
+  chooseAlign,
   chooseCustomAccent,
   chooseTemplate,
   chooseVariant,
@@ -9,8 +10,10 @@ import {
 } from "@/lib/cardNewsStore";
 import AccentPicker from "./AccentPicker";
 import {
+  ALIGN_LABEL,
   availableTemplates,
   DEFAULT_ALIGN,
+  type TextAlign,
   needsPhoto,
   resolveColors,
   templateById,
@@ -53,8 +56,8 @@ const SAMPLE = normalizeCardNews({
  *
  * 고른 것은 브라우저에 기억해서 다음에도 그대로 선택돼 있다. 생성한 뒤
  * 미리보기에서 바꾸는 것도 그대로 된다(다시 생성하지 않는다).
- * 강조색을 가진 템플릿이면 아래에 강조색 고르기가 붙는다. 정렬은 여기서
- * 고르지 않는다(마지막에 쓴 것을 그대로 쓰고 미리보기에서 바꾼다).
+ * 강조색을 가진 템플릿이면 아래에 강조색 고르기가, 정렬을 고를 수 있는
+ * 템플릿이면 좌측/중앙 고르기가 붙는다. 견본에 바로 반영된다.
  */
 export default function TemplatePicker() {
   const design = useDesignChoice();
@@ -62,6 +65,8 @@ export default function TemplatePicker() {
   /** 템플릿마다 그릴 색. 견본에도 고른 강조색이 그대로 보이게 한다. */
   const colorsFor = (t: typeof selected) =>
     resolveColors(t, design.variantId, design.customAccents?.[t.id]);
+  const align: TextAlign = design.align ?? DEFAULT_ALIGN;
+  const hasAccent = !!selected.variants && selected.variants.length > 0;
 
   return (
     <div className="mt-6">
@@ -114,7 +119,7 @@ export default function TemplatePicker() {
                       source={SAMPLE.source}
                       photo={null}
                       variant={colorsFor(template)}
-                      align={(isSelected && design.align) || DEFAULT_ALIGN}
+                      align={template.alignable ? align : DEFAULT_ALIGN}
                     />
                   </div>
                 </div>
@@ -134,14 +139,39 @@ export default function TemplatePicker() {
         </div>
       </div>
 
-      {selected.variants && selected.variants.length > 0 && (
-        <div className="mt-4 max-w-sm mx-auto text-left glass-panel rounded-xl p-4">
-          <AccentPicker
-            template={selected}
-            current={colorsFor(selected)}
-            onPreset={(variantId) => chooseVariant(selected.id, variantId)}
-            onCustom={(color) => chooseCustomAccent(selected.id, color)}
-          />
+      {(hasAccent || selected.alignable) && (
+        <div className="mt-4 max-w-sm mx-auto text-left glass-panel rounded-xl p-4 space-y-4">
+          {hasAccent && (
+            <AccentPicker
+              template={selected}
+              current={colorsFor(selected)}
+              onPreset={(variantId) => chooseVariant(selected.id, variantId)}
+              onCustom={(color) => chooseCustomAccent(selected.id, color)}
+            />
+          )}
+          {selected.alignable && (
+            <div>
+              <span className="block text-white/70 text-xs font-korean-bold mb-2">정렬</span>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="정렬">
+                {(["left", "center"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={option === align}
+                    onClick={() => chooseAlign(option)}
+                    className={`py-2 rounded-lg border text-sm font-korean-reg transition-colors ${
+                      option === align
+                        ? "border-primary/50 bg-primary/10 text-white"
+                        : "border-white/10 text-white/60 hover:bg-white/5"
+                    }`}
+                  >
+                    {ALIGN_LABEL[option]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

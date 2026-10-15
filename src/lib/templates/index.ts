@@ -1,6 +1,6 @@
 import DarkNeon from "@/components/templates/DarkNeon";
 import GradientCenter from "@/components/templates/GradientCenter";
-import SolidSerif from "@/components/templates/SolidSerif";
+import DarkNeonSerif from "@/components/templates/DarkNeonSerif";
 import type { BackgroundKind, Template, TemplateVariant } from "./types";
 import { isHexColor } from "./color";
 import { LIGHT_VARIANTS, NEON_VARIANTS } from "./variants";
@@ -29,20 +29,22 @@ export const TEMPLATES: Template[] = [
     Render: GradientCenter,
   },
   {
-    id: "solid-serif",
-    name: "단색 · 명조",
-    description: "단색 배경에 글을 바로. 좌측 상단 정렬",
-    background: "color",
-    font: "serif",
-    Render: SolidSerif,
-  },
-  {
     id: "dark-neon",
     name: "어두운 바탕 · 네온",
     description: "거의 검정 위에 형광 한 색. 좌측 정렬",
     background: "color",
     font: "sans",
     Render: DarkNeon,
+    variants: NEON_VARIANTS,
+    alignable: true,
+  },
+  {
+    id: "dark-neon-serif",
+    name: "어두운 바탕 · 네온 · 명조",
+    description: "네온과 같은 구성에 서체만 명조",
+    background: "color",
+    font: "serif",
+    Render: DarkNeonSerif,
     variants: NEON_VARIANTS,
     alignable: true,
   },
@@ -57,13 +59,36 @@ export const TEMPLATES: Template[] = [
     variants: LIGHT_VARIANTS,
     alignable: true,
   },
+  {
+    id: "light-accent-serif",
+    name: "흰 바탕 · 강조색 · 명조",
+    description: "흰 바탕 구성에 서체만 명조",
+    background: "color",
+    font: "serif",
+    Render: DarkNeonSerif,
+    variants: LIGHT_VARIANTS,
+    alignable: true,
+  },
 ];
+
+/**
+ * 목록에서 뺀 템플릿을 무엇으로 열지.
+ *
+ * `단색 · 명조`(solid-serif)를 뺐다(2026-10-15, 서체와 디자인이 아쉽다는
+ * 판단). 그걸로 저장해 둔 결과는 명조라는 성격이 가장 가까운
+ * `흰 바탕 · 강조색 · 명조` 로 연다. 기본값(그라데이션 · 고딕)으로 떨어뜨리면
+ * 서체까지 바뀐다.
+ */
+const RETIRED: Record<string, string> = {
+  "solid-serif": "light-accent-serif",
+};
 
 export const DEFAULT_TEMPLATE_ID = TEMPLATES[0].id;
 
 /** 모르는 id 가 들어와도 화면이 비지 않도록 기본값으로 떨어뜨린다. */
 export function templateById(id: string | null | undefined): Template {
-  return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0];
+  const resolved = (id && RETIRED[id]) || id;
+  return TEMPLATES.find((t) => t.id === resolved) ?? TEMPLATES[0];
 }
 
 /**

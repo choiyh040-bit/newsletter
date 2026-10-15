@@ -22,5 +22,21 @@ export const NEON_VARIANTS: readonly TemplateVariant[] = [
   { id: "black-cyan", name: "검정 · 시안", base: "#080B0D", neon: "#25E0F0" },
   { id: "black-violet", name: "검정 · 바이올렛", base: "#0B0A0F", neon: "#9B5CFF" },
   { id: "navy-yellow", name: "남색 · 노랑", base: "#0B1026", neon: "#FFD400" },
+];
+
+/**
+ * 흰 바탕 + 강조색 한 색. 레이아웃은 네온과 같다(같은 컴포넌트).
+ *
+ * 처음에는 네온의 색 조합 하나(`ivory-crimson`)로 들어 있었다. 이름이
+ * "어두운 바탕"인 템플릿 안에 흰 바탕이 숨어 있으면 찾을 수 없어서 따로
+ * 뺐다. 강조색은 흰 바탕에서 글자로도 읽히는 진한 색으로 고른다. 형광
+ * 채도는 흰 바탕에서 오히려 번져 보인다.
+ */
+export const LIGHT_VARIANTS: readonly TemplateVariant[] = [
+  { id: "white-crimson", name: "흰색 · 진홍", base: "#FFFFFF", neon: "#D81E3C" },
+  { id: "white-blue", name: "흰색 · 파랑", base: "#FFFFFF", neon: "#1F4FE0" },
+  { id: "white-green", name: "흰색 · 진녹", base: "#FFFFFF", neon: "#0E8A5F" },
+  { id: "white-orange", name: "흰색 · 주황", base: "#FFFFFF", neon: "#F05A16" },
+  { id: "white-violet", name: "흰색 · 보라", base: "#FFFFFF", neon: "#6B3FD4" },
   { id: "ivory-crimson", name: "아이보리 · 진홍", base: "#F3F0E8", neon: "#D81E3C" },
 ];

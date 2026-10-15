@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, type CardNews, type CardSlide } from "@/lib/cardnews";
 import SlideEditor from "@/components/SlideEditor";
+import AccentPicker from "@/components/AccentPicker";
 import {
   deleteCardNews,
   setCardNewsTemplate,
   setCardNewsVariant,
+  setCardNewsCustomAccent,
   setCardNewsAlign,
   updateCardNewsData,
   useCardNewsHistory,
@@ -18,7 +20,7 @@ import {
   BACKGROUND_LABEL,
   availableTemplates,
   templateById,
-  variantFor,
+  resolveColors,
   ALIGN_LABEL,
   DEFAULT_ALIGN,
   type TextAlign,
@@ -60,7 +62,12 @@ function PreviewContent() {
   // 사진 파이프라인이 아직 없어 색 배경 템플릿만 고를 수 있다.
   const choices = availableTemplates(false);
   const template = templateById(entry?.templateId);
-  const variant = variantFor(template, entry?.variantId);
+  // 색 조합에 직접 고른 강조색을 덮은 실제 색.
+  const variant = resolveColors(
+    template,
+    entry?.variantId,
+    entry?.customAccents?.[template.id]
+  );
   const align: TextAlign = entry?.align ?? DEFAULT_ALIGN;
   const Render = template.Render;
 
@@ -385,36 +392,15 @@ function PreviewContent() {
                   );
                 })}
               </div>
-              {/* 색 조합. 색을 가진 템플릿에서만 나온다. */}
-              {template.variants && template.variants.length > 0 && (
+              {/* 강조색. 색을 가진 템플릿에서만 나온다. */}
+              {template.variants && template.variants.length > 0 && entry && (
                 <div className="mt-5 pt-4 border-t border-white/5">
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-white/70 text-xs font-korean-bold">색 조합</span>
-                    <span className="text-white/40 text-xs">{variant?.name}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {template.variants.map((option) => {
-                      const isCurrent = option.id === variant?.id;
-                      return (
-                        <button
-                          key={option.id}
-                          onClick={() => entry && setCardNewsVariant(entry.id, option.id)}
-                          title={option.name}
-                          aria-label={option.name}
-                          aria-pressed={isCurrent}
-                          className={`w-9 h-9 rounded-full border transition-transform hover:scale-110 ${
-                            isCurrent ? "border-white/70 scale-110" : "border-white/15"
-                          }`}
-                          style={{ background: option.base }}
-                        >
-                          <span
-                            className="block w-3.5 h-3.5 rounded-full mx-auto"
-                            style={{ background: option.neon }}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <AccentPicker
+                    template={template}
+                    current={variant}
+                    onPreset={(variantId) => setCardNewsVariant(entry.id, template.id, variantId)}
+                    onCustom={(color) => setCardNewsCustomAccent(entry.id, template.id, color)}
+                  />
                 </div>
               )}
 

@@ -1,5 +1,5 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { inkFor, readableOn, withAlpha } from "@/lib/templates/color";
+import { inkFor, legibleOn, readableOn, withAlpha } from "@/lib/templates/color";
 import { fitFontSize } from "@/lib/templates/fit";
 import { NEON_VARIANTS } from "@/lib/templates/variants";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
@@ -24,6 +24,9 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
   // 색 조합이 없는 상태로 그릴 일은 없지만, 들어오더라도 화면이 비지 않게 한다.
   const { base, neon } = variant ?? NEON_VARIANTS[0];
   const ink = inkFor(base);
+  // 강조색을 **글자로** 쓸 때의 색. 사용자가 고른 색이 바탕에서 안 읽히면
+  // (흰 바탕에 노랑 등) 읽힐 만큼만 옮긴다. 면(바·형광펜·네모)은 고른 색 그대로.
+  const neonText = legibleOn(neon, base);
 
   const centered = align === "center";
 
@@ -159,7 +162,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
                 style={{
                   fontSize: 32,
                   fontWeight: 700,
-                  color: neon,
+                  color: neonText,
                   letterSpacing: "0.09em",
                 }}
               >
@@ -244,7 +247,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
         >
           <TextLines
             lines={slide.heading}
-            accentColor={neon}
+            accentColor={neonText}
             markBackground={neon}
             markColor={readableOn(neon)}
           />
@@ -263,7 +266,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
           >
             <TextLines
               lines={slide.body}
-              accentColor={neon}
+              accentColor={neonText}
               markBackground={neon}
               markColor={readableOn(neon)}
             />
@@ -309,7 +312,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
             >
               <TextLines
                 lines={slide.note}
-                accentColor={neon}
+                accentColor={neonText}
                 markBackground={neon}
                 markColor={readableOn(neon)}
               />

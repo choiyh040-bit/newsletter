@@ -94,6 +94,23 @@ export interface CardNews {
   caption: string;
   hashtags: string[];
   source: CardNewsSource | null;
+  /**
+   * 근거로 삼은 기사들. 키워드 검색이면 여러 건일 수 있다.
+   *
+   * **모델이 적은 것이 아니라 서버가 아는 주소**다(검색 근거 또는 사용자가
+   * 넣은 기사 URL). 모델에게 주소를 받아 적게 하면 지어낸다.
+   */
+  sources?: CardNewsSource[];
+}
+
+/** 출처 목록을 정리한다. http(s) 주소만, 최대 3개. */
+export function normalizeSources(raw: unknown): CardNewsSource[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((x): x is Record<string, unknown> => typeof x === "object" && x !== null)
+    .map((x) => ({ name: toText(x.name), url: toText(x.url) }))
+    .filter((x) => /^https?:\/\//.test(x.url))
+    .slice(0, 3);
 }
 
 export interface CardNewsMeta {
@@ -299,6 +316,7 @@ export function normalizeCardNews(raw: unknown): CardNews {
           .slice(0, 10)
       : [],
     source: source && source.name ? source : null,
+    ...(Array.isArray(input.sources) ? { sources: normalizeSources(input.sources) } : {}),
   };
 }
 

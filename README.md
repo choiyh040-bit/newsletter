@@ -240,6 +240,19 @@ lite 모델은 검색을 하고도 표시를 비워 보낼 때가 많습니다. 
 `readArticle`은 평범한 브라우저 User-Agent로 요청합니다. 언론사 상당수가
 봇처럼 보이는 요청을 막기 때문입니다.
 
+### 출처 주소
+
+출처 주소는 **모델이 적은 것을 쓰지 않고 서버가 아는 주소를 붙입니다**
+(`generate/route.ts`의 `withSources`). 모델은 주소를 지어냅니다.
+
+- 기사 URL로 만들면: 그 URL
+- 키워드로 만들면: 검색 근거(`groundingChunks`)의 주소. 구글이 주는 것은
+  `vertexaisearch.cloud.google.com` 경유 주소라 한동안만 살아 있으므로, 서버가
+  따라가서 실제 기사 주소로 바꿉니다(`research/route.ts`의 `resolveLinks`).
+  못 바꾸면 뺍니다.
+
+미리보기의 출처 칸에서 `출처: 매체명 주소` 꼴로 복사합니다.
+
 ### 모델을 코드에 적어 두지 않습니다
 
 `src/lib/gemini.ts`가 **실행할 때 `models.list()`로 목록을 받아**
@@ -251,7 +264,9 @@ lite 모델은 검색을 하고도 표시를 비워 보낼 때가 많습니다. 
 - `generateContent`를 지원한다고 밝힌 것만
 - 이름에 `image`·`tts`·`transcribe`·`audio`·`lyria` 같은 게 들어가면 제외
   (목록에는 음악·이미지·음성 모델이 섞여 있습니다)
-- **flash-lite 만**, 버전 높은 것부터 최대 4개
+- **flash-lite 만**, 버전 높은 것부터 최대 4개. 단 **검색 단계는 flash 2개를 먼저**
+  쓰고 그다음 lite 로 넘어갑니다. lite 는 검색 근거(기사 주소)를 보내 주지 않아
+  출처 주소를 붙일 수 없기 때문입니다(`gemini.ts`의 `Tier`)
 - 모든 호출에 **생각 수준 LOW** 고정
 
 flash 를 빼고 lite + LOW 로 고정한 것은 **시간** 때문입니다. flash(3.8)는

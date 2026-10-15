@@ -43,12 +43,28 @@ const MAX_MODELS = 4;
  * 버전이 높은 것을 먼저 쓴다. 버전 없는 별칭(gemini-flash-lite-latest)은
  * 0 이 되어 맨 뒤로 간다.
  */
-function rankModel(name: string): number | null {
+function rankModel(name: string, tier: Tier): number | null {
   if (!name.startsWith("gemini-")) return null;
   if (NOT_FOR_TEXT.test(name)) return null;
-  if (!name.includes("flash-lite")) return null;
+  if (!name.includes("flash")) return null;
+  if ((tier === "lite") !== name.includes("flash-lite")) return null;
   return -Number(/gemini-(\d+(?:\.\d+)?)/.exec(name)?.[1] ?? 0);
 }
+
+/**
+ * 모델 등급. 생성은 lite 만 쓴다(위 설명).
+ *
+ * **검색 단계만 flash 를 먼저 쓴다**(2026-10-15). lite 는 검색을 하고도
+ * 검색 근거(기사 주소 목록, `groundingChunks`)를 **한 번도 보내 주지 않았다**
+ * (생각 수준 LOW·MINIMAL·설정 없음 모두 0건). flash 는 보낸다. 주소가 없으면
+ * 키워드로 만든 카드뉴스에 출처 주소를 붙일 수 없다. 대신 검색이 2초에서
+ * 6초 남짓으로 는다. flash 가 다 막히면 lite 로 넘어가고, 그때는 주소 없이
+ * 만든다.
+ */
+export type Tier = "lite" | "flash";
+
+/** flash 등급에서 몇 개까지 먼저 써 볼지. 그 뒤로는 lite 로 넘어간다. */
+const FLASH_FIRST = 2;
 
 /**
  * 생각 수준. 모든 호출에 고정한다.
@@ -62,12 +78,14 @@ export const THINKING = { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
  * 목록은 자주 바뀌지 않으므로 잠깐 재사용한다. 서버리스 인스턴스가 살아
  * 있는 동안만 유효하고, 사라지면 그냥 다시 받는다.
  */
-let modelCache: { at: number; models: string[] } | null = null;
+let modelCache: { at: number; models: Record<Tier, string[]> } | null = null;
 const MODEL_CACHE_MS = 10 * 60_000;
 
-async function usableModels(): Promise<string[]> {
+async function usableModels(tier: Tier): Promise<string[]> {
+  const pick = (m: Record<Tier, string[]>) =>
+    tier === "flash" ? [...m.flash.slice(0, FLASH_FIRST), ...m.lite] : m.lite;
   if (modelCache && Date.now() - modelCache.at < MODEL_CACHE_MS) {
-    return modelCache.models;
+    return pick(modelCache.models);
   }
   try {
     const names: string[] = [];
@@ -75,16 +93,19 @@ async function usableModels(): Promise<string[]> {
       const name = (model.name ?? "").replace(/^models\//, "");
       // 글을 짓는 데 쓸 수 있다고 스스로 밝힌 것만 본다.
       if (!model.supportedActions?.includes("generateContent")) continue;
-      if (rankModel(name) !== null) names.push(name);
+      names.push(name);
     }
-    const ranked = names
-      .sort((a, b) => rankModel(a)! - rankModel(b)!)
-      .slice(0, MAX_MODELS);
+    const rank = (t: Tier) =>
+      names
+        .filter((n) => rankModel(n, t) !== null)
+        .sort((a, b) => rankModel(a, t)! - rankModel(b, t)!)
+        .slice(0, MAX_MODELS);
+    const models = { lite: rank("lite"), flash: rank("flash") };
 
-    if (ranked.length === 0) return FALLBACK_MODELS;
-    modelCache = { at: Date.now(), models: ranked };
-    console.info(`[gemini] 쓸 수 있는 모델 ${ranked.length}개: ${ranked.join(", ")}`);
-    return ranked;
+    if (models.lite.length === 0) return FALLBACK_MODELS;
+    modelCache = { at: Date.now(), models };
+    console.info(`[gemini] 쓸 수 있는 모델 lite: ${models.lite.join(", ")} / flash: ${models.flash.join(", ")}`);
+    return pick(models);
   } catch (error) {
     console.warn("[gemini] 모델 목록을 못 받아 왔습니다. 기본값을 씁니다:", error);
     return FALLBACK_MODELS;
@@ -195,10 +216,11 @@ export function client() {
 export async function withFallback<T>(
   run: (model: string, signal: AbortSignal) => Promise<T>,
   left: () => number,
-  label: string
+  label: string,
+  tier: Tier = "lite"
 ): Promise<T> {
   let lastError: unknown = new Error("쓸 수 있는 모델이 없습니다.");
-  const models = await usableModels();
+  const models = await usableModels(tier);
 
   for (const model of models) {
     if (left() < ATTEMPT_NEEDS_MS) break;

@@ -20,12 +20,18 @@ import type { CardNews, CardSlide } from "../cardnews";
  */
 export type BackgroundKind = "color" | "photo";
 
-/** 고딕은 원티드산스, 명조는 나눔명조를 쓴다. */
+/**
+ * 고딕은 원티드산스, 명조는 마루 부리를 쓴다.
+ *
+ * 명조는 처음에 나눔명조였다. 2026-10-15 사용자가 바꾸자고 했다. 열린명조가
+ * 먼저 후보였지만 웹 임베딩·형식 변환이 제한된다는 안내가 있어 넣지 않았고,
+ * 나눔과 같은 OFL 인 마루 부리로 정했다.
+ */
 export type FontKind = "sans" | "serif";
 
 export const FONT_STACK: Record<FontKind, string> = {
   sans: "'Wanted Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-  serif: "'Nanum Myeongjo', serif",
+  serif: "'Maru Buri', serif",
 };
 
 /**
@@ -111,8 +117,8 @@ export interface Template {
   /**
    * 정렬을 고를 수 있는 템플릿인지.
    *
-   * 모든 템플릿에 열지 않는다. `GradientCenter` 는 중앙이, `SolidSerif` 는
-   * 좌측 상단이 그 디자인의 정체성이라, 바꾸면 다른 템플릿이 되어 버린다.
+   * 모든 템플릿에 열지 않는다. `GradientCenter` 는 중앙 정렬이 그 디자인의
+   * 정체성이라, 바꾸면 다른 템플릿이 되어 버린다.
    */
   alignable?: boolean;
 }

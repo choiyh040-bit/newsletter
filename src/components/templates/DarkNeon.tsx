@@ -2,7 +2,7 @@ import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
 import { inkFor, legibleOn, readableOn, withAlpha } from "@/lib/templates/color";
 import { fitFontSize } from "@/lib/templates/fit";
 import { NEON_VARIANTS } from "@/lib/templates/variants";
-import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
+import { FONT_STACK, type FontKind, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
 
 /**
@@ -20,7 +20,25 @@ import TextLines from "./TextLines";
  * 정렬은 기본이 좌측이다. 참고 자료 A 가 전부 좌측이기도 하고, 본문이 길면
  * 중앙은 읽기 어렵다. 짧고 단정적인 세트를 위해 중앙도 열어 뒀다.
  */
-export default function DarkNeon({ slide, total, source, variant, align }: TemplateProps) {
+export default function DarkNeon({
+  slide,
+  total,
+  source,
+  variant,
+  align,
+  font = "sans",
+}: TemplateProps & { font?: FontKind }) {
+  // 명조 버전은 레이아웃은 그대로 두고 서체만 바꾼다. 명조(마루 부리)는
+  // 굵기를 셋(400·600·700)만 싣는다. 고딕용 굵기를 가까운 단계로 옮긴다.
+  // 800 을 그대로 주면 브라우저가 굵기를 흉내 내서(가짜 볼드) 획이 뭉개진다.
+  const weight = (w: number) =>
+    font === "serif" ? (w >= 700 ? 700 : w >= 550 ? 600 : 400) : w;
+  // 글자 크기 계산에 쓰는 한글 한 자의 폭(em). 서체마다 다르다. 재 보니
+  // 원티드산스는 0.86, 마루 부리는 0.97 이었다. 고딕용 어림값(0.95)을 명조에
+  // 그대로 쓰면 가장 긴 줄이 칸을 넘어 "세계철강협 / 회"처럼 쪼개졌다.
+  // 형광펜의 좌우 여백까지 더해 넉넉하게 잡는다.
+  const charWidth = font === "serif" ? 1.05 : undefined;
+
   // 색 조합이 없는 상태로 그릴 일은 없지만, 들어오더라도 화면이 비지 않게 한다.
   const { base, neon } = variant ?? NEON_VARIANTS[0];
   const ink = inkFor(base);
@@ -44,19 +62,42 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
 
   const bodyLineHeight = 1.62;
   const bodyGap = 44;
-  // 본문도 칸에 맞춘다. 숫자로 박아 두면 줄이 짧은 장에서 혼자 작게 남는다.
-  const bodySize = fitFontSize({
-    lines: slide.body,
-    width: contentWidth,
-    height: 520,
-    max: isCover ? 54 : 64,
-    min: 34,
-    lineHeight: bodyLineHeight,
-  });
 
   // 결론 상자 높이. 글줄 + 안쪽 여백 + 테두리 + 위 간격.
   const NOTE_SIZE = 38;
   const noteHeight = hasNote ? slide.note.length * NOTE_SIZE * 1.5 + 60 + 4 + 44 : 0;
+
+  const headingLineHeight = isCover ? 1.08 : 1.24;
+  const headingMin = isCover ? 72 : 52;
+
+  /** 헤드라인·본문을 뺀, 나머지가 다 차지하고 남는 높이. */
+  const freeHeight =
+    CARD_HEIGHT -
+    84 * 2 - // 위아래 여백
+    130 - // 바 + 카테고리 라벨
+    60 - // 하단 출처·장수
+    (isDetail ? 150 : 0) - // 큰 번호
+    noteHeight -
+    (isCover && slide.sub ? 82 : 0) -
+    (isOutro ? 128 : 0);
+
+  // 본문도 칸에 맞춘다. 숫자로 박아 두면 줄이 짧은 장에서 혼자 작게 남는다.
+  //
+  // 본문 높이 상한은 **헤드라인이 최소 크기로 들어갈 자리를 남기고** 잡는다.
+  // 예전에는 본문이 먼저 최대 크기(520px 칸)를 차지하고 헤드라인이 남은
+  // 자리에 맞췄다. 헤드라인 3줄 + 본문 4줄 + 결론 상자 2줄인 장에서 남은
+  // 자리가 161px 이었고, 헤드라인은 최소 크기로도 193px 이라 결론 상자가
+  // 하단 줄 밑으로 32px 잘렸다(2026-10-15, 명조 버전을 보다가 발견).
+  const headingFloor = slide.heading.length * headingMin * headingLineHeight;
+  const bodySize = fitFontSize({
+    lines: slide.body,
+    width: contentWidth,
+    height: Math.min(520, freeHeight - headingFloor - bodyGap),
+    max: isCover ? 54 : 64,
+    min: 34,
+    lineHeight: bodyLineHeight,
+    charWidth,
+  });
 
   /**
    * 헤드라인이 쓸 수 있는 높이.
@@ -67,25 +108,17 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
    * 다른 요소라서 눈에 잘 안 띄었다.
    */
   const headingRoom =
-    CARD_HEIGHT -
-    84 * 2 - // 위아래 여백
-    130 - // 바 + 카테고리 라벨
-    60 - // 하단 출처·장수
-    (isDetail ? 150 : 0) - // 큰 번호
-    (bodyLines > 0 ? bodyLines * bodySize * bodyLineHeight + bodyGap : 0) -
-    noteHeight -
-    (isCover && slide.sub ? 82 : 0) -
-    (isOutro ? 128 : 0);
+    freeHeight - (bodyLines > 0 ? bodyLines * bodySize * bodyLineHeight + bodyGap : 0);
 
-  const headingLineHeight = isCover ? 1.08 : 1.24;
   const headingSize = fitFontSize({
     lines: slide.heading,
     width: contentWidth,
     height: headingRoom,
     // 표지는 글줄이 서너 자까지 짧아지므로 상한을 높게 연다.
     max: isCover ? 168 : isOutro ? 118 : 96,
-    min: isCover ? 72 : 52,
+    min: headingMin,
     lineHeight: headingLineHeight,
+    charWidth,
   });
 
   return (
@@ -100,7 +133,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
         boxSizing: "border-box",
         overflow: "hidden",
         background: base,
-        fontFamily: FONT_STACK.sans,
+        fontFamily: FONT_STACK[font],
         color: ink.strong,
       }}
     >
@@ -161,7 +194,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
               <span
                 style={{
                   fontSize: 32,
-                  fontWeight: 700,
+                  fontWeight: weight(700),
                   color: neonText,
                   letterSpacing: "0.09em",
                 }}
@@ -173,7 +206,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
               <span
                 style={{
                   fontSize: 28,
-                  fontWeight: 500,
+                  fontWeight: weight(500),
                   color: ink.faint,
                   letterSpacing: "0.04em",
                 }}
@@ -217,7 +250,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
             <div
               style={{
                 fontSize: 128,
-                fontWeight: 800,
+                fontWeight: weight(800),
                 lineHeight: 0.92,
                 letterSpacing: "-0.04em",
               }}
@@ -240,7 +273,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
         <div
           style={{
             fontSize: headingSize,
-            fontWeight: 800,
+            fontWeight: weight(800),
             lineHeight: headingLineHeight,
             letterSpacing: "-0.035em",
           }}
@@ -258,7 +291,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
             style={{
               marginTop: isCover ? 44 : bodyGap,
               fontSize: bodySize,
-              fontWeight: 400,
+              fontWeight: weight(400),
               lineHeight: bodyLineHeight,
               letterSpacing: "-0.01em",
               color: ink.muted,
@@ -304,7 +337,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
             <div
               style={{
                 fontSize: 38,
-                fontWeight: 600,
+                fontWeight: weight(600),
                 lineHeight: 1.5,
                 letterSpacing: "-0.01em",
                 color: ink.strong,
@@ -327,7 +360,7 @@ export default function DarkNeon({ slide, total, source, variant, align }: Templ
             style={{
               marginTop: 48,
               fontSize: 34,
-              fontWeight: 500,
+              fontWeight: weight(500),
               color: ink.faint,
               letterSpacing: "0.01em",
             }}

@@ -40,12 +40,10 @@ export default function LandingPage() {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const urls = query.match(urlRegex);
     const extractedUrl = urls ? urls[0] : "";
-    let extractedKeyword = query.replace(urlRegex, "").trim();
-    if (!extractedKeyword && extractedUrl) {
-      extractedKeyword = "웹페이지 내용 분석 및 요약";
-    } else if (!extractedKeyword) {
-      extractedKeyword = query.trim();
-    }
+    // URL 만 넣었으면 키워드는 비워 보낸다. 예전에는 "웹페이지 내용 분석 및
+    // 요약"이라는 가짜 키워드를 채웠는데, 기사 본문을 못 읽으면 서버가 **그
+    // 문구로 검색을** 했다. 비워 두면 서버가 주소 자체로 검색한다.
+    const extractedKeyword = query.replace(urlRegex, "").trim();
     const params = new URLSearchParams({ keyword: extractedKeyword });
     if (extractedUrl) params.append("url", extractedUrl);
     router.push(`/loading?${params.toString()}`);
@@ -106,12 +104,12 @@ export default function LandingPage() {
             <h1 className="font-korean-bold text-[38px] md:text-[72px] leading-[1.15] text-white mb-6">
               <span className="text-primary">인스타그램 카드뉴스</span>
               <br />
-              <span className="text-white/60 text-[28px] md:text-[48px]">기사 하나로 5장 완성</span>
+              <span className="text-white/60 text-[28px] md:text-[48px]">기사 하나로 최대 7장</span>
             </h1>
 
             <p className="font-korean-reg text-white/60 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
-              키워드나 URL 하나만 입력하면, AI가 최신 뉴스를 검색해<br className="hidden md:block" />
-              인스타그램 카드뉴스 5장을 한 번에 생성합니다.
+              키워드를 넣으면 최신 뉴스를 검색해서, 기사 URL을 넣으면 그 본문을 읽어서<br className="hidden md:block" />
+              인스타그램 카드뉴스를 한 번에 생성합니다.
             </p>
 
             {/* Input */}
@@ -122,7 +120,7 @@ export default function LandingPage() {
                 <input
                   id="query-input"
                   className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-4 py-3 outline-none text-[15px]"
-                  placeholder="기사 URL 붙여넣기 (또는 키워드만 입력)"
+                  placeholder="키워드 또는 기사 URL 입력"
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -138,7 +136,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 </button>
               </div>
-              <p className="text-white/30 text-xs mt-2 text-center">기사 URL을 함께 넣으면 그 본문을 근거로 만듭니다</p>
+              <p className="text-white/30 text-xs mt-2 text-center">예: “국제회의 유치” · 기사 주소를 넣으면 그 기사 내용으로만 만듭니다</p>
             </div>
 
             {/* Stats */}
@@ -196,7 +194,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-korean-bold text-white text-xl">Instagram 카드뉴스</h3>
-                  <p className="text-white/40 text-sm">1080 × 1350 (4:5) · 4~5장</p>
+                  <p className="text-white/40 text-sm">1080 × 1350 (4:5) · 5~7장</p>
                 </div>
               </div>
               <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "1/1", maxHeight: "280px" }}>
@@ -235,8 +233,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { num: "01", icon: "edit", title: "키워드 입력", desc: "뉴스 주제나 URL을 자유롭게 입력하세요. 길게 쓸 필요 없어요.", color: "from-cyan-500 to-blue-600" },
-              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "기사 본문을 읽고 사실을 확인한 뒤 카드 5장을 구성합니다.", color: "from-violet-500 to-purple-600" },
-              { num: "03", icon: "download", title: "PNG 저장", desc: "카드 5장을 PNG로 내려받고 캡션을 복사해 그대로 올리면 끝!", color: "from-pink-500 to-rose-600" },
+              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: "기사 본문을 읽고 사실을 확인한 뒤 카드 5~7장을 구성합니다.", color: "from-violet-500 to-purple-600" },
+              { num: "03", icon: "download", title: "PNG 저장", desc: "카드를 PNG로 내려받고 캡션을 복사해 그대로 올리면 끝!", color: "from-pink-500 to-rose-600" },
             ].map((step) => (
               <div key={step.num} className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-white/15 transition-all text-center group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform shadow-lg`}>

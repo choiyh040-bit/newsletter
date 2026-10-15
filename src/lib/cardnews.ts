@@ -11,11 +11,16 @@ export const CARD_HEIGHT = 1350;
 /**
  * 슬라이드 장수 범위.
  *
- * 모델에게는 4~5장을 만들라고 한다(프롬프트 [구성]). 상한을 8로 둔 것은
- * **사람이 편집기에서 장을 더 붙일 수 있게** 하기 위해서다. 생성 분량과
- * 사람이 손볼 수 있는 분량은 다른 값이다.
+ * 생성은 `MIN_SLIDES`~`GENERATED_MAX_SLIDES`(5~7장)이다. 프롬프트 [구성]이
+ * 그렇게 시키고, `/api/generate` 가 벗어나면 다시 만들게 한다. 상한을 8로
+ * 둔 것은 **사람이 편집기에서 장을 더 붙일 수 있게** 하기 위해서다. 생성
+ * 분량과 사람이 손볼 수 있는 분량은 다른 값이다.
+ *
+ * 하한은 정리 함수(`normalizeCardNews`)에서 강제하지 않는다. 그 함수는 저장해
+ * 둔 옛 결과(4장)를 열 때도 지나가므로, 거기서 막으면 옛 결과가 안 열린다.
  */
-export const MIN_SLIDES = 4;
+export const MIN_SLIDES = 5;
+export const GENERATED_MAX_SLIDES = 7;
 export const MAX_SLIDES = 8;
 
 /** 포인트 컬러를 못 고르거나 형식이 틀렸을 때 쓰는 기본값. */

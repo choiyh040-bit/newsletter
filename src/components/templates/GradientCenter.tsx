@@ -1,5 +1,5 @@
 import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
-import { accentText, gradientFor, shade, readableOn } from "@/lib/templates/color";
+import { accentText, gradientFor, shade, readableOn, withAlpha } from "@/lib/templates/color";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
 
@@ -8,8 +8,13 @@ import TextLines from "./TextLines";
  *
  * 그라데이션 위에 반투명 다크 카드를 얹고 그 안에 글을 넣는다. 사진 없이
  * 완결되는 기본 템플릿이다.
+ *
+ * `photo` 가 오면 같은 구성에 **사진을 바탕에 깐다**(사진 · 그라데이션 · 고딕).
+ * 사진 위에 기사 색 그라데이션을 반투명하게 덮어 세트가 한 색으로 묶이고
+ * 글자도 읽히게 한다. 표지는 사진이 보이게 옅게, 상세 장은 글이 우선이라
+ * 진하게 덮는다. 사진이 없으면 그라데이션만으로 그린다(사진 못 찾은 경우).
  */
-export default function GradientCenter({ slide, accent, total, source }: TemplateProps) {
+export default function GradientCenter({ slide, accent, total, source, photo }: TemplateProps) {
   const isCover = slide.kind === "cover";
   const index = slide.slideNumber - 1;
 
@@ -31,6 +36,24 @@ export default function GradientCenter({ slide, accent, total, source }: Templat
         color: "#ffffff",
       }}
     >
+      {photo && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element -- PNG 로 구울 때 그대로 담기려면 평범한 img 여야 한다 */}
+          <img
+            src={photo.url}
+            alt=""
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `linear-gradient(180deg, ${withAlpha(accent, isCover ? 0.35 : 0.72)} 0%, ${withAlpha(accent, isCover ? 0.55 : 0.82)} 55%, rgba(6,10,16,${isCover ? 0.82 : 0.9}) 100%)`,
+            }}
+          />
+        </>
+      )}
+
       {/* 화면 위쪽을 띄워 글자 대비를 확보하는 비네트 */}
       <div
         style={{
@@ -182,6 +205,25 @@ export default function GradientCenter({ slide, accent, total, source }: Templat
           </div>
         )}
       </div>
+
+      {/* 사진 작가 표기. CC BY 계열은 표기가 의무다. 장마다 따로 게시될 수
+          있으므로 모든 장에 단다. */}
+      {photo && (
+        <div
+          style={{
+            position: "relative",
+            marginTop: 14,
+            fontSize: 19,
+            color: "rgba(255,255,255,0.55)",
+            textAlign: "right",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          사진 · {photo.credit} · Wikimedia Commons
+        </div>
+      )}
     </div>
   );
 }

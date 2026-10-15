@@ -25,7 +25,13 @@ const THUMB_WIDTH = 104;
 const SCALE = THUMB_WIDTH / CARD_WIDTH;
 
 /** 생성 전에는 사진이 없으므로 사진 배경 템플릿은 보여만 주고 못 고른다. */
-const USABLE = new Set(availableTemplates(false).map((t) => t.id));
+const USABLE = new Set(availableTemplates().map((t) => t.id));
+
+/**
+ * 사진 템플릿 견본에 깔 그림. 실제 사진은 생성할 때 기사에 맞춰 찾으므로,
+ * 여기서는 "사진이 깔린다"는 것만 보여 주는 그림을 쓴다(저장소에 있는 SVG).
+ */
+const SAMPLE_PHOTO = { url: "/sample-photo.svg", credit: "견본" };
 
 /**
  * 미리보기에 그릴 견본 표지.
@@ -117,7 +123,7 @@ export default function TemplatePicker() {
                       accent={SAMPLE.accent}
                       total={5}
                       source={SAMPLE.source}
-                      photo={null}
+                      photo={template.background === "photo" ? SAMPLE_PHOTO : null}
                       variant={colorsFor(template)}
                       align={template.alignable ? align : DEFAULT_ALIGN}
                     />

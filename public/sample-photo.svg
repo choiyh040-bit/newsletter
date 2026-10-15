@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+  <!-- 사진 템플릿 견본용 그림(직접 그림). 실제 카드에는 기사에 맞춰 찾은 사진이 깔린다. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6c38b"/>
+      <stop offset="0.55" stop-color="#e2857a"/>
+      <stop offset="1" stop-color="#5a4a7a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1350" fill="url(#sky)"/>
+  <circle cx="760" cy="520" r="120" fill="#ffe4b8" opacity="0.85"/>
+  <g fill="#2c2440">
+    <rect x="0" y="900" width="140" height="450"/>
+    <rect x="150" y="780" width="110" height="570"/>
+    <rect x="270" y="860" width="160" height="490"/>
+    <rect x="440" y="700" width="120" height="650"/>
+    <rect x="570" y="820" width="150" height="530"/>
+    <rect x="730" y="740" width="110" height="610"/>
+    <rect x="850" y="880" width="230" height="470"/>
+  </g>
+  <rect y="1180" width="1080" height="170" fill="#1d1830"/>
+</svg>

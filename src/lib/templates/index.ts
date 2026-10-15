@@ -29,6 +29,15 @@ export const TEMPLATES: Template[] = [
     Render: GradientCenter,
   },
   {
+    id: "photo-gradient",
+    name: "사진 · 그라데이션 · 고딕",
+    description: "기사 관련 사진 위에 그라데이션과 반투명 카드. 중앙 정렬",
+    background: "photo",
+    font: "sans",
+    // 레이아웃은 그라데이션 · 고딕과 같다. 사진이 있을 때만 바탕에 깐다.
+    Render: GradientCenter,
+  },
+  {
     id: "dark-neon",
     name: "어두운 바탕 · 네온",
     description: "거의 검정 위에 형광 한 색. 좌측 정렬",
@@ -132,9 +141,15 @@ export function needsPhoto(template: Template): boolean {
   return template.background === "photo";
 }
 
-/** 지금 쓸 수 있는 것만. 사진 파이프라인이 붙기 전까지는 색 배경만 고를 수 있다. */
-export function availableTemplates(hasPhoto: boolean): Template[] {
-  return TEMPLATES.filter((t) => hasPhoto || t.background === "color");
+/**
+ * 고를 수 있는 템플릿. **사진 템플릿도 늘 고를 수 있다.**
+ *
+ * 예전에는 사진이 있어야만 사진 템플릿을 보여 줬다. 이제 사진은 생성할 때
+ * 자동으로 찾아 붙이고(`lib/photo.ts`), 못 찾으면 사진 템플릿이 그라데이션으로
+ * 그린다. 그래서 거를 이유가 없다.
+ */
+export function availableTemplates(): Template[] {
+  return TEMPLATES;
 }
 
 export const BACKGROUND_LABEL: Record<BackgroundKind, string> = {

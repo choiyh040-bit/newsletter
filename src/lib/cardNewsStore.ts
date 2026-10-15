@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { normalizeCardNews, type CardNews } from "./cardnews";
+import { isHexColor } from "./templates/color";
 import type { TextAlign } from "./templates/types";
 
 /**
@@ -36,6 +37,11 @@ export interface CardNewsEntry {
   variantId?: string;
   /** 고른 정렬. 없으면 좌측으로 본다. */
   align?: TextAlign;
+  /**
+   * 사용자가 직접 고른 강조색. **템플릿 id 별로** 둔다.
+   * 있으면 색 조합의 강조색을 덮는다(바탕은 색 조합 그대로).
+   */
+  customAccents?: Record<string, string>;
 }
 
 // ─── 저장소 읽고 쓰기 ────────────────────────────────────────────────────────
@@ -145,6 +151,27 @@ export interface DesignChoice {
   templateId?: string;
   variantId?: string;
   align?: TextAlign;
+  customAccents?: Record<string, string>;
+}
+
+/** 저장된 값에서 올바른 색만 남긴다. 손으로 고친 저장값이 화면을 깨지 않게. */
+function cleanAccents(value: unknown): Record<string, string> | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(value)) if (isHexColor(v)) out[k] = v;
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** 한 템플릿의 직접 고른 색을 넣거나(색) 뺀다(null). */
+function withAccent(
+  accents: Record<string, string> | undefined,
+  templateId: string,
+  color: string | null
+): Record<string, string> {
+  const next = { ...accents };
+  if (color && isHexColor(color)) next[templateId] = color;
+  else delete next[templateId];
+  return next;
 }
 
 const NO_DESIGN: DesignChoice = {};
@@ -165,6 +192,8 @@ function parseDesign(raw: string): DesignChoice {
     if (typeof v.templateId === "string") out.templateId = v.templateId;
     if (typeof v.variantId === "string") out.variantId = v.variantId;
     if (v.align === "left" || v.align === "center") out.align = v.align;
+    const accents = cleanAccents(v.customAccents);
+    if (accents) out.customAccents = accents;
     return out;
   } catch {
     return NO_DESIGN;
@@ -188,6 +217,18 @@ function rememberDesign(patch: DesignChoice): void {
 /** 홈에서 템플릿을 고른다. */
 export function chooseTemplate(templateId: string): void {
   rememberDesign({ templateId });
+}
+
+/** 홈에서 색 조합을 고른다. 그 템플릿의 직접 고른 색은 지운다. */
+export function chooseVariant(templateId: string, variantId: string): void {
+  const { customAccents } = readDesignChoice();
+  rememberDesign({ variantId, customAccents: withAccent(customAccents, templateId, null) });
+}
+
+/** 홈에서 강조색을 직접 고른다. */
+export function chooseCustomAccent(templateId: string, color: string): void {
+  const { customAccents } = readDesignChoice();
+  rememberDesign({ customAccents: withAccent(customAccents, templateId, color) });
 }
 
 let designCache: { raw: string; value: DesignChoice } | null = null;
@@ -251,11 +292,29 @@ export function setCardNewsTemplate(id: string, templateId: string): void {
   notify();
 }
 
-/** 고른 색 조합을 기억한다. 이유는 `setCardNewsTemplate` 와 같다. */
-export function setCardNewsVariant(id: string, variantId: string): void {
-  rememberDesign({ variantId });
+/**
+ * 고른 색 조합을 기억한다. 이유는 `setCardNewsTemplate` 와 같다.
+ * 색 조합을 고르면 그 템플릿의 직접 고른 강조색은 지운다. 견본을 눌렀는데
+ * 예전에 고른 색이 계속 덮고 있으면 눌러도 안 바뀌는 것처럼 보인다.
+ */
+export function setCardNewsVariant(id: string, templateId: string, variantId: string): void {
+  chooseVariant(templateId, variantId);
   const next = parseHistory(readRaw()).map((entry) =>
-    entry.id === id ? { ...entry, variantId } : entry
+    entry.id === id
+      ? { ...entry, variantId, customAccents: withAccent(entry.customAccents, templateId, null) }
+      : entry
+  );
+  writeRaw(JSON.stringify(next));
+  notify();
+}
+
+/** 강조색을 직접 고른다. 바탕은 지금 색 조합 그대로다. */
+export function setCardNewsCustomAccent(id: string, templateId: string, color: string): void {
+  chooseCustomAccent(templateId, color);
+  const next = parseHistory(readRaw()).map((entry) =>
+    entry.id === id
+      ? { ...entry, customAccents: withAccent(entry.customAccents, templateId, color) }
+      : entry
   );
   writeRaw(JSON.stringify(next));
   notify();

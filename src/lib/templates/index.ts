@@ -2,7 +2,8 @@ import DarkNeon from "@/components/templates/DarkNeon";
 import GradientCenter from "@/components/templates/GradientCenter";
 import SolidSerif from "@/components/templates/SolidSerif";
 import type { BackgroundKind, Template, TemplateVariant } from "./types";
-import { NEON_VARIANTS } from "./variants";
+import { isHexColor } from "./color";
+import { LIGHT_VARIANTS, NEON_VARIANTS } from "./variants";
 
 export * from "./types";
 export * from "./variants";
@@ -45,6 +46,17 @@ export const TEMPLATES: Template[] = [
     variants: NEON_VARIANTS,
     alignable: true,
   },
+  {
+    id: "light-accent",
+    name: "흰 바탕 · 강조색",
+    description: "흰 바탕에 강조색 한 색. 좌측 정렬",
+    background: "color",
+    font: "sans",
+    // 레이아웃은 네온과 같다. 컴포넌트는 바탕 밝기를 보고 글자색을 뒤집는다.
+    Render: DarkNeon,
+    variants: LIGHT_VARIANTS,
+    alignable: true,
+  },
 ];
 
 export const DEFAULT_TEMPLATE_ID = TEMPLATES[0].id;
@@ -68,6 +80,27 @@ export function variantFor(
   if (!list || list.length === 0) return null;
   return list.find((v) => v.id === id) ?? list[0];
 }
+
+/**
+ * 실제로 그릴 색. 고른 색 조합에 **사용자가 직접 고른 강조색**을 덮는다.
+ *
+ * 바탕은 색 조합에서 오고, 강조색만 바꾼다. 바탕까지 아무 색이나 고르게
+ * 하면 "바탕 하나 + 튀는 색 하나"라는 이 템플릿들의 인상이 무너진다.
+ * 직접 고른 색은 템플릿마다 따로 둔다. 검정 바탕에서 고른 형광 연두가 흰
+ * 바탕으로 넘어오면 안 읽힌다.
+ */
+export function resolveColors(
+  template: Template,
+  variantId: string | null | undefined,
+  customAccent: string | null | undefined
+): TemplateVariant | null {
+  const preset = variantFor(template, variantId);
+  if (!preset || !isHexColor(customAccent)) return preset;
+  return { ...preset, id: CUSTOM_VARIANT_ID, name: "직접 고른 색", neon: customAccent };
+}
+
+/** 직접 고른 강조색을 쓰는 중임을 나타내는 id. 색 조합 id 와 겹치지 않는다. */
+export const CUSTOM_VARIANT_ID = "custom";
 
 /** 사진이 있어야만 쓸 수 있는 템플릿인지. */
 export function needsPhoto(template: Template): boolean {

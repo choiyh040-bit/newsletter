@@ -122,6 +122,48 @@ function luminance(hex: string): number {
   return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0);
 }
 
+/** `#rgb`·`#rrggbb` 꼴인지. 사용자가 고른 색을 받을 때 거른다. */
+export function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+/** 두 색의 명암 대비(WCAG). 1~21. */
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** 두 색을 섞어 #rrggbb 로. t=0 이면 a, 1 이면 b. */
+function mix(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (shift: number) =>
+    Math.round(((pa >> shift) & 0xff) * (1 - t) + ((pb >> shift) & 0xff) * t);
+  const hex = (v: number) => v.toString(16).padStart(2, "0");
+  return `#${hex(ch(16))}${hex(ch(8))}${hex(ch(0))}`;
+}
+
+/**
+ * 바탕 위에서 **글자로** 읽히는 강조색.
+ *
+ * 강조색을 사용자가 마음대로 고르게 되면서 필요해졌다. 흰 바탕에 노랑,
+ * 검정 바탕에 남색을 고르면 그 색으로 쓴 글자는 안 읽힌다. 고른 색을
+ * 바탕 반대쪽(흰 바탕이면 검정, 검정 바탕이면 흰색)으로 조금씩 섞어 대비가
+ * `min` 에 닿을 때까지만 옮긴다. 이미 읽히는 색은 그대로 돌려준다.
+ *
+ * 글자에만 쓴다. 형광펜 바탕·굵은 바·선은 고른 색 그대로 둔다. 거기서는
+ * 색이 "면"이라 옅어도 보이고, 사용자가 고른 색이 가장 크게 드러나는 곳이다.
+ */
+export function legibleOn(color: string, base: string, min = 3): string {
+  if (contrast(color, base) >= min) return color;
+  const toward = luminance(base) > 0.4 ? "#000000" : "#ffffff";
+  for (let t = 0.1; t <= 1; t += 0.1) {
+    const next = mix(color, toward, t);
+    if (contrast(next, base) >= min) return next;
+  }
+  return toward;
+}
+
 /** 바탕 위에 올릴 글자색 네 단계. */
 export interface Ink {
   /** 헤드라인 */

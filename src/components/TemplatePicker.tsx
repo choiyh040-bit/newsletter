@@ -1,14 +1,20 @@
 "use client";
 
 import { CARD_HEIGHT, CARD_WIDTH, normalizeCardNews } from "@/lib/cardnews";
-import { chooseTemplate, useDesignChoice } from "@/lib/cardNewsStore";
+import {
+  chooseCustomAccent,
+  chooseTemplate,
+  chooseVariant,
+  useDesignChoice,
+} from "@/lib/cardNewsStore";
+import AccentPicker from "./AccentPicker";
 import {
   availableTemplates,
   DEFAULT_ALIGN,
   needsPhoto,
+  resolveColors,
   templateById,
   TEMPLATES,
-  variantFor,
 } from "@/lib/templates";
 
 /** 미리보기 한 장의 가로 폭(px). 세로는 4:5 로 따라간다. */
@@ -47,12 +53,15 @@ const SAMPLE = normalizeCardNews({
  *
  * 고른 것은 브라우저에 기억해서 다음에도 그대로 선택돼 있다. 생성한 뒤
  * 미리보기에서 바꾸는 것도 그대로 된다(다시 생성하지 않는다).
- * 색 조합·정렬은 여기서 고르지 않는다. 홈이 복잡해지지 않게, 마지막에 쓴
- * 것을 그대로 쓰고 미리보기에서 바꾼다.
+ * 강조색을 가진 템플릿이면 아래에 강조색 고르기가 붙는다. 정렬은 여기서
+ * 고르지 않는다(마지막에 쓴 것을 그대로 쓰고 미리보기에서 바꾼다).
  */
 export default function TemplatePicker() {
   const design = useDesignChoice();
   const selected = templateById(design.templateId);
+  /** 템플릿마다 그릴 색. 견본에도 고른 강조색이 그대로 보이게 한다. */
+  const colorsFor = (t: typeof selected) =>
+    resolveColors(t, design.variantId, design.customAccents?.[t.id]);
 
   return (
     <div className="mt-6">
@@ -104,10 +113,7 @@ export default function TemplatePicker() {
                       total={5}
                       source={SAMPLE.source}
                       photo={null}
-                      variant={variantFor(
-                        template,
-                        isSelected ? design.variantId : undefined
-                      )}
+                      variant={colorsFor(template)}
                       align={(isSelected && design.align) || DEFAULT_ALIGN}
                     />
                   </div>
@@ -127,6 +133,17 @@ export default function TemplatePicker() {
           })}
         </div>
       </div>
+
+      {selected.variants && selected.variants.length > 0 && (
+        <div className="mt-4 max-w-sm mx-auto text-left glass-panel rounded-xl p-4">
+          <AccentPicker
+            template={selected}
+            current={colorsFor(selected)}
+            onPreset={(variantId) => chooseVariant(selected.id, variantId)}
+            onCustom={(color) => chooseCustomAccent(selected.id, color)}
+          />
+        </div>
+      )}
     </div>
   );
 }

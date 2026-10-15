@@ -1,5 +1,7 @@
 import {
   extractJson,
+  GENERATED_MAX_SLIDES,
+  MIN_SLIDES,
   normalizeCardNews,
   type CardNews,
 } from "@/lib/cardnews";
@@ -46,7 +48,8 @@ ${article}
 - 관계자 발언은 따옴표로 인용하지 말고 "~라고 밝혔다" 같은 요약체로 처리하세요.
 
 [구성]
-- 슬라이드는 4장 또는 5장. 첫 장은 표지, 마지막 장은 마무리, 나머지는 상세입니다.
+- 슬라이드는 **${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장**. 첫 장은 표지, 마지막 장은 마무리, 나머지는 상세입니다.
+  자료가 적으면 ${MIN_SLIDES}장, 많으면 ${GENERATED_MAX_SLIDES}장까지 씁니다. 같은 사실을 나눠 장을 늘리지 마세요.
 - 표지(cover): sub에 짧은 소제목 한 줄(**12자 이내**), heading에 큰 헤드라인.
   body는 비우거나 한 줄만.
 - 상세(detail): heading은 그 장의 핵심 한 문장, body에 구체적인 사실과 수치.
@@ -163,7 +166,14 @@ async function generateOnce(
       ...(signal ? { abortSignal: signal } : {}),
     },
   });
-  return normalizeCardNews(extractJson(response.text ?? ""));
+  const result = normalizeCardNews(extractJson(response.text ?? ""));
+  // 장수가 범위를 벗어나면 형식 오류와 같이 다룬다. 바깥의 재시도가 더 엄한
+  // 안내로 다시 부른다. 넘친 장을 잘라 내면 마무리 장이 사라진다.
+  const count = result.slides.length;
+  if (count < MIN_SLIDES || count > GENERATED_MAX_SLIDES) {
+    throw new Error(`슬라이드가 ${count}장입니다. ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장이어야 합니다.`);
+  }
+  return result;
 }
 
 export async function POST(request: Request) {
@@ -205,7 +215,7 @@ export async function POST(request: Request) {
     if (left() < RETRY_NEEDS_MS) return failure(firstError, "카드뉴스 생성");
 
     try {
-      const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요.`;
+      const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요. 슬라이드는 반드시 ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장입니다.`;
       return Response.json(await withFallback(generate(stricter), left, "재시도"));
     } catch (error) {
       console.error("[generate] 최종 실패:", error);

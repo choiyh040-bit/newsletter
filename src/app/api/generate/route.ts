@@ -7,7 +7,7 @@ import {
 } from "@/lib/cardnews";
 
 /**
- * 검색과 생성을 한 번에 하므로 기본 제한(보통 10초)으로는 자주 잘린다.
+ * 검색과 생성을 잇달아 하므로 기본 제한(보통 10초)으로는 자주 잘린다.
  * Vercel 서버리스 함수 상한에 맞춰 60초로 올린다.
  */
 export const maxDuration = 60;
@@ -210,20 +210,23 @@ async function readArticle(url: string): Promise<string> {
   }
 }
 
-function buildPrompt(keyword: string, article: string): string {
+/** 생성에 넘기는 근거가 무엇인지. 문구만 다르고 규칙은 같다. */
+type Material = "기사 본문" | "검색 자료";
+
+function buildPrompt(keyword: string, article: string, material: Material = "기사 본문"): string {
   return `당신은 인스타그램 카드뉴스를 만드는 한국어 에디터입니다.
 아래 규칙을 지켜 카드뉴스 한 세트를 JSON으로 만들어 주세요.
 
 [소재]
 - 키워드: ${keyword}
-${
-  article
-    ? `- 아래 기사 본문**만**을 근거로 삼으세요. 본문에 없는 사실, 수치, 순위는 절대 쓰지 마세요.\n\n<기사 본문>\n${article}\n</기사 본문>`
-    : `- 제공된 기사 본문이 없습니다. 반드시 Google 검색 도구를 실행해 최신 기사와 수치를 확인한 뒤 작성하세요.`
-}
+- 아래 ${material}**만**을 근거로 삼으세요. 자료에 없는 사실, 수치, 순위는 절대 쓰지 마세요.
+
+<${material}>
+${article}
+</${material}>
 
 [사실 규칙]
-- 확인되지 않은 내용을 지어내지 마세요. 검색이나 기사에서 확인한 사실만 쓰세요.
+- 확인되지 않은 내용을 지어내지 마세요. 위 자료에서 확인한 사실만 쓰세요.
 - 수치가 확실하지 않으면 아예 쓰지 마세요. 대략적인 표현으로 얼버무리지 마세요.
 - **기사에 없는 평가·감탄을 보태지 마세요.** 사실은 맞는데 말투만 과장되는 것도
   지어내는 것입니다. "무려", "완승", "압도적", "역대급" 같은 말을 쓰지 마세요.
@@ -326,29 +329,78 @@ ${
 }
 
 /**
- * 한 번 생성한다.
+ * 한 번 생성한다. **검색 도구는 붙이지 않는다.**
  *
- * `useSearch` 가 거짓이면 검색 도구를 아예 붙이지 않는다. 검색 도구는
- * 일반 생성과 **할당량이 따로**라, 붙이는 것만으로 429 가 날 수 있다.
- * 기사 본문을 이미 읽어 온 경우에는 근거가 손에 있으므로 붙이지 않는다.
+ * 예전에는 키워드만 들어오면 여기에 검색 도구를 붙여 "검색하면서 카드뉴스
+ * JSON 까지" 한 번에 시켰다. 재 보니 그 한 번이 **30.2초**였다(3.8-flash,
+ * 생각 토큰 2776). 시도 상한 32초에 1.8초 남는다. 조금만 느려도 끊기고,
+ * 끊긴 뒤 남은 20초로는 같은 일을 다시 못 한다. 그래서 배포 사이트에서
+ * 키워드 경로만 매번 52초에 시간 초과였다.
+ *
+ * 상한을 늘리는 대신 일을 나눴다. 검색은 `research` 가 하고, 여기서는 손에
+ * 쥔 자료로 글만 짓는다. 기사 본문을 읽어 온 경로와 같은 일이 된다.
  */
 async function generateOnce(
   model: string,
   prompt: string,
-  useSearch: boolean,
   signal?: AbortSignal
 ): Promise<CardNews> {
   const response = await client().models.generateContent({
     model,
     contents: prompt,
     config: {
-      ...(useSearch ? { tools: [{ googleSearch: {} }] } : {}),
       // 남은 시간이 다 되면 호출 자체를 끊는다. 안 끊으면 플랫폼이 함수를
       // 죽일 때까지 기다리게 되고, 그러면 우리가 오류를 만들 기회가 없다.
       ...(signal ? { abortSignal: signal } : {}),
     },
   });
   return normalizeCardNews(extractJson(response.text ?? ""));
+}
+
+/** 검색으로 모은 자료의 최대 길이. 기사 본문과 같은 선으로 자른다. */
+const RESEARCH_MAX_CHARS = ARTICLE_MAX_CHARS;
+
+/**
+ * 검색 도구로 자료만 모은다. 카드뉴스는 만들지 않는다.
+ *
+ * 결과는 평문 사실 목록이다. JSON 도, 줄 배열도, 강조 표시도 시키지 않는다.
+ * 그런 규칙을 지키느라 생각하는 시간이 한 번에 몰렸던 것이 문제였으므로,
+ * 이 단계는 찾고 옮겨 적는 일만 한다.
+ *
+ * 검색 도구는 일반 생성과 **할당량이 따로**다. 이 단계만 그 할당량을 쓴다.
+ */
+async function research(
+  model: string,
+  subject: string,
+  signal?: AbortSignal
+): Promise<string> {
+  const response = await client().models.generateContent({
+    model,
+    contents: `Google 검색으로 다음 주제의 최신 한국 기사를 찾아, 카드뉴스의 근거로 쓸 사실을 정리하세요.
+
+주제: ${subject}
+
+- 가장 최근의 기사 한두 건을 중심으로 정리하세요. 여러 사건을 섞지 마세요.
+- 기관명, 날짜, 금액·건수 같은 수치, 사업 이름, 일정처럼 확인된 사실만 적으세요.
+- 검색에서 확인하지 못한 것은 적지 마세요. 추측이나 평가는 넣지 마세요.
+- 기사 문장을 그대로 옮기지 말고 짧은 사실 단위로 적으세요.
+- 맨 끝에 "출처:" 줄을 두고 근거로 삼은 매체명과 기사 제목을 적으세요.
+- 평문 목록으로 ${RESEARCH_MAX_CHARS / 2}자 이내. 머리말이나 맺음말은 쓰지 마세요.`,
+    config: {
+      tools: [{ googleSearch: {} }],
+      ...(signal ? { abortSignal: signal } : {}),
+    },
+  });
+
+  const text = (response.text ?? "").trim();
+  // 검색을 한 번도 안 하고 지어낸 답이면 근거로 쓸 수 없다. 형식 오류처럼
+  // 다루지 않고 실패로 돌려, 화면에 "자료를 못 찾았다"가 드러나게 한다.
+  const searched =
+    (response.candidates?.[0]?.groundingMetadata?.groundingChunks?.length ?? 0) > 0;
+  if (!text || !searched) {
+    throw new Error("검색으로 자료를 찾지 못했습니다. 키워드를 바꾸거나 기사 URL을 넣어 주세요.");
+  }
+  return text.slice(0, RESEARCH_MAX_CHARS);
 }
 
 /**
@@ -363,12 +415,11 @@ async function generateOnce(
  * 어차피 1초 안에 떨어지므로 진짜 요청으로 확인하는 것과 비용이 같고,
  * **멀쩡한 경우에만 왕복이 하나 더 는다.**
  */
-async function generateWithFallback(
-  prompt: string,
-  useSearch: boolean,
+async function withFallback<T>(
+  run: (model: string, signal: AbortSignal) => Promise<T>,
   left: () => number,
   label: string
-): Promise<CardNews> {
+): Promise<T> {
   let lastError: unknown = new Error("쓸 수 있는 모델이 없습니다.");
   const models = await usableModels();
 
@@ -383,7 +434,7 @@ async function generateWithFallback(
     const took = () => `${Date.now() - attemptAt}ms/상한 ${cap}ms`;
 
     try {
-      const result = await generateOnce(model, prompt, useSearch, AbortSignal.timeout(cap));
+      const result = await run(model, AbortSignal.timeout(cap));
       console.info(`[generate] ${label} 성공 · ${model} (${took()})`);
       return result;
     } catch (error) {
@@ -427,27 +478,49 @@ export async function POST(request: Request) {
 
   const article = url ? await readArticle(url) : "";
   if (url && !article) {
-    console.warn("기사 본문을 읽지 못해 검색만으로 생성합니다:", url);
+    console.warn("기사 본문을 읽지 못해 검색으로 자료를 모읍니다:", url);
   }
-
-  // 근거가 손에 없을 때만 검색에 기댄다. 본문을 읽어 왔으면 검색 도구를
-  // 붙이지 않아, 따로 걸려 있는 검색 할당량을 쓰지 않는다.
-  const useSearch = !article;
 
   // 본문을 못 읽었는데 키워드도 없으면 검색할 거리가 없다. 그럴 때는 주소
   // 자체를 준다. "입력된 기사 내용 요약" 같은 문구로는 아무것도 못 찾는다.
   const subject = keyword || (article ? "아래 기사 본문의 내용" : url);
-  const prompt = buildPrompt(subject, article);
   console.info(
-    `[generate] 본문 ${article.length}자, 검색 ${useSearch ? "사용" : "안 함"}, 읽기 ${Date.now() - startedAt}ms`
+    `[generate] 본문 ${article.length}자, 검색 ${article ? "안 함" : "사용"}, 읽기 ${Date.now() - startedAt}ms`
   );
 
   const left = () => BUDGET_MS - (Date.now() - startedAt);
 
-  // 검색 도구를 켜면 응답 스키마를 강제할 수 없어 형식이 틀어질 때가 있다.
+  // 근거가 손에 없을 때만 검색한다. 검색과 생성을 **따로** 부른다.
+  // 한 번에 시키면 30초가 걸려 시도 상한(32초)에 걸렸다. generateOnce 주석 참고.
+  let material: Material = "기사 본문";
+  let evidence = article;
+  if (!evidence) {
+    try {
+      evidence = await withFallback((model, signal) => research(model, subject, signal), left, "검색");
+      material = "검색 자료";
+      console.info(`[generate] 검색 자료 ${evidence.length}자, ${Date.now() - startedAt}ms`);
+    } catch (error) {
+      console.error(`[generate] 검색 실패 (${Date.now() - startedAt}ms):`, error);
+      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      const timedOut = isAbort(error);
+      return Response.json(
+        {
+          error: timedOut ? "자료 검색이 제한 시간을 넘었습니다." : "자료 검색에 실패했습니다.",
+          detail: timedOut ? `TIMEOUT: ${message}` : message,
+        },
+        { status: timedOut ? 504 : 502 }
+      );
+    }
+  }
+
+  const prompt = buildPrompt(subject, evidence, material);
+  const generate = (p: string) => (model: string, signal: AbortSignal) =>
+    generateOnce(model, p, signal);
+
+  // 응답 스키마를 강제하지 않으므로 형식이 틀어질 때가 있다.
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
-    const result = await generateWithFallback(prompt, useSearch, left, "1차");
+    const result = await withFallback(generate(prompt), left, "1차");
     console.info(`[generate] 1차 완료, ${Date.now() - startedAt}ms`);
     return Response.json(result);
   } catch (firstError) {
@@ -468,7 +541,7 @@ export async function POST(request: Request) {
 
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요.`;
-      const result = await generateWithFallback(stricter, useSearch, left, "재시도");
+      const result = await withFallback(generate(stricter), left, "재시도");
       console.info(`[generate] 재시도 완료, ${Date.now() - startedAt}ms`);
       return Response.json(result);
     } catch (error) {

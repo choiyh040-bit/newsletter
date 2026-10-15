@@ -40,12 +40,10 @@ export default function LandingPage() {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const urls = query.match(urlRegex);
     const extractedUrl = urls ? urls[0] : "";
-    let extractedKeyword = query.replace(urlRegex, "").trim();
-    if (!extractedKeyword && extractedUrl) {
-      extractedKeyword = "웹페이지 내용 분석 및 요약";
-    } else if (!extractedKeyword) {
-      extractedKeyword = query.trim();
-    }
+    // URL 만 넣었으면 키워드는 비워 보낸다. 예전에는 "웹페이지 내용 분석 및
+    // 요약"이라는 가짜 키워드를 채웠는데, 기사 본문을 못 읽으면 서버가 **그
+    // 문구로 검색을** 했다. 비워 두면 서버가 주소 자체로 검색한다.
+    const extractedKeyword = query.replace(urlRegex, "").trim();
     const params = new URLSearchParams({ keyword: extractedKeyword });
     if (extractedUrl) params.append("url", extractedUrl);
     router.push(`/loading?${params.toString()}`);
@@ -110,8 +108,8 @@ export default function LandingPage() {
             </h1>
 
             <p className="font-korean-reg text-white/60 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
-              키워드나 URL 하나만 입력하면, AI가 최신 뉴스를 검색해<br className="hidden md:block" />
-              인스타그램 카드뉴스 5장을 한 번에 생성합니다.
+              키워드를 넣으면 최신 뉴스를 검색해서, 기사 URL을 넣으면 그 본문을 읽어서<br className="hidden md:block" />
+              인스타그램 카드뉴스를 한 번에 생성합니다.
             </p>
 
             {/* Input */}
@@ -122,7 +120,7 @@ export default function LandingPage() {
                 <input
                   id="query-input"
                   className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-4 py-3 outline-none text-[15px]"
-                  placeholder="기사 URL 붙여넣기 (또는 키워드만 입력)"
+                  placeholder="키워드 또는 기사 URL 입력"
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -138,7 +136,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 </button>
               </div>
-              <p className="text-white/30 text-xs mt-2 text-center">기사 URL을 함께 넣으면 그 본문을 근거로 만듭니다</p>
+              <p className="text-white/30 text-xs mt-2 text-center">예: “국제회의 유치” · 기사 주소를 넣으면 그 기사 내용으로만 만듭니다</p>
             </div>
 
             {/* Stats */}

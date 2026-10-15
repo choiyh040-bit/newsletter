@@ -354,7 +354,7 @@ function LoadingContent() {
             </div>
             <div className="flex-1 h-px bg-white/10" />
             <code className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
-              cardgen_ai · instagram · keyword=&quot;{keyword}&quot;
+              cardgen_ai · instagram · {keyword ? <>keyword=&quot;{keyword}&quot;</> : <>url=&quot;{url}&quot;</>}
             </code>
           </div>
         </div>

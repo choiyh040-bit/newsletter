@@ -112,7 +112,7 @@ function PreviewContent() {
 
   // 날짜를 앞에 붙여 내려받은 파일이 만든 순서대로 정렬되게 한다.
   const datePrefix = (entry?.createdAt ?? new Date().toISOString()).slice(0, 10);
-  const baseName = `${datePrefix}-${safeFileName(entry?.keyword ?? data?.title ?? "cardnews")}`;
+  const baseName = `${datePrefix}-${safeFileName(entry?.keyword || data?.title || "cardnews")}`;
 
   const saveOne = async () => {
     const node = cardRefs.current[current];

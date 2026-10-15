@@ -59,6 +59,25 @@ function PreviewContent() {
   // 되돌리는 일을 효과로 처리하면 렌더가 한 번 더 도는데, 렌더 시점에 id를
   // 비교하면 그럴 필요가 없다.
   const [slidePos, setSlidePos] = useState({ id: "", index: 0 });
+
+  // 미리보기 배율. 칸 폭에 맞춰 줄인다(최대 PREVIEW_SCALE).
+  //
+  // 예전에는 0.42 로 고정이었다. 카드가 454px 가 되는데 휴대폰 칸은 340px
+  // 남짓이라, 휴대폰에서 **카드 왼쪽이 화면 밖으로 밀려 잘렸다**(오른쪽은 빈
+  // 공간). 내려받는 PNG 는 원본 크기라 멀쩡해서, 화면만 보면 카드가 잘린
+  // 것처럼 보였다.
+  //
+  // 칸은 데이터를 불러온 뒤에야 그려지므로, 칸이 붙는 순간부터 잰다(콜백 ref).
+  const [previewScale, setPreviewScale] = useState(PREVIEW_SCALE);
+  const previewObserver = useRef<ResizeObserver | null>(null);
+  const previewBoxRef = useCallback((el: HTMLDivElement | null) => {
+    previewObserver.current?.disconnect();
+    if (!el) return;
+    const fit = () => setPreviewScale(Math.min(PREVIEW_SCALE, el.clientWidth / CARD_WIDTH));
+    fit();
+    previewObserver.current = new ResizeObserver(fit);
+    previewObserver.current.observe(el);
+  }, []);
   // 사진 파이프라인이 아직 없어 색 배경 템플릿만 고를 수 있다.
   const choices = availableTemplates(false);
   const template = templateById(entry?.templateId);
@@ -277,17 +296,17 @@ function PreviewContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* 카드 미리보기 */}
-          <div className="lg:col-span-7 flex flex-col items-center">
+          <div ref={previewBoxRef} className="lg:col-span-7 min-w-0 flex flex-col items-center">
             <div
               className="relative rounded-2xl overflow-hidden shadow-2xl"
               style={{
-                width: CARD_WIDTH * PREVIEW_SCALE,
-                height: CARD_HEIGHT * PREVIEW_SCALE,
+                width: CARD_WIDTH * previewScale,
+                height: CARD_HEIGHT * previewScale,
               }}
             >
               <div
                 style={{
-                  transform: `scale(${PREVIEW_SCALE})`,
+                  transform: `scale(${previewScale})`,
                   transformOrigin: "top left",
                   width: CARD_WIDTH,
                   height: CARD_HEIGHT,

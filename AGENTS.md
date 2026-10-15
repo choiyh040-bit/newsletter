@@ -33,3 +33,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 카드뉴스 제작 규칙의 원본은 `.claude/skills/mice-cardnews/SKILL.md`이다.
 카드 생성이나 렌더링을 건드리기 전에 먼저 읽는다. 각 규칙이 어느 파일에
 구현돼 있는지는 README의 대조표에 있다.
+
+# 테스트가 통과하면 배포까지 한다
+
+사용자가 정한 규칙이다(2026-10-15). 고친 것을 확인하는 테스트가 **모두**
+통과하면 묻지 않고 main 에 합쳐 배포하고, **배포된 사이트에서 같은 테스트를
+다시** 돌린다. 하나라도 실패하면 합치지 않고 결과부터 보고한다.
+
+- 테스트는 바꾼 곳을 실제로 써 보는 것이다. 빌드·타입 검사만으로는 부족하다.
+  화면을 바꿨으면 데스크톱과 **휴대폰 폭(360px 안팎)** 둘 다 본다.
+- 배포 사이트: https://newsletter-woad-seven.vercel.app (main 에 푸시하면
+  Vercel 이 1분 안팎에 새로 만든다).
+- Gemini 호출은 할당량을 쓰므로 생성 테스트는 꼭 필요한 만큼만 한다. 화면만
+  확인할 때는 이전 생성 결과를 `localStorage` 에 넣어 미리보기를 연다.

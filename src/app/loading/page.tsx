@@ -4,15 +4,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { saveCardNews } from "@/lib/cardNewsStore";
 
-const STATUS_MESSAGES = [
-  "기사 본문 확인 중...",
-  "최신 사실 관계 검색 중...",
-  "카드 구성 설계 중...",
-  "문장 다시 쓰는 중...",
-  "줄바꿈 다듬는 중...",
-  "캡션과 해시태그 작성 중...",
-  "마무리 정리 중...",
-];
+/**
+ * 단계마다 보여 줄 문구와, 그 단계에서 막대가 갈 수 있는 끝.
+ *
+ * 생성은 요청 두 번이다(`/api/research` → `/api/generate`). 예전에는 문구를
+ * 시간에 맞춰 돌렸는데, 이제는 실제로 어느 단계인지 안다. 막대도 단계를
+ * 넘지 못하게 막는다. 자료를 다 모으기 전에 "캡션 작성 중"이 뜨면 거짓말이다.
+ */
+const STAGES = {
+  research: { cap: 45, messages: ["기사 본문 확인 중...", "최신 사실 관계 검색 중..."] },
+  generate: {
+    cap: 95,
+    messages: ["카드 구성 설계 중...", "문장 다시 쓰는 중...", "줄바꿈 다듬는 중...", "캡션과 해시태그 작성 중..."],
+  },
+} as const;
+type Stage = keyof typeof STAGES;
 
 /**
  * 응답 본문이 JSON 이 아닐 때 사람이 읽을 수 있는 설명으로 바꾼다.
@@ -46,6 +52,7 @@ function LoadingContent() {
   const url = searchParams.get("url") ?? "";
 
   const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState<Stage>("research");
   const [statusIdx, setStatusIdx] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -56,43 +63,61 @@ function LoadingContent() {
     hasFetched.current = true;
 
     let currentProgress = 0;
-    // 실제 생성은 15~45초쯤 걸린다. 전에는 12초에 95% 에 닿고 그 뒤로는
-    // 멈춰 있어서, **기다리는 시간의 대부분을 95% 에서 보냈다.** 막대가
-    // 사실과 너무 달랐다. 실제에 가깝게 늘리고, 그래도 남으면 아래에
-    // 흐른 시간을 보여 준다.
-    const totalDuration = 45000;
+    let currentStage: Stage = "research";
+    // 단계마다 20초쯤 걸린다고 보고 막대를 민다. 전에는 12초에 95% 에 닿고
+    // 그 뒤로는 멈춰 있어서, **기다리는 시간의 대부분을 95% 에서 보냈다.**
+    // 그래도 남으면 아래에 흐른 시간을 보여 준다.
+    const stageDuration = 20000;
     const intervalMs = 80;
-    const increment = 100 / (totalDuration / intervalMs);
+    const increment = 50 / (stageDuration / intervalMs);
 
     const startedAt = Date.now();
     const tick = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 500);
 
     const animInterval = setInterval(() => {
-      currentProgress = Math.min(currentProgress + increment, 95);
+      const { cap, messages } = STAGES[currentStage];
+      const floor = currentStage === "research" ? 0 : STAGES.research.cap;
+      currentProgress = Math.min(currentProgress + increment, cap);
       setProgress(currentProgress);
-      setStatusIdx(Math.floor((currentProgress / 100) * STATUS_MESSAGES.length));
+      const within = (currentProgress - floor) / (cap - floor);
+      setStatusIdx(Math.min(Math.floor(within * messages.length), messages.length - 1));
     }, intervalMs);
+
+    /** 한 단계를 부르고 JSON 을 돌려준다. */
+    const call = async (path: string, payload: unknown) => {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        // **먼저 글자로 읽는다.** 응답이 늘 우리 JSON 인 것은 아니다.
+        // 함수가 제한 시간을 넘기면 Vercel 이 함수를 죽이고 자기 오류
+        // 페이지를 돌려주는데, 그걸 바로 json() 으로 읽으면 구문 오류가
+        // 나고 **그 구문 오류가 화면에 뜬다.** 진짜 원인(시간 초과)은
+        // 어디에도 안 남는다. 실제로 그렇게 한 번 헤맸다.
+        throw new Error(await readError(res));
+      }
+
+      const text = await res.text();
+      if (!text.trim().startsWith("{")) throw new Error(describeNonJson(res, text));
+      return JSON.parse(text);
+    };
 
     const generate = async () => {
       try {
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword, url }),
-        });
+        // 요청을 둘로 나눈 것은 시간 제한 때문이다. 한 요청에서 검색과
+        // 생성을 다 하면 합이 서버의 55초 예산을 넘었다. 요청마다 예산이
+        // 따로이므로 나누면 단계마다 온전히 쓴다.
+        const material = await call("/api/research", { keyword, url });
 
-        if (!res.ok) {
-          // **먼저 글자로 읽는다.** 응답이 늘 우리 JSON 인 것은 아니다.
-          // 함수가 제한 시간을 넘기면 Vercel 이 함수를 죽이고 자기 오류
-          // 페이지를 돌려주는데, 그걸 바로 json() 으로 읽으면 구문 오류가
-          // 나고 **그 구문 오류가 화면에 뜬다.** 진짜 원인(시간 초과)은
-          // 어디에도 안 남는다. 실제로 그렇게 한 번 헤맸다.
-          throw new Error(await readError(res));
-        }
+        currentStage = "generate";
+        currentProgress = Math.max(currentProgress, STAGES.research.cap);
+        setStage("generate");
+        setStatusIdx(0);
 
-        const text = await res.text();
-        if (!text.trim().startsWith("{")) throw new Error(describeNonJson(res, text));
-        const data = JSON.parse(text);
+        const data = await call("/api/generate", material);
         // 결과에 고유 주소를 준다. /preview?id=... 로 넘기면 새로고침해도
         // 같은 카드뉴스가 다시 열리고, 주소를 북마크해 둘 수도 있다.
         const id = saveCardNews(keyword, data);
@@ -104,7 +129,7 @@ function LoadingContent() {
         const finishInterval = setInterval(() => {
           p = Math.min(p + 2, 100);
           setProgress(p);
-          setStatusIdx(STATUS_MESSAGES.length - 1);
+          setStatusIdx(STAGES.generate.messages.length - 1);
           if (p >= 100) {
             clearInterval(finishInterval);
             setTimeout(() => router.replace(`/preview?id=${id}`), 600);
@@ -127,7 +152,8 @@ function LoadingContent() {
 
   const circumference = 508;
   const dashOffset = circumference - (progress / 100) * circumference;
-  const statusMessage = STATUS_MESSAGES[Math.min(statusIdx, STATUS_MESSAGES.length - 1)];
+  const stageMessages = STAGES[stage].messages;
+  const statusMessage = stageMessages[Math.min(statusIdx, stageMessages.length - 1)];
 
   if (error) {
     const isRateLimit =
@@ -313,7 +339,7 @@ function LoadingContent() {
                   적어도 돌아가고 있다는 것은 알 수 있다. */}
               <p className="font-korean-reg text-white/35 text-xs mt-1.5 tabular-nums">
                 {elapsed}초 지남
-                {elapsed >= 40 && " · 기사가 길면 1분 가까이 걸립니다"}
+                {elapsed >= 40 && " · 길면 1분 넘게 걸립니다"}
               </p>
             </div>
           </div>

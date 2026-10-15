@@ -135,11 +135,11 @@ export default function LandingPage() {
             <div className="relative w-full max-w-2xl mx-auto">
               <div className="relative flex items-center glass-panel p-2 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors"
                 style={{ boxShadow: "0 0 40px rgba(6,182,212,0.1)" }}>
-                <span className="material-symbols-outlined ml-4 text-primary/70">search</span>
+                <span className="material-symbols-outlined ml-2 md:ml-4 text-primary/70">search</span>
                 <input
                   id="query-input"
-                  className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-4 py-3 outline-none text-[15px]"
-                  placeholder="키워드 또는 기사 URL 입력"
+                  className="w-full min-w-0 bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-1.5 md:px-4 py-3 outline-none text-[15px]"
+                  placeholder="키워드 또는 기사 URL"
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -149,10 +149,15 @@ export default function LandingPage() {
                   id="generate-btn"
                   onClick={handleGenerate}
                   disabled={!query.trim()}
-                  className="cta-gradient text-white px-7 py-3 rounded-xl font-korean-bold text-sm flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                  className="cta-gradient text-white px-4 md:px-7 py-3 rounded-xl font-korean-bold text-sm flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
-                  생성하기
-                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                  {/* 휴대폰에서는 버튼을 줄여 입력칸 안내 문구가 다 보이게 한다. */}
+                  <span className="md:hidden">생성</span>
+                  <span className="hidden md:inline">생성하기</span>
+                  {/* 아이콘 서체 CSS 가 display 를 덮어써서 hidden 이 안 먹는다. 감싸서 숨긴다. */}
+                  <span className="hidden md:inline-flex">
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                  </span>
                 </button>
               </div>
               <p className="text-white/30 text-xs mt-2 text-center leading-relaxed">

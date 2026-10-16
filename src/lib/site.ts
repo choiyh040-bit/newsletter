@@ -5,8 +5,11 @@
  * `NEXT_PUBLIC_` 이 붙은 값은 빌드할 때 페이지에 들어간다. 바꾼 뒤에는 다시 배포해야 한다.
  */
 
-/** 문의 이메일. 비어 있으면 안내 페이지에 "문의처 준비 중"으로 나온다. */
-export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() ?? "";
+/**
+ * 문의 이메일. 환경변수가 있으면 그것, 없으면 운영자 주소(2026-10-16 사용자가 정함).
+ * 개인정보처리방침·이용약관의 문의처로 공개된다.
+ */
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "choiyh040@gmail.com";
 
 /** 서비스 이름. 화면 머리의 이름과 같다. */
 export const SITE_NAME = "CardGen AI";

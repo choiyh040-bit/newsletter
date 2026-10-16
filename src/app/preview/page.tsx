@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, photoCredit, type CardNews, type CardSlide } from "@/lib/cardnews";
+import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, photoCredit, slidePhoto, type CardNews, type CardSlide } from "@/lib/cardnews";
 import { toCardJpeg } from "@/lib/photoUpload";
 import SlideEditor from "@/components/SlideEditor";
 import AccentPicker from "@/components/AccentPicker";
@@ -82,67 +82,6 @@ function PreviewContent() {
   // 사진 파이프라인이 아직 없어 색 배경 템플릿만 고를 수 있다.
   const choices = availableTemplates();
   const template = templateById(entry?.templateId);
-  // 사진 템플릿일 때만 사진을 넘긴다. 사진은 생성할 때 찾아 둔 것이다.
-  // 직접 올린 사진이 있으면 그것을, 없으면 생성할 때 찾아 둔 사진을 쓴다.
-  const photo =
-    template.background === "photo" ? (data?.userPhoto ?? data?.photo ?? null) : null;
-  // 사진을 쓰면 캡션 끝에 작가 표기를 붙인다(CC BY 계열은 의무). 사진을 안 쓰는
-  // 템플릿이면 붙이지 않는다. 템플릿을 바꿀 때마다 따라 바뀌어야 해서 저장된
-  // 캡션에 넣지 않고 보여 줄 때·복사할 때 만든다.
-  const captionText =
-    (data?.caption ?? "") +
-    (photo && photoCredit(photo)
-      ? `\n사진: ${photoCredit(photo)}${photo.pageUrl ? ` ${photo.pageUrl}` : ""}`
-      : "");
-
-  // 내 사진 올리기. 아이스탁처럼 프로그램이 가져올 수 없는 곳의 사진을 쓴다.
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const uploadPhoto = async (file: File | undefined) => {
-    if (!file || !entry || !data) return;
-    setUploadError(null);
-    try {
-      const url = await toCardJpeg(file);
-      updateCardNewsData(entry.id, {
-        ...data,
-        userPhoto: { url, credit: "직접 올린 사진", license: "사용자 제공", pageUrl: "", source: "upload" },
-      });
-    } catch {
-      setUploadError("사진을 읽지 못했습니다. JPG·PNG 사진인지 확인해 주세요.");
-    }
-  };
-  // 다른 사진. 같은 검색어로, 이미 본 사진은 빼고 하나 더 찾는다.
-  const [photoBusy, setPhotoBusy] = useState(false);
-  const nextPhoto = async () => {
-    if (!entry || !data || photoBusy) return;
-    setUploadError(null);
-    setPhotoBusy(true);
-    try {
-      // 예전 결과에는 검색어가 남아 있지 않다. 그때는 일반적인 행사장 컷을 찾는다.
-      const query = data.photoQuery || "convention center";
-      const exclude = [...(data.photoSeen ?? []), data.photo?.pageUrl ?? ""].filter(Boolean);
-      const res = await fetch("/api/photo-search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, exclude }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { photo?: CardNews["photo"] | null };
-      if (!res.ok || !body.photo) {
-        setUploadError("더 보여 드릴 사진을 찾지 못했습니다.");
-        return;
-      }
-      updateCardNewsData(entry.id, { ...data, photo: body.photo, photoSeen: exclude.slice(-30) });
-    } catch {
-      setUploadError("사진을 찾지 못했습니다. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setPhotoBusy(false);
-    }
-  };
-  const removeUserPhoto = () => {
-    if (!entry || !data) return;
-    const { userPhoto: _removed, ...rest } = data;
-    void _removed;
-    updateCardNewsData(entry.id, rest);
-  };
   // 색 조합에 직접 고른 강조색을 덮은 실제 색.
   const variant = resolveColors(
     template,
@@ -163,6 +102,110 @@ function PreviewContent() {
   const total = data?.slides.length ?? 0;
   const entryId = entry?.id ?? "";
   const current = slidePos.id === entryId ? slidePos.index : 0;
+
+  // ─── 사진(사진 템플릿) ─────────────────────────────────────────────────────
+  // 장마다 다른 사진을 쓴다. 이 장에 올린 사진 → 이 장 사진 → 세트 사진 순.
+  const isPhotoTemplate = template.background === "photo";
+  const photoOf = (i: number) =>
+    isPhotoTemplate && data?.slides[i] ? slidePhoto(data.slides[i], data) : null;
+  const photo = photoOf(current);
+
+  // 캡션 끝 사진 표기. 장마다 사진이 달라서 쓴 사진을 모두 적는다(같은 사진은 한 번).
+  // 픽사베이·언스플래쉬는 곳마다 작가를 모아 한 줄, 위키미디어(CC)는 사진마다
+  // 라이선스와 원본 주소까지 한 줄. 사진 템플릿이 아니면 붙이지 않는다. 템플릿을
+  // 바꾸면 따라 바뀌어야 해서 저장된 캡션에 넣지 않고 보여 줄 때·복사할 때 만든다.
+  const creditLines = (() => {
+    if (!isPhotoTemplate || !data) return [] as string[];
+    const seen = new Set<string>();
+    const photos = data.slides
+      .map((sl) => slidePhoto(sl, data))
+      .filter((p): p is NonNullable<typeof p> => !!p && !!photoCredit(p) && !seen.has(p.url) && !!seen.add(p.url));
+    const lines: string[] = [];
+    for (const src of ["Pixabay", "Unsplash"] as const) {
+      const names = [...new Set(photos.filter((p) => p.source === src).map((p) => p.credit))];
+      if (names.length) lines.push(`사진: ${names.join(", ")} · ${src}`);
+    }
+    for (const p of photos.filter((p) => p.source !== "Pixabay" && p.source !== "Unsplash")) {
+      lines.push(`사진: ${photoCredit(p)}${p.pageUrl ? ` ${p.pageUrl}` : ""}`);
+    }
+    return lines;
+  })();
+  const captionText = (data?.caption ?? "") + (creditLines.length ? `\n${creditLines.join("\n")}` : "");
+
+  /** 지금 보는 장의 사진 칸을 바꿔 저장한다. */
+  const updateSlide = (patch: (slide: CardSlide) => CardSlide) => {
+    if (!entry || !data) return;
+    updateCardNewsData(entry.id, {
+      ...data,
+      slides: data.slides.map((sl, i) => (i === current ? patch(sl) : sl)),
+    });
+  };
+
+  // 내 사진 올리기(지금 보는 장). 아이스탁처럼 프로그램이 가져올 수 없는 곳의 사진.
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadPhoto = async (file: File | undefined) => {
+    if (!file || !data) return;
+    setUploadError(null);
+    try {
+      const url = await toCardJpeg(file);
+      updateSlide((sl) => ({
+        ...sl,
+        userPhoto: { url, credit: "직접 올린 사진", license: "사용자 제공", pageUrl: "", source: "upload" },
+      }));
+    } catch {
+      setUploadError("사진을 읽지 못했습니다. JPG·PNG 사진인지 확인해 주세요.");
+    }
+  };
+
+  // 다른 사진(지금 보는 장). 같은 검색어로, 다른 장에 쓴 사진·이미 본 사진은 빼고 찾는다.
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const nextPhoto = async () => {
+    if (!data || photoBusy) return;
+    const slide = data.slides[current];
+    setUploadError(null);
+    setPhotoBusy(true);
+    try {
+      // 예전 결과에는 검색어가 남아 있지 않다. 그때는 일반적인 행사장 컷을 찾는다.
+      const query = slide.photoQuery || data.photoQuery || "convention center";
+      const inUse = data.slides.map((sl) => slidePhoto(sl, data)?.pageUrl ?? "");
+      const exclude = [...new Set([...(data.photoSeen ?? []), ...inUse])].filter(Boolean);
+      const res = await fetch("/api/photo-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, exclude }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { photo?: CardNews["photo"] | null };
+      if (!res.ok || !body.photo) {
+        setUploadError("더 보여 드릴 사진을 찾지 못했습니다.");
+        return;
+      }
+      if (!entry) return;
+      updateCardNewsData(entry.id, {
+        ...data,
+        photoSeen: exclude.slice(-30),
+        slides: data.slides.map((sl, i) => (i === current ? { ...sl, photo: body.photo! } : sl)),
+      });
+    } catch {
+      setUploadError("사진을 찾지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  // 올린 사진 지우기(지금 보는 장). 예전 판의 세트 단위 올린 사진도 함께 지운다.
+  const currentHasUpload = !!(data?.slides[current]?.userPhoto || (!data?.slides[current]?.photo && data?.userPhoto));
+  const removeUserPhoto = () => {
+    if (!entry || !data) return;
+    const { userPhoto: _setUpload, ...rest } = data;
+    void _setUpload;
+    const slides = data.slides.map((sl, i) => {
+      if (i !== current) return sl;
+      const { userPhoto: _u, ...plain } = sl;
+      void _u;
+      return plain;
+    });
+    updateCardNewsData(entry.id, { ...(data.slides[current]?.userPhoto ? data : rest), slides });
+  };
 
   const goTo = useCallback(
     (move: (index: number) => number) => {
@@ -321,7 +364,7 @@ function PreviewContent() {
               accent={data.accent}
               total={total}
               source={data.source}
-              photo={photo}
+              photo={photoOf(i)}
               variant={variant}
               align={align}
             />
@@ -525,6 +568,9 @@ function PreviewContent() {
               {template.background === "photo" && (
                 <div className="mt-5 pt-4 border-t border-white/5">
                   <span className="block text-white/70 text-xs font-korean-bold mb-2">사진</span>
+                  <p className="text-white/50 text-xs font-korean-reg mb-1">
+                    {current + 1}번째 장의 사진입니다. 장마다 따로 바꿀 수 있습니다.
+                  </p>
                   <p className="text-white/40 text-xs font-korean-reg leading-relaxed [overflow-wrap:anywhere]">
                     {photo?.source === "upload" ? (
                       "직접 올린 사진을 쓰고 있습니다. 사진 표기는 붙이지 않습니다."
@@ -543,7 +589,7 @@ function PreviewContent() {
                   </p>
                   <div className="flex gap-2 mt-3">
                     {/* 올린 사진을 쓰는 중이면 자동 사진이 안 보이므로 숨긴다. */}
-                    {!data?.userPhoto && (
+                    {!currentHasUpload && (
                       <button
                         type="button"
                         onClick={() => void nextPhoto()}
@@ -565,7 +611,7 @@ function PreviewContent() {
                         }}
                       />
                     </label>
-                    {data?.userPhoto && (
+                    {currentHasUpload && (
                       <button
                         type="button"
                         onClick={removeUserPhoto}

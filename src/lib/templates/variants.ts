@@ -40,3 +40,28 @@ export const LIGHT_VARIANTS: readonly TemplateVariant[] = [
   { id: "white-violet", name: "흰색 · 보라", base: "#FFFFFF", neon: "#6B3FD4" },
   { id: "ivory-crimson", name: "아이보리 · 진홍", base: "#F3F0E8", neon: "#D81E3C" },
 ];
+
+/**
+ * 사진 · 반투명 카드의 강조색. 사진 위 어두운 상자에서 읽히는 밝은 색들.
+ * `base` 는 견본 동그라미의 바탕(상자 색)일 뿐 카드 배경은 사진이다.
+ * 참고 게시물이 노랑(서울썸머비치)·민트(표지)를 썼다.
+ */
+export const PHOTO_VARIANTS: readonly TemplateVariant[] = [
+  { id: "photo-yellow", name: "노랑", base: "#1A1C21", neon: "#FFD54A" },
+  { id: "photo-mint", name: "민트", base: "#1A1C21", neon: "#7EF0C8" },
+  { id: "photo-sky", name: "하늘", base: "#1A1C21", neon: "#7CC8FF" },
+  { id: "photo-pink", name: "분홍", base: "#1A1C21", neon: "#FF8FB8" },
+  { id: "photo-white", name: "흰색", base: "#1A1C21", neon: "#FFFFFF" },
+];
+
+/**
+ * 크림 바탕 · 굵은 고딕의 강조색. 바탕은 참고 게시물의 크림색으로 고정하고
+ * 강조색만 바꾼다. 크림 위에서 글자로 읽히는 진한 색들.
+ */
+export const CREAM_VARIANTS: readonly TemplateVariant[] = [
+  { id: "cream-red", name: "크림 · 빨강", base: "#F3EEE4", neon: "#D7262B" },
+  { id: "cream-blue", name: "크림 · 파랑", base: "#F3EEE4", neon: "#1F4FE0" },
+  { id: "cream-green", name: "크림 · 진녹", base: "#F3EEE4", neon: "#0E8A5F" },
+  { id: "cream-orange", name: "크림 · 주황", base: "#F3EEE4", neon: "#E8590C" },
+  { id: "cream-violet", name: "크림 · 보라", base: "#F3EEE4", neon: "#6B3FD4" },
+];

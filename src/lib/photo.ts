@@ -295,3 +295,60 @@ export async function findPhoto(
   }
   return null;
 }
+
+/** 한 검색어의 후보들. 처음 후보가 나온 곳(픽사베이 → 언스플래쉬 → 위키미디어)의 것. */
+async function candidatePool(query: string, signal: AbortSignal): Promise<Candidate[]> {
+  for (const provider of PROVIDERS) {
+    if (signal.aborted) return [];
+    try {
+      const found = await provider.search(query, signal);
+      if (found.length > 0) return found;
+    } catch (error) {
+      console.warn(`[photo] ${provider.name} "${query}" 검색 실패:`, error);
+    }
+  }
+  return [];
+}
+
+/**
+ * 장마다 사진을 하나씩, **서로 겹치지 않게** 고른다.
+ *
+ * 참고 게시물들은 장마다 사진이 달랐다(표지는 전경, 다음 장은 내부, 그다음은
+ * 사람들…). 같은 사진이 이어지면 넘길 이유가 없다. 장마다 검색어를 따로 받아
+ * **동시에** 찾고(차례로 찾으면 일곱 장이면 일곱 배 걸린다), 앞 장에서 쓴
+ * 사진은 빼고 고른다. 그 장 검색어로 남는 게 없으면 세트 검색어(`fallback`)로.
+ */
+export async function findSlidePhotos(
+  queries: string[],
+  fallback: string,
+  timeoutMs = 6_000
+): Promise<(FoundPhoto | null)[]> {
+  const signal = AbortSignal.timeout(timeoutMs);
+  const unique = [...new Set([...queries, fallback].map((q) => q.trim()).filter(Boolean))];
+  const pools = new Map(
+    await Promise.all(unique.map(async (q) => [q, await candidatePool(q, signal)] as const))
+  );
+
+  const used = new Set<string>();
+  const pick = (q: string) => {
+    const pool = (pools.get(q.trim()) ?? []).filter((c) => !used.has(c.pageUrl)).slice(0, POOL);
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  };
+
+  const chosen = queries.map((q) => {
+    const c = pick(q) ?? pick(fallback);
+    if (c) used.add(c.pageUrl);
+    return c;
+  });
+
+  // 언스플래쉬 사용 알림은 실제로 고른 사진에만.
+  await Promise.all(
+    chosen.map((c) => (c?.notify ? fetch(c.notify.url, { headers: c.notify.headers }).catch(() => {}) : null))
+  );
+  return chosen.map((c) => {
+    if (!c) return null;
+    const { notify: _n, ...photo } = c;
+    void _n;
+    return photo;
+  });
+}

@@ -1,9 +1,11 @@
 import DarkNeon from "@/components/templates/DarkNeon";
 import GradientCenter from "@/components/templates/GradientCenter";
 import DarkNeonSerif from "@/components/templates/DarkNeonSerif";
+import PhotoStory from "@/components/templates/PhotoStory";
+import CreamBold from "@/components/templates/CreamBold";
 import type { BackgroundKind, Template, TemplateVariant } from "./types";
 import { isHexColor } from "./color";
-import { LIGHT_VARIANTS, NEON_VARIANTS } from "./variants";
+import { CREAM_VARIANTS, LIGHT_VARIANTS, NEON_VARIANTS, PHOTO_VARIANTS } from "./variants";
 
 export * from "./types";
 export * from "./variants";
@@ -29,13 +31,25 @@ export const TEMPLATES: Template[] = [
     Render: GradientCenter,
   },
   {
+    // id 는 처음 만들 때(그라데이션 · 고딕에 사진을 깐 것) 그대로 둔다. 저장된
+    // 결과가 이 id 로 열린다. 2026-10-16 참고 게시물에 맞춰 레이아웃을 새로 그렸다.
     id: "photo-gradient",
-    name: "사진 · 그라데이션 · 고딕",
-    description: "기사 관련 사진 위에 그라데이션과 반투명 카드. 중앙 정렬",
+    name: "사진 · 반투명 카드",
+    description: "장마다 다른 사진 위에 반투명 카드. 표지는 사진 위에 큰 제목",
     background: "photo",
     font: "sans",
-    // 레이아웃은 그라데이션 · 고딕과 같다. 사진이 있을 때만 바탕에 깐다.
-    Render: GradientCenter,
+    Render: PhotoStory,
+    variants: PHOTO_VARIANTS,
+  },
+  {
+    // 사용자가 보낸 참고 게시물("인스타 카드뉴스 성공하는 방법 vs 실패하는 방법")
+    id: "cream-bold",
+    name: "크림 바탕 · 굵은 고딕",
+    description: "크림 바탕에 아주 굵은 검정 제목, 핵심어만 강조색. 중앙 정렬",
+    background: "color",
+    font: "sans",
+    Render: CreamBold,
+    variants: CREAM_VARIANTS,
   },
   {
     id: "dark-neon",

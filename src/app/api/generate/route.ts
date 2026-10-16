@@ -8,7 +8,7 @@ import {
   type CardNewsSource,
 } from "@/lib/cardnews";
 import { client, failure, startBudget, THINKING, withFallback } from "@/lib/gemini";
-import { findPhoto } from "@/lib/photo";
+import { findSlidePhotos } from "@/lib/photo";
 
 /**
  * 모은 자료로 카드뉴스를 짓는다. 두 단계 중 두 번째.
@@ -116,8 +116,12 @@ ${article}
 - **주소(URL)는 쓰지 마세요.** 출처 주소는 캡션 끝에 따로 붙습니다.
 
 [사진 검색어]
-- imageQuery 에 카드 배경 사진을 찾을 **영어** 검색어를 2~4 단어로 적으세요.
-  스톡 사진 사이트에서 검색합니다. 기사 속 행사장 그 자체가 아니어도 됩니다.
+- **각 슬라이드마다** imageQuery 에 그 장의 배경 사진을 찾을 **영어** 검색어를
+  2~4 단어로 적으세요. 세트 전체용 imageQuery 도 하나 적습니다(맨 바깥).
+- **장마다 다른 장면**이어야 합니다. 같은 사진이 이어지면 넘길 이유가 없습니다.
+  표지는 주제를 대표하는 전경, 상세 장은 그 장 내용에 맞는 장면(일정이면
+  행사장 입구, 참여 대상이면 사람들, 분야면 그 분야의 사물)으로 고릅니다.
+- 스톡 사진 사이트에서 검색합니다. 기사 속 행사장 그 자체가 아니어도 됩니다.
 - 기사 분위기에 맞는 **일반적인 장면**이면 됩니다. 이런 것들입니다.
   - 장소·건물: "convention center", "Busan skyline", "exhibition hall"
   - 장면: "conference audience", "business meeting", "trade show booth"
@@ -145,14 +149,16 @@ ${article}
       "badge": "MICE 뉴스",
       "sub": "표지 위쪽 작은 소제목",
       "heading": ["표지 첫 줄", "==둘째 줄==", "셋째 줄", "넷째 줄"],
-      "body": []
+      "body": [],
+      "imageQuery": "convention center exterior"
     },
     {
       "kind": "detail",
       "badge": "MICE 뉴스",
       "sub": "예산",
       "heading": ["상세 헤드라인"],
-      "body": ["본문 첫 줄에 *수치 42건*", "본문 둘째 줄"]
+      "body": ["본문 첫 줄에 *수치 42건*", "본문 둘째 줄"],
+      "imageQuery": "conference audience"
     }
   ],
   "caption": "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)",
@@ -207,12 +213,23 @@ async function generateOnce(
   if (count < MIN_SLIDES || count > GENERATED_MAX_SLIDES) {
     throw new Error(`슬라이드가 ${count}장입니다. ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장이어야 합니다.`);
   }
-  return { result, imageQuery };
+  // 장마다의 사진 검색어도 정리 함수가 버리므로 따로 꺼낸다.
+  const rawSlides =
+    typeof raw === "object" && raw !== null && Array.isArray((raw as { slides?: unknown }).slides)
+      ? ((raw as { slides: unknown[] }).slides)
+      : [];
+  const slideQueries = result.slides.map((_, i) => {
+    const q = (rawSlides[i] as { imageQuery?: unknown } | undefined)?.imageQuery;
+    return typeof q === "string" ? q.slice(0, 80) : "";
+  });
+  return { result, imageQuery, slideQueries };
 }
 
 interface Generated {
   result: CardNews;
   imageQuery: string;
+  /** 장마다의 사진 검색어. 비어 있으면 세트 검색어를 쓴다. */
+  slideQueries: string[];
 }
 
 /** 사진 검색에 줄 시간의 상한. 남은 시간이 이보다 적으면 그만큼만 쓴다. */
@@ -226,20 +243,31 @@ const PHOTO_MAX_MS = 6_000;
  * 찾아도 실패가 아니다. 사진 템플릿이 그라데이션으로 그린다.
  */
 async function finish(
-  { result, imageQuery }: Generated,
+  { result, imageQuery, slideQueries }: Generated,
   links: CardNewsSource[],
   material: Material,
   left: () => number
 ): Promise<CardNews> {
   const withSrc = withSources(result, links, material);
-  const room = Math.min(PHOTO_MAX_MS, left() - 3_000);
-  if (room < 1_500) return withSrc;
-  const words = imageQuery.split(/\s+/).filter(Boolean);
-  const photo = await findPhoto([imageQuery, words.slice(0, 2).join(" ")], room);
-  console.info(`[generate] 사진 "${imageQuery}" → ${photo ? `${photo.source} ${photo.credit}` : "없음"}`);
-  // 검색어를 남겨 둔다. 미리보기의 "다른 사진"이 같은 검색어로 다시 찾는다.
   const withQuery = imageQuery ? { ...withSrc, photoQuery: imageQuery } : withSrc;
-  return photo ? { ...withQuery, photo } : withQuery;
+  const room = Math.min(PHOTO_MAX_MS, left() - 3_000);
+  if (room < 1_500) return withQuery;
+
+  // 장마다 다른 사진. 장 검색어가 비면 세트 검색어로 찾는다.
+  const queries = slideQueries.map((q) => q || imageQuery);
+  const photos = await findSlidePhotos(queries, imageQuery, room);
+  console.info(
+    `[generate] 사진 ${photos.filter(Boolean).length}/${photos.length}장: ` +
+      queries.map((q, i) => `"${q}"→${photos[i] ? photos[i]!.source : "없음"}`).join(", ")
+  );
+  const slides = withQuery.slides.map((slide, i) => ({
+    ...slide,
+    ...(queries[i] ? { photoQuery: queries[i] } : {}),
+    ...(photos[i] ? { photo: photos[i]! } : {}),
+  }));
+  // 세트 사진(예전 결과 호환, 홈 견본 등)은 표지 사진으로 둔다.
+  const cover = photos.find(Boolean);
+  return { ...withQuery, slides, ...(cover ? { photo: cover } : {}) };
 }
 
 /**

@@ -79,6 +79,20 @@ export interface CardSlide {
    * 없으면 상자를 그리지 않는다.
    */
   note: TextLine[];
+  /**
+   * 이 장의 배경 사진(사진 템플릿). **장마다 다른 사진**을 쓴다(2026-10-16) —
+   * 같은 사진이 다섯 장 이어지면 넘길 이유가 없다. 없으면 세트의 `photo` 를 쓴다.
+   */
+  photo?: CardNewsPhoto;
+  /** 이 장에 직접 올린 사진. 있으면 `photo` 보다 먼저 쓴다. */
+  userPhoto?: CardNewsPhoto;
+  /** 이 장의 사진을 찾은 검색어. "다른 사진"이 다시 쓴다. */
+  photoQuery?: string;
+}
+
+/** 이 장에 실제로 그릴 사진. 직접 올린 것 → 이 장 사진 → 세트 사진 순. */
+export function slidePhoto(slide: CardSlide, data: CardNews): CardNewsPhoto | null {
+  return slide.userPhoto ?? slide.photo ?? data.userPhoto ?? data.photo ?? null;
 }
 
 export interface CardNewsSource {
@@ -343,6 +357,11 @@ export function normalizeCardNews(raw: unknown): CardNews {
       heading: toLines(slide.heading, kind === "cover" ? 5 : 3),
       body: toLines(slide.body, kind === "cover" ? 2 : 4),
       note: kind === "detail" ? toLines(slide.note, 2) : [],
+      ...(normalizePhoto(slide.photo) ? { photo: normalizePhoto(slide.photo) } : {}),
+      ...(normalizePhoto(slide.userPhoto) ? { userPhoto: normalizePhoto(slide.userPhoto) } : {}),
+      ...(typeof slide.photoQuery === "string" && slide.photoQuery.trim()
+        ? { photoQuery: slide.photoQuery.trim().slice(0, 80) }
+        : {}),
     };
   });
 

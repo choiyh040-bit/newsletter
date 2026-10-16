@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import TemplatePicker from "@/components/TemplatePicker";
 import TonePicker from "@/components/TonePicker";
+import MobileMenu from "@/components/MobileMenu";
 import { INFO_LINKS } from "@/components/InfoPage";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
@@ -73,14 +74,14 @@ export default function LandingPage() {
     <>
       {/* ─── TopNav ─────────────────────────────────────────── */}
       <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/8">
-        <div className="flex justify-between items-center px-6 md:px-12 h-16 w-full max-w-7xl mx-auto">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+        <div className="flex justify-between items-center gap-2 px-4 md:px-12 h-16 w-full max-w-7xl mx-auto">
+          <Link href="/" className="flex items-center gap-2 md:gap-2.5 hover:opacity-80 transition-opacity whitespace-nowrap">
             <div className="w-8 h-8 rounded-xl cta-gradient flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 auto_awesome
               </span>
             </div>
-            <span className="font-korean-bold text-lg text-white tracking-tight">CardGen AI</span>
+            <span className="font-korean-bold text-base md:text-lg text-white tracking-tight">CardGen AI</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link className="text-white/80 font-medium hover:text-primary transition-colors text-sm" href="/">홈</Link>
@@ -89,13 +90,16 @@ export default function LandingPage() {
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/guide">사용법</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/feedback">피드백</Link>
           </nav>
+          <div className="flex items-center gap-1.5">
+            <MobileMenu extra={[{ href: "#features", label: "기능" }, { href: "#examples", label: "예시" }]} />
           <button
             onClick={handleGenerate}
-            className="cta-gradient text-white px-5 py-2 rounded-full text-sm font-korean-bold hover:brightness-110 active:scale-95 transition-all shadow-lg"
+            className="cta-gradient text-white px-4 md:px-5 py-2 rounded-full text-sm font-korean-bold hover:brightness-110 active:scale-95 transition-all shadow-lg whitespace-nowrap"
             style={{ boxShadow: "0 4px 20px rgba(6,182,212,0.3)" }}
           >
             지금 시작하기
           </button>
+          </div>
         </div>
       </header>
 

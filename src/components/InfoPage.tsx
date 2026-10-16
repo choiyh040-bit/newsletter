@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { SITE_NAME } from "@/lib/site";
+import MobileMenu from "./MobileMenu";
+import { SITE_MENU } from "@/lib/siteMenu";
 
 /**
  * 소개·사용법·개인정보처리방침·이용약관 같은 글 페이지의 틀.
@@ -28,21 +30,31 @@ export default function InfoPage({
   return (
     <>
       <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/8">
-        <div className="flex justify-between items-center px-6 md:px-12 h-16 w-full max-w-7xl mx-auto">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+        <div className="flex justify-between items-center gap-2 px-4 md:px-12 h-16 w-full max-w-7xl mx-auto">
+          <Link href="/" className="flex items-center gap-2 md:gap-2.5 hover:opacity-80 transition-opacity whitespace-nowrap">
             <div className="w-8 h-8 rounded-xl cta-gradient flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 auto_awesome
               </span>
             </div>
-            <span className="font-korean-bold text-lg text-white tracking-tight">{SITE_NAME}</span>
+            <span className="font-korean-bold text-base md:text-lg text-white tracking-tight">{SITE_NAME}</span>
           </Link>
-          <Link
-            href="/"
-            className="cta-gradient text-white px-5 py-2 rounded-full text-sm font-korean-bold hover:brightness-110 transition-all"
-          >
-            만들러 가기
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <nav className="hidden md:flex items-center gap-6 mr-4">
+              {SITE_MENU.slice(1).map((m) => (
+                <Link key={m.href} href={m.href} className="text-white/55 hover:text-primary text-sm transition-colors">
+                  {m.label.split(" · ")[0]}
+                </Link>
+              ))}
+            </nav>
+            <MobileMenu />
+            <Link
+              href="/"
+              className="cta-gradient text-white px-4 md:px-5 py-2 rounded-full text-sm font-korean-bold hover:brightness-110 transition-all whitespace-nowrap"
+            >
+              만들러 가기
+            </Link>
+          </div>
         </div>
       </header>
 

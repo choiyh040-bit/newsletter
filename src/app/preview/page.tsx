@@ -430,9 +430,9 @@ function PreviewContent() {
 
       <main className="pt-24 pb-20 px-6 md:px-12 max-w-6xl mx-auto">
         <div className="flex items-center gap-3 mb-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-green-400 text-xs font-bold">생성 완료</span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="text-primary text-xs font-bold">생성 완료</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 rounded-full glass-panel">
             <span className="text-white/60 text-xs">
@@ -446,7 +446,7 @@ function PreviewContent() {
           {/* 카드 미리보기 */}
           <div ref={previewBoxRef} className="lg:col-span-7 min-w-0 flex flex-col items-center">
             <div
-              className="relative rounded-2xl overflow-hidden shadow-2xl"
+              className="relative overflow-hidden shadow-2xl"
               style={{
                 width: CARD_WIDTH * previewScale,
                 height: CARD_HEIGHT * previewScale,
@@ -521,7 +521,7 @@ function PreviewContent() {
               />
             )}
 
-            <div className="glass-panel p-5 rounded-2xl">
+            <div className="glass-panel p-5">
               <h4 className="text-white font-korean-bold text-sm mb-1 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-sm">palette</span>
                 디자인
@@ -536,7 +536,7 @@ function PreviewContent() {
                     <button
                       key={choice.id}
                       onClick={() => entry && setCardNewsTemplate(entry.id, choice.id)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
+                      className={`w-full text-left px-4 py-3 border transition-colors ${
                         isCurrent
                           ? "border-primary/50 bg-primary/10"
                           : "border-white/10 hover:bg-white/5"
@@ -619,7 +619,7 @@ function PreviewContent() {
                           return value ? { ...rest, captionLook: value } : rest;
                         });
                       }}
-                      className="flex-1 min-w-0 bg-white/5 border border-white/15 rounded-lg text-white/85 text-sm py-2 px-3"
+                      className="flex-1 min-w-0 bg-white/5 border border-white/15 text-white/85 text-sm py-2 px-3"
                     >
                       <option value="">자동</option>
                       {CAPTION_LOOK_IDS.map((id) => (
@@ -719,7 +719,7 @@ function PreviewContent() {
               )}
             </div>
 
-            <div className="glass-panel p-5 rounded-2xl">
+            <div className="glass-panel p-5">
               <h4 className="text-white font-korean-bold text-sm mb-4 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-sm">download</span>
                 내보내기
@@ -748,13 +748,13 @@ function PreviewContent() {
               )}
             </div>
 
-            <div className="glass-panel p-5 rounded-2xl space-y-4">
+            <div className="glass-panel p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-white font-korean-bold text-sm">캡션</h4>
                 <button
                   onClick={() => copy("caption")}
                   className="text-xs transition-colors"
-                  style={{ color: copied === "caption" ? "#4cd7f6" : "rgba(255,255,255,0.4)" }}
+                  style={{ color: copied === "caption" ? "#5b9bff" : "rgba(255,255,255,0.4)" }}
                 >
                   {copied === "caption" ? "복사됨!" : "복사"}
                 </button>
@@ -767,7 +767,7 @@ function PreviewContent() {
                   <button
                     onClick={() => copy("hashtags")}
                     className="text-xs transition-colors"
-                    style={{ color: copied === "hashtags" ? "#4cd7f6" : "rgba(255,255,255,0.4)" }}
+                    style={{ color: copied === "hashtags" ? "#5b9bff" : "rgba(255,255,255,0.4)" }}
                   >
                     {copied === "hashtags" ? "복사됨!" : "복사"}
                   </button>
@@ -786,14 +786,14 @@ function PreviewContent() {
             </div>
 
             {sourceList.length > 0 && (
-              <div className="glass-panel p-5 rounded-2xl">
+              <div className="glass-panel p-5">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-white font-korean-bold text-sm">출처</h4>
                   {sourceList.some((src) => src.url) && (
                     <button
                       onClick={() => copy("sources")}
                       className="text-xs transition-colors"
-                      style={{ color: copied === "sources" ? "#4cd7f6" : "rgba(255,255,255,0.4)" }}
+                      style={{ color: copied === "sources" ? "#5b9bff" : "rgba(255,255,255,0.4)" }}
                     >
                       {copied === "sources" ? "복사됨!" : "복사"}
                     </button>
@@ -829,7 +829,7 @@ function PreviewContent() {
             )}
 
             {history.length > 1 && (
-              <div className="glass-panel p-5 rounded-2xl">
+              <div className="glass-panel p-5">
                 <h4 className="text-white font-korean-bold text-sm mb-1">최근 생성</h4>
                 <p className="text-white/40 text-xs mb-4 font-korean-reg">
                   이 브라우저에만 저장됩니다. 최대 {MAX_VISIBLE_HISTORY}건까지 보여줍니다.
@@ -841,7 +841,7 @@ function PreviewContent() {
                       <li key={item.id} className="flex items-center gap-1">
                         <button
                           onClick={() => router.replace(`/preview?id=${item.id}`)}
-                          className={`flex-1 text-left px-3 py-2 rounded-lg transition-colors min-w-0 ${
+                          className={`flex-1 text-left px-3 py-2 transition-colors min-w-0 ${
                             isCurrent ? "bg-white/10" : "hover:bg-white/5"
                           }`}
                         >

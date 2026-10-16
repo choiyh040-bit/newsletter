@@ -2,11 +2,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import TemplatePicker from "@/components/TemplatePicker";
 import TonePicker from "@/components/TonePicker";
 import MobileMenu from "@/components/MobileMenu";
 import { INFO_LINKS } from "@/components/InfoPage";
+import { FeatureCard, HeroCards } from "@/components/SampleCards";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
 function Lines({ lines }: { lines: readonly string[] }) {
@@ -95,7 +95,7 @@ export default function LandingPage() {
           <button
             onClick={handleGenerate}
             className="cta-gradient text-white px-4 md:px-5 py-2 rounded-full text-sm font-korean-bold hover:brightness-110 active:scale-95 transition-all shadow-lg whitespace-nowrap"
-            style={{ boxShadow: "0 4px 20px rgba(6,182,212,0.3)" }}
+            style={{ boxShadow: "0 4px 20px rgba(37,99,235,0.35)" }}
           >
             지금 시작하기
           </button>
@@ -109,17 +109,17 @@ export default function LandingPage() {
           {/* Aurora BG */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full opacity-30"
-              style={{ background: "radial-gradient(circle, rgba(6,182,212,0.4) 0%, transparent 65%)", filter: "blur(80px)" }} />
+              style={{ background: "radial-gradient(circle, rgba(59,130,246,0.4) 0%, transparent 65%)", filter: "blur(80px)" }} />
             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full opacity-20"
               style={{ background: "radial-gradient(circle, rgba(5,102,217,0.5) 0%, transparent 65%)", filter: "blur(80px)" }} />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] opacity-10"
-              style={{ background: "radial-gradient(ellipse, rgba(76,215,246,0.3) 0%, transparent 70%)", filter: "blur(40px)" }} />
+              style={{ background: "radial-gradient(ellipse, rgba(96,165,250,0.3) 0%, transparent 70%)", filter: "blur(40px)" }} />
           </div>
 
           <div className="relative z-10 w-full max-w-4xl mx-auto">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel mb-6 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-green-400"></span>
+              <span className="w-2 h-2 rounded-full bg-primary"></span>
               <span className="text-white/70 text-xs font-medium">Gemini 기반 · 실시간 검색 지원</span>
             </div>
 
@@ -141,8 +141,8 @@ export default function LandingPage() {
 
             {/* Input */}
             <div className="relative w-full max-w-2xl mx-auto">
-              <div className="relative flex items-center glass-panel p-2 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors"
-                style={{ boxShadow: "0 0 40px rgba(6,182,212,0.1)" }}>
+              <div className="relative flex items-center glass-panel p-2 border border-white/10 hover:border-primary/40 transition-colors"
+                style={{ boxShadow: "0 0 40px rgba(59,130,246,0.12)" }}>
                 <span className="material-symbols-outlined ml-2 md:ml-4 text-primary/70">search</span>
                 <input
                   id="query-input"
@@ -188,19 +188,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Hero Preview Image */}
+          {/* 견본 카드. 예전 소개 그림(hero_mockup.png)은 트위터 게시물이 섞여 있어 바꿨다. */}
           <div className="relative mt-14 w-full max-w-4xl mx-auto px-4">
-            <div className="relative rounded-3xl overflow-hidden glass-panel border border-white/10"
-              style={{ boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)" }}>
-              <Image
-                src="/hero_mockup.png"
-                alt="인스타그램 카드뉴스 생성 예시"
-                width={1200}
-                height={600}
-                className="w-full object-cover opacity-80"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+            <div className="relative overflow-hidden glass-panel border border-white/10 py-10 px-4"
+              style={{ boxShadow: "0 40px 80px rgba(0,0,0,0.5)", background: "radial-gradient(ellipse at 50% 40%, rgba(37,99,235,0.28) 0%, rgba(11,19,38,0) 70%)" }}>
+              <HeroCards />
             </div>
           </div>
         </section>
@@ -220,12 +212,12 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 max-w-xl mx-auto">
             {/* Instagram Feature Card */}
-            <div className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-pink-500/30 transition-all group relative overflow-hidden">
+            <div className="glass-panel p-8 border border-white/8 hover:border-primary/40 transition-all group relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
-                style={{ background: "radial-gradient(circle, #f58529, transparent)", filter: "blur(40px)" }} />
+                style={{ background: "radial-gradient(circle, #3b82f6, transparent)", filter: "blur(40px)" }} />
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b, #8134af)" }}>
+                  style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}>
                   <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
                 </div>
                 <div>
@@ -233,9 +225,11 @@ export default function LandingPage() {
                   <p className="text-white/40 text-sm">1080 × 1350 (4:5) · 5~7장</p>
                 </div>
               </div>
-              <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "1/1", maxHeight: "280px" }}>
-                <Image src="/instagram_card_preview.png" alt="인스타그램 카드뉴스 예시" fill className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="relative overflow-hidden mb-6 flex items-center justify-center pt-6 pb-10"
+                style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.35), rgba(11,19,38,0.2))" }}>
+                <div className="shadow-2xl">
+                  <FeatureCard height={250} />
+                </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="flex gap-1.5 justify-center">
                     {[...Array(5)].map((_, i) => (
@@ -248,7 +242,7 @@ export default function LandingPage() {
                 {["키워드로 최신 기사 검색", "기사 URL이면 본문까지 읽어옴", "디자인은 만든 뒤에도 바로 바꾸기", "표지 + 상세 + 마무리 자동 구성", "캡션 + 해시태그 + 출처 자동 작성", "PNG 한 장씩 또는 전체 ZIP으로 저장"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
                     <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
-                      style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b)" }}>
+                      style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}>
                       <span className="material-symbols-outlined text-white text-[12px]">check</span>
                     </span>
                     {item}
@@ -268,11 +262,11 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { num: "01", icon: "edit", title: "입력하고 디자인 고르기", desc: ["키워드나 기사 URL을 넣고", "카드 디자인을 고르세요."], color: "from-cyan-500 to-blue-600" },
-              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: ["기사를 읽거나 검색해 사실을 확인하고", "카드 5~7장을 구성합니다."], color: "from-violet-500 to-purple-600" },
-              { num: "03", icon: "download", title: "PNG 저장", desc: ["카드를 PNG로 내려받고", "캡션을 복사해 그대로 올리면 끝!"], color: "from-pink-500 to-rose-600" },
+              { num: "01", icon: "edit", title: "입력하고 디자인 고르기", desc: ["키워드나 기사 URL을 넣고", "카드 디자인을 고르세요."], color: "from-sky-500 to-blue-600" },
+              { num: "02", icon: "neurology", title: "AI 자동 생성", desc: ["기사를 읽거나 검색해 사실을 확인하고", "카드 5~7장을 구성합니다."], color: "from-blue-500 to-blue-700" },
+              { num: "03", icon: "download", title: "PNG 저장", desc: ["카드를 PNG로 내려받고", "캡션을 복사해 그대로 올리면 끝!"], color: "from-blue-600 to-indigo-800" },
             ].map((step) => (
-              <div key={step.num} className="glass-panel rounded-3xl p-8 border border-white/8 hover:border-white/15 transition-all text-center group">
+              <div key={step.num} className="glass-panel p-8 border border-white/8 hover:border-white/15 transition-all text-center group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform shadow-lg`}>
                   <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>{step.icon}</span>
                 </div>
@@ -302,7 +296,7 @@ export default function LandingPage() {
               {
                 icon: "copyright",
                 title: "저작권 안전한 배경만",
-                desc: ["출처가 불분명한 보도 사진이나", "스톡 이미지를 쓰지 않습니다.", "기본은 그라데이션과 타이포그래피입니다."],
+                desc: ["보도 사진은 쓰지 않습니다.", "상업적 사용이 허용된 사진만 찾아 쓰고", "작가와 출처를 함께 적습니다."],
               },
               {
                 icon: "format_line_spacing",
@@ -315,7 +309,7 @@ export default function LandingPage() {
                 desc: ["인스타그램 세로 피드에 잘리지 않는", "4:5 규격으로 뽑습니다.", "미리보기와 저장 결과가 같습니다."],
               },
             ].map(({ icon, title, desc }) => (
-              <div key={title} className="glass-panel p-6 rounded-2xl">
+              <div key={title} className="glass-panel p-6">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                   <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
                 </div>
@@ -328,10 +322,10 @@ export default function LandingPage() {
 
         {/* ─── CTA Section ─────────────────────────────────── */}
         <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-          <div className="relative glass-panel rounded-[40px] p-12 md:p-20 text-center overflow-hidden border border-white/8">
+          <div className="relative glass-panel p-12 md:p-20 text-center overflow-hidden border border-white/8">
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] opacity-20"
-                style={{ background: "radial-gradient(ellipse, rgba(6,182,212,0.6) 0%, transparent 70%)", filter: "blur(60px)" }} />
+                style={{ background: "radial-gradient(ellipse, rgba(59,130,246,0.6) 0%, transparent 70%)", filter: "blur(60px)" }} />
             </div>
             <div className="relative z-10">
               <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-5">
@@ -344,7 +338,7 @@ export default function LandingPage() {
                 <button
                   onClick={handleGenerate}
                   className="cta-gradient text-white px-10 py-4 rounded-2xl font-korean-bold text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all"
-                  style={{ boxShadow: "0 20px 60px rgba(6,182,212,0.35)" }}
+                  style={{ boxShadow: "0 20px 60px rgba(37,99,235,0.4)" }}
                 >
                   카드뉴스 만들기 →
                 </button>

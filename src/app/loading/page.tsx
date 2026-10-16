@@ -273,7 +273,7 @@ function LoadingContent() {
         {/* Background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 opacity-10 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(6,182,212,0.5) 0%, transparent 70%)", filter: "blur(120px)" }} />
+            style={{ background: "radial-gradient(circle, rgba(59,130,246,0.5) 0%, transparent 70%)", filter: "blur(120px)" }} />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 opacity-10 rounded-full"
             style={{ background: "radial-gradient(circle, rgba(5,102,217,0.5) 0%, transparent 70%)", filter: "blur(120px)" }} />
           <div
@@ -298,7 +298,7 @@ function LoadingContent() {
           {/* Progress ring */}
           <div className="relative mb-8">
             <div className="absolute inset-0 rounded-full opacity-20 blur-3xl animate-pulse"
-              style={{ background: "linear-gradient(135deg, #f58529, #dd2a7b)" }} />
+              style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }} />
             <div className="relative w-44 h-44 md:w-52 md:h-52 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="50%" cy="50%" fill="transparent" r="45%" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
@@ -307,7 +307,7 @@ function LoadingContent() {
                   cy="50%"
                   fill="transparent"
                   r="45%"
-                  stroke="url(#instagramGradient)"
+                  stroke="url(#progressGradient)"
                   strokeDasharray={circumference}
                   strokeDashoffset={dashOffset}
                   strokeLinecap="round"
@@ -315,10 +315,9 @@ function LoadingContent() {
                   className="transition-all duration-500 ease-out"
                 />
                 <defs>
-                  <linearGradient id="instagramGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#f58529" />
-                    <stop offset="50%" stopColor="#dd2a7b" />
-                    <stop offset="100%" stopColor="#8134af" />
+                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#7cb2ff" />
+                    <stop offset="100%" stopColor="#2563eb" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -327,7 +326,7 @@ function LoadingContent() {
                   className="material-symbols-outlined text-4xl animate-pulse"
                   style={{
                     fontVariationSettings: "'FILL' 1",
-                    color: "#dd2a7b",
+                    color: "#5b9bff",
                   }}
                 >
                   photo_camera
@@ -360,7 +359,7 @@ function LoadingContent() {
 
 
           {/* Log bar */}
-          <div className="mt-8 w-full glass-panel p-3 px-4 rounded-xl flex items-center gap-4 border border-white/5">
+          <div className="mt-8 w-full glass-panel p-3 px-4 flex items-center gap-4 border border-white/5">
             <div className="flex gap-1.5">
               <div className="w-2 h-2 rounded-full bg-red-400 opacity-60" />
               <div className="w-2 h-2 rounded-full bg-primary" />

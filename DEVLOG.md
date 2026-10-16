@@ -32,10 +32,16 @@
   시험에서 그 스크립트 자리에 가짜를 끼워, 사이트가 등록한 `beforeSend` 에 주소를 넣어 결과를 확인했다
   (`scratchpad/analytics.mjs`).
 
+- 배포 뒤 시험에서 처음엔 "보낸 기록 0건"이 나왔다. 원인 둘. ① 통계 스크립트는 **자동화 브라우저
+  (`navigator.webdriver`, Headless)를 일부러 세지 않는다.** ② Vercel 이 통계 주소를 `/_vercel/insights` 가
+  아니라 프로젝트마다 다른 숨은 경로(`/<무작위>/script.js`, `/<무작위>/view`)로 바꿔 준다(광고 차단기 회피,
+  `NEXT_PUBLIC_VERCEL_OBSERVABILITY_BASEPATH`). 시험은 일반 브라우저처럼 꾸미고 `…/view` 를 가로채 막은 뒤
+  보내려던 내용만 본다(`scratchpad/analytics-live.mjs`). 실제 전송 내용: `{"o":".../loading","dp":"/loading"}` — 키워드 없음.
+
 ### 저장소 밖 설정
 
-- **Vercel 대시보드 → 프로젝트 → Analytics → Enable** 을 눌러야 모으기 시작한다. 켜기 전에는
-  `/_vercel/insights/script.js` 가 없어서 아무것도 보내지 않는다.
+- 숨은 경로가 붙어 나온 것으로 보아 **Vercel 대시보드에서 Web Analytics 가 이미 켜져 있다.**
+  꺼져 있었다면 Analytics 탭에서 Enable 을 눌러야 모으기 시작한다.
 
 ---
 

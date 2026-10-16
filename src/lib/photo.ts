@@ -79,7 +79,7 @@ function isOnePerson(text: string): boolean {
   return ONE_PERSON.test(text) && !MANY_PEOPLE.test(text);
 }
 
-/** 위키미디어에서 실존 인물을 찍은 사진에 붙는 분류. */
+/** 위키미디어에서 실존 인물을 찍은 사진에 붙는 분류·제목 낱말. 위키미디어 파일은 대개 실제 행사의 실제 인물이다. */
 const PEOPLE_CATEGORY = /(living people|people of|portraits?|fashion models|models \(people\)|runway|catwalk|celebrit)/i;
 
 /** 배경으로 못 쓰는 것. 로고·지도·문장(紋章)·도표는 사진이 아니다. */
@@ -249,7 +249,7 @@ async function searchCommons(query: string, signal: AbortSignal): Promise<Candid
     // 위키미디어는 분류(Categories)와 설명이 있어 함께 본다. 실존 인물 분류가 붙으면 뺀다.
     const categories = stripHtml(meta.Categories?.value ?? "");
     const about = `${page.title ?? ""} ${stripHtml(meta.ImageDescription?.value ?? "")} ${categories}`;
-    if (isOnePerson(about) || PEOPLE_CATEGORY.test(categories)) continue;
+    if (isOnePerson(about) || PEOPLE_CATEGORY.test(about)) continue;
 
     const license = stripHtml(meta.LicenseShortName?.value ?? "");
     if (!OK_LICENSE.test(license) || BAD_LICENSE.test(license)) continue;

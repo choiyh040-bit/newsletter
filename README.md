@@ -171,7 +171,8 @@ API 키가 있을 때만 씁니다(아래). 키가 없으면 위키미디어만 
 | `UNSPLASH_ACCESS_KEY` | https://unsplash.com/developers → Your apps → New Application → 약관 동의 → 앱 이름 입력 → 만들어진 앱의 "Access Key" (Secret Key 아님) |
 
 Vercel: 프로젝트 → Settings → Environment Variables 에 위 이름으로 넣고(Production),
-**Deployments 에서 Redeploy** 해야 반영됩니다. 언스플래쉬는 처음에 시간당 50회
+**Deployments 에서 Redeploy** 해야 반영됩니다. 들어갔는지는 `/api/photo-check` 로 확인합니다
+(키 값은 보여 주지 않고, 있는지·시험 검색 상태만 알려 줍니다). 언스플래쉬는 처음에 시간당 50회
 제한(Demo)이고, 앱 페이지에서 Production 신청을 하면 늘어납니다.
 
 ### 고른 디자인 기억

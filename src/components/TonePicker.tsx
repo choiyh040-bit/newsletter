@@ -14,8 +14,8 @@ export default function TonePicker() {
 
   return (
     <div className="mt-5">
-      <div className="flex items-center justify-center gap-2" role="radiogroup" aria-label="말투">
-        <span className="text-white/50 text-xs font-korean-bold mr-1">말투</span>
+      <div className="flex flex-wrap items-center justify-center gap-1.5 md:gap-2" role="radiogroup" aria-label="말투">
+        <span className="text-white/50 text-xs font-korean-bold mr-1 whitespace-nowrap">말투</span>
         {TONES.map((t) => {
           const on = t.id === current;
           return (
@@ -25,7 +25,7 @@ export default function TonePicker() {
               role="radio"
               aria-checked={on}
               onClick={() => chooseTone(t.id)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-korean-bold border transition-colors ${
+              className={`px-3 md:px-3.5 py-1.5 rounded-full text-xs font-korean-bold border transition-colors whitespace-nowrap ${
                 on ? "border-primary/70 bg-primary/15 text-white" : "border-white/12 text-white/55 hover:text-white/80"
               }`}
             >

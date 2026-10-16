@@ -38,6 +38,7 @@ import {
 } from "@/lib/templates";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
 import AdSlot, { AD_SLOTS } from "@/components/AdSlot";
+import MobileMenu from "@/components/MobileMenu";
 import { assignLooks, CAPTION_LOOKS } from "@/lib/templates/captionLooks";
 import { usePhotoTones } from "@/lib/photoTone";
 
@@ -406,8 +407,8 @@ function PreviewContent() {
       </div>
 
       <header className="bg-surface/80 backdrop-blur-xl border-b border-white/8 fixed top-0 w-full z-50">
-        <div className="flex justify-between items-center px-6 md:px-12 h-16 w-full max-w-7xl mx-auto">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+        <div className="flex justify-between items-center gap-2 px-4 md:px-12 h-16 w-full max-w-7xl mx-auto">
+          <Link href="/" className="flex items-center gap-2 md:gap-2.5 hover:opacity-80 transition-opacity whitespace-nowrap">
             <div className="w-7 h-7 rounded-lg cta-gradient flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
                 auto_awesome
@@ -415,12 +416,15 @@ function PreviewContent() {
             </div>
             <span className="font-korean-bold text-white text-base">CardGen AI</span>
           </Link>
-          <button
-            onClick={() => router.push("/")}
-            className="cta-gradient text-white font-korean-bold px-5 py-2 rounded-full text-sm active:scale-95 transition-transform"
-          >
-            새로 만들기
-          </button>
+          <div className="flex items-center gap-1.5">
+            <MobileMenu />
+            <button
+              onClick={() => router.push("/")}
+              className="cta-gradient text-white font-korean-bold px-5 py-2 rounded-full text-sm active:scale-95 transition-transform whitespace-nowrap"
+            >
+              새로 만들기
+            </button>
+          </div>
         </div>
       </header>
 

@@ -4,6 +4,11 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# 사용자에게는 늘 한국어로 말한다
+
+최종 답변뿐 아니라 **작업 중간의 진행 메시지까지 전부 한국어**로 쓴다.
+사용자가 여러 번 지적했다(2026-10-15, 10-16). 코드·명령어·파일 이름은 그대로 둔다.
+
 # 개발일지를 남긴다
 
 작업 한 마디가 끝나면 `DEVLOG.md` 맨 위에 항목을 이어 적는다. 한 마디는

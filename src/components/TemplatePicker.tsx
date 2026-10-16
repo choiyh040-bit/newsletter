@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_HEIGHT, CARD_WIDTH, normalizeCardNews } from "@/lib/cardnews";
 import {
   chooseAlign,
@@ -19,6 +20,14 @@ import {
   templateById,
   TEMPLATES,
 } from "@/lib/templates";
+
+/** 넘칠 때 더 있는 쪽 끝을 흐리게. */
+function scrollMask(s: { overflow: boolean; atStart: boolean; atEnd: boolean }): string | undefined {
+  if (!s.overflow) return undefined;
+  const left = s.atStart ? "black 0" : "transparent 0, black 28px";
+  const right = s.atEnd ? "black 100%" : "black calc(100% - 48px), transparent 100%";
+  return `linear-gradient(to right, ${left}, ${right})`;
+}
 
 /** 미리보기 한 장의 가로 폭(px). 세로는 4:5 로 따라간다. */
 const THUMB_WIDTH = 104;
@@ -74,12 +83,55 @@ export default function TemplatePicker() {
   const align: TextAlign = design.align ?? DEFAULT_ALIGN;
   const hasAccent = !!selected.variants && selected.variants.length > 0;
 
+  // 가로 넘김 상태: 넘치는지, 양 끝에 닿았는지.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [scroll, setScroll] = useState({ overflow: false, atStart: true, atEnd: false });
+  const measureScroll = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const overflow = el.scrollWidth > el.clientWidth + 4;
+    setScroll({
+      overflow,
+      atStart: el.scrollLeft <= 4,
+      atEnd: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4,
+    });
+  }, []);
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    // 크기가 바뀔 때(처음 그릴 때 포함) 다시 잰다. 콜백 안에서 재므로 렌더 중 상태 변경이 아니다.
+    const ro = new ResizeObserver(measureScroll);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measureScroll]);
+  // 지난번에 고른 디자인이 오른쪽 끝에 있으면 처음부터 보이게 끌어온다.
+  // scrollIntoView 는 화면 전체까지 위아래로 움직여서(고르기가 화면 아래에 있으면 첫 화면이
+  // 내려간다) 줄만 가로로 옮긴다.
+  useEffect(() => {
+    const box = scrollerRef.current;
+    const el = box?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]');
+    if (!box || !el) return;
+    const target = el.offsetLeft - (box.clientWidth - el.offsetWidth) / 2;
+    if (target > 0) box.scrollLeft = target;
+  }, [selected.id]);
+
   return (
     <div className="mt-6">
-      <p className="text-white/50 text-xs font-korean-reg mb-3 text-center">카드 디자인</p>
+      <p className="text-white/50 text-xs font-korean-reg mb-3 text-center">
+        카드 디자인 · {TEMPLATES.length}가지
+        {/* 화면 밖에 카드가 더 있을 때만. 처음 온 사람은 보이는 두세 개가 전부인 줄 알았다. */}
+        {scroll.overflow && <span className="text-primary/80"> · 옆으로 넘겨 보세요 →</span>}
+      </p>
       {/* 개수가 늘면 가로로 넘겨 본다. 한가운데 정렬은 넘칠 때 왼쪽이 잘리므로
-          안쪽 줄을 w-max + mx-auto 로 가운데 둔다. */}
-      <div className="overflow-x-auto pb-2 -mx-2 px-2">
+          안쪽 줄을 w-max + mx-auto 로 가운데 둔다. 더 있는 쪽 끝은 흐리게(mask) 해서
+          뒤에 더 있다는 것을 보여 준다. 마우스로는 밀기 어려워 넓은 화면에는 ‹ › 단추. */}
+      <div className="relative">
+      <div
+        ref={scrollerRef}
+        onScroll={measureScroll}
+        className="overflow-x-auto pb-2 -mx-2 px-2"
+        style={{ maskImage: scrollMask(scroll), WebkitMaskImage: scrollMask(scroll) }}
+      >
         <div className="flex gap-3 w-max mx-auto" role="radiogroup" aria-label="카드 디자인">
           {TEMPLATES.map((template) => {
             const Render = template.Render;
@@ -143,6 +195,25 @@ export default function TemplatePicker() {
             );
           })}
         </div>
+      </div>
+      {scroll.overflow &&
+        (["left", "right"] as const).map((side) => {
+          const atEdge = side === "left" ? scroll.atStart : scroll.atEnd;
+          return (
+            <button
+              key={side}
+              type="button"
+              aria-label={side === "left" ? "이전 디자인 보기" : "다음 디자인 보기"}
+              disabled={atEdge}
+              onClick={() => scrollerRef.current?.scrollBy({ left: side === "left" ? -320 : 320, behavior: "smooth" })}
+              className={`hidden md:flex absolute top-[38%] -translate-y-1/2 ${
+                side === "left" ? "-left-5" : "-right-5"
+              } w-9 h-9 rounded-full bg-surface/90 border border-white/15 items-center justify-center text-white/80 hover:bg-white/10 disabled:opacity-0 transition-opacity`}
+            >
+              <span className="material-symbols-outlined text-xl">{side === "left" ? "chevron_left" : "chevron_right"}</span>
+            </button>
+          );
+        })}
       </div>
 
       {(hasAccent || selected.alignable) && (

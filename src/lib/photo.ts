@@ -79,6 +79,9 @@ function isOnePerson(text: string): boolean {
   return ONE_PERSON.test(text) && !MANY_PEOPLE.test(text);
 }
 
+/** 위키미디어에서 실존 인물을 찍은 사진에 붙는 분류. */
+const PEOPLE_CATEGORY = /(living people|people of|portraits?|fashion models|models \(people\)|runway|catwalk|celebrit)/i;
+
 /** 배경으로 못 쓰는 것. 로고·지도·문장(紋章)·도표는 사진이 아니다. */
 const NOT_A_PHOTO = /(logo|map|flag|coat of arms|emblem|seal|diagram|chart|icon|symbol|signature|poster|screenshot)/i;
 
@@ -241,9 +244,13 @@ async function searchCommons(query: string, signal: AbortSignal): Promise<Candid
     // 카드 한 장(1080×1350)을 덮을 만큼은 커야 한다. 작으면 뭉개진다.
     if ((info.width ?? 0) < 1000 || (info.height ?? 0) < 700) continue;
     if (NOT_A_PHOTO.test(page.title ?? "")) continue;
-    if (isOnePerson(page.title ?? "")) continue;
-
     const meta = info.extmetadata ?? {};
+    // 제목만 보면 "Alexandra_Kutas_runway_show" 처럼 이름만 있는 인물 사진이 샌다(2026-10-16).
+    // 위키미디어는 분류(Categories)와 설명이 있어 함께 본다. 실존 인물 분류가 붙으면 뺀다.
+    const categories = stripHtml(meta.Categories?.value ?? "");
+    const about = `${page.title ?? ""} ${stripHtml(meta.ImageDescription?.value ?? "")} ${categories}`;
+    if (isOnePerson(about) || PEOPLE_CATEGORY.test(categories)) continue;
+
     const license = stripHtml(meta.LicenseShortName?.value ?? "");
     if (!OK_LICENSE.test(license) || BAD_LICENSE.test(license)) continue;
     // 초상권·상표 같은 추가 제한이 표시된 파일은 쓰지 않는다.

@@ -147,14 +147,14 @@ export default function TemplatePicker() {
                 disabled={disabled}
                 onClick={() => chooseTemplate(template.id)}
                 title={template.description}
-                className={`flex flex-col items-center gap-2 p-1.5 border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex flex-col items-center gap-2 p-1.5 rounded-xl border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   isSelected
                     ? "border-primary bg-primary/10"
                     : "border-white/10 hover:border-white/30"
                 }`}
               >
                 <div
-                  className="relative overflow-hidden pointer-events-none"
+                  className="relative overflow-hidden rounded-lg pointer-events-none"
                   style={{ width: THUMB_WIDTH, height: CARD_HEIGHT * SCALE }}
                   aria-hidden
                 >
@@ -217,7 +217,7 @@ export default function TemplatePicker() {
       </div>
 
       {(hasAccent || selected.alignable) && (
-        <div className="mt-4 max-w-sm mx-auto text-left glass-panel p-4 space-y-4">
+        <div className="mt-4 max-w-sm mx-auto text-left glass-panel rounded-xl p-4 space-y-4">
           {hasAccent && (
             <AccentPicker
               template={selected}

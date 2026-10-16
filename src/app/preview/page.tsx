@@ -446,7 +446,7 @@ function PreviewContent() {
           {/* 카드 미리보기 */}
           <div ref={previewBoxRef} className="lg:col-span-7 min-w-0 flex flex-col items-center">
             <div
-              className="relative overflow-hidden shadow-2xl"
+              className="relative rounded-2xl overflow-hidden shadow-2xl"
               style={{
                 width: CARD_WIDTH * previewScale,
                 height: CARD_HEIGHT * previewScale,
@@ -536,7 +536,7 @@ function PreviewContent() {
                     <button
                       key={choice.id}
                       onClick={() => entry && setCardNewsTemplate(entry.id, choice.id)}
-                      className={`w-full text-left px-4 py-3 border transition-colors ${
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
                         isCurrent
                           ? "border-primary/50 bg-primary/10"
                           : "border-white/10 hover:bg-white/5"
@@ -619,7 +619,7 @@ function PreviewContent() {
                           return value ? { ...rest, captionLook: value } : rest;
                         });
                       }}
-                      className="flex-1 min-w-0 bg-white/5 border border-white/15 text-white/85 text-sm py-2 px-3"
+                      className="flex-1 min-w-0 bg-white/5 border border-white/15 rounded-lg text-white/85 text-sm py-2 px-3"
                     >
                       <option value="">자동</option>
                       {CAPTION_LOOK_IDS.map((id) => (
@@ -841,7 +841,7 @@ function PreviewContent() {
                       <li key={item.id} className="flex items-center gap-1">
                         <button
                           onClick={() => router.replace(`/preview?id=${item.id}`)}
-                          className={`flex-1 text-left px-3 py-2 transition-colors min-w-0 ${
+                          className={`flex-1 text-left px-3 py-2 rounded-lg transition-colors min-w-0 ${
                             isCurrent ? "bg-white/10" : "hover:bg-white/5"
                           }`}
                         >

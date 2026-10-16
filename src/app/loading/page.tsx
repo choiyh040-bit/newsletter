@@ -359,7 +359,7 @@ function LoadingContent() {
 
 
           {/* Log bar */}
-          <div className="mt-8 w-full glass-panel p-3 px-4 flex items-center gap-4 border border-white/5">
+          <div className="mt-8 w-full glass-panel p-3 px-4 rounded-xl flex items-center gap-4 border border-white/5">
             <div className="flex gap-1.5">
               <div className="w-2 h-2 rounded-full bg-red-400 opacity-60" />
               <div className="w-2 h-2 rounded-full bg-primary" />

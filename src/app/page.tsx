@@ -141,7 +141,7 @@ export default function LandingPage() {
 
             {/* Input */}
             <div className="relative w-full max-w-2xl mx-auto">
-              <div className="relative flex items-center glass-panel p-2 border border-white/10 hover:border-primary/40 transition-colors"
+              <div className="relative flex items-center glass-panel p-2 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors"
                 style={{ boxShadow: "0 0 40px rgba(59,130,246,0.12)" }}>
                 <span className="material-symbols-outlined ml-2 md:ml-4 text-primary/70">search</span>
                 <input
@@ -190,7 +190,7 @@ export default function LandingPage() {
 
           {/* 견본 카드. 예전 소개 그림(hero_mockup.png)은 트위터 게시물이 섞여 있어 바꿨다. */}
           <div className="relative mt-14 w-full max-w-4xl mx-auto px-4">
-            <div className="relative overflow-hidden glass-panel border border-white/10 py-10 px-4"
+            <div className="relative rounded-3xl overflow-hidden glass-panel border border-white/10 py-10 px-4"
               style={{ boxShadow: "0 40px 80px rgba(0,0,0,0.5)", background: "radial-gradient(ellipse at 50% 40%, rgba(37,99,235,0.28) 0%, rgba(11,19,38,0) 70%)" }}>
               <HeroCards />
             </div>
@@ -225,7 +225,7 @@ export default function LandingPage() {
                   <p className="text-white/40 text-sm">1080 × 1350 (4:5) · 5~7장</p>
                 </div>
               </div>
-              <div className="relative overflow-hidden mb-6 flex items-center justify-center pt-6 pb-10"
+              <div className="relative rounded-2xl overflow-hidden mb-6 flex items-center justify-center pt-6 pb-10"
                 style={{ background: "linear-gradient(160deg, rgba(37,99,235,0.35), rgba(11,19,38,0.2))" }}>
                 <div className="shadow-2xl">
                   <FeatureCard height={250} />

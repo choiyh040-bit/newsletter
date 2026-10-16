@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AdSlot, { AD_SLOTS } from "@/components/AdSlot";
-import { saveCardNews } from "@/lib/cardNewsStore";
+import { readDesignChoice, saveCardNews } from "@/lib/cardNewsStore";
+import { DEFAULT_TONE } from "@/lib/tone";
 
 /**
  * 단계마다 보여 줄 문구와, 그 단계에서 막대가 갈 수 있는 끝.
@@ -119,7 +120,14 @@ function LoadingContent() {
         setStage("generate");
         setStatusIdx(0);
 
-        const data = await call("/api/generate", material);
+        // 말투와 글 길이. 사진 · 자막 템플릿을 골랐으면 자막처럼 짧게 쓴다(자세한
+        // 사실은 캡션으로). 템플릿을 생성 전에 고르게 한 덕에 여기서 알 수 있다.
+        const design = readDesignChoice();
+        const data = await call("/api/generate", {
+          ...material,
+          tone: design.tone ?? DEFAULT_TONE,
+          copy: design.templateId === "photo-caption" ? "caption" : "full",
+        });
         // 결과에 고유 주소를 준다. /preview?id=... 로 넘기면 새로고침해도
         // 같은 카드뉴스가 다시 열리고, 주소를 북마크해 둘 수도 있다.
         const id = saveCardNews(keyword, data);

@@ -114,6 +114,24 @@ body {
   font-display: swap;
 }
 
+/* 사진 · 자막 템플릿의 글씨 모양. 도현(좁고 높은 고딕)과 검은고딕(아주 굵은
+   고딕), 둘 다 OFL. 한글은 자주 쓰는 2,400여 자만 있어 드문 글자는 원티드산스로 나온다. */
+@font-face {
+  font-family: 'Do Hyeon';
+  src: url('/fonts/DoHyeon-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Black Han Sans';
+  src: url('/fonts/BlackHanSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'HangamePoker';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/HangamePoker.woff2') format('woff2');

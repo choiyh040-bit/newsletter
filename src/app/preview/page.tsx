@@ -1,9 +1,19 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, photoCredit, slidePhoto, type CardNews, type CardSlide } from "@/lib/cardnews";
+import {
+  CAPTION_LOOK_IDS,
+  CARD_HEIGHT,
+  CARD_WIDTH,
+  MAX_SLIDES,
+  photoCredit,
+  slidePhoto,
+  type CaptionLookId,
+  type CardNews,
+  type CardSlide,
+} from "@/lib/cardnews";
 import { toCardJpeg } from "@/lib/photoUpload";
 import SlideEditor from "@/components/SlideEditor";
 import AccentPicker from "@/components/AccentPicker";
@@ -28,6 +38,8 @@ import {
 } from "@/lib/templates";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
 import AdSlot, { AD_SLOTS } from "@/components/AdSlot";
+import { assignLooks, CAPTION_LOOKS } from "@/lib/templates/captionLooks";
+import { usePhotoTones } from "@/lib/photoTone";
 
 /** 미리보기에서 카드를 줄여 보여줄 비율. 캡처는 항상 원본 크기로 한다. */
 const PREVIEW_SCALE = 0.42;
@@ -110,6 +122,26 @@ function PreviewContent() {
   const photoOf = (i: number) =>
     isPhotoTemplate && data?.slides[i] ? slidePhoto(data.slides[i], data) : null;
   const photo = photoOf(current);
+
+  // 사진 · 자막: 세트 전체의 사진 밝기를 재서 장마다 글씨 모양을 정한다. 이웃한
+  // 장이 같은 모양이 되지 않게 여기서 한꺼번에 정해 카드에 넘긴다(저장은 안 한다.
+  // 사람이 고른 모양만 저장된다).
+  const tones = usePhotoTones(
+    template.id === "photo-caption" && data ? data.slides.map((sl) => slidePhoto(sl, data)?.url) : []
+  );
+  const isCaption = template.id === "photo-caption";
+  const looks = useMemo(
+    () =>
+      isCaption && data
+        ? assignLooks(
+            data.slides.map((sl) => ({ slideNumber: sl.slideNumber, isCover: sl.kind === "cover", chosen: sl.captionLook })),
+            tones
+          )
+        : [],
+    [isCaption, data, tones]
+  );
+  const renderSlide = (i: number): CardSlide =>
+    looks[i] && data ? { ...data.slides[i], captionLook: looks[i] } : data!.slides[i];
 
   // 캡션 끝 사진 표기. 장마다 사진이 달라서 쓴 사진을 모두 적는다(같은 사진은 한 번).
   // 픽사베이·언스플래쉬는 곳마다 작가를 모아 한 줄, 위키미디어(CC)는 사진마다
@@ -361,7 +393,7 @@ function PreviewContent() {
             }}
           >
             <Render
-              slide={slide}
+              slide={renderSlide(i)}
               accent={data.accent}
               total={total}
               source={data.source}
@@ -425,7 +457,7 @@ function PreviewContent() {
                 }}
               >
                 <Render
-                  slide={data.slides[current]}
+                  slide={renderSlide(current)}
                   accent={data.accent}
                   total={total}
                   source={data.source}
@@ -561,6 +593,59 @@ function PreviewContent() {
                   </div>
                   <p className="text-white/30 text-xs mt-2 font-korean-reg">
                     본문이 길면 좌측이 읽기 좋습니다. 중앙은 짧고 단정적인 세트에 어울립니다.
+                  </p>
+                </div>
+              )}
+
+              {/* 사진 · 자막: 장마다 글씨 모양. 기본은 사진 밝기를 보고 자동. */}
+              {template.id === "photo-caption" && data.slides[current] && (
+                <div className="mt-5 pt-4 border-t border-white/5">
+                  <label className="block text-white/70 text-xs font-korean-bold mb-2" htmlFor="caption-look">
+                    글씨 모양 · {current + 1}번째 장
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      id="caption-look"
+                      value={data.slides[current].captionLook ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value as CaptionLookId | "";
+                        updateSlide((sl) => {
+                          const { captionLook: _old, ...rest } = sl;
+                          void _old;
+                          return value ? { ...rest, captionLook: value } : rest;
+                        });
+                      }}
+                      className="flex-1 min-w-0 bg-white/5 border border-white/15 rounded-lg text-white/85 text-sm py-2 px-3"
+                    >
+                      <option value="">자동</option>
+                      {CAPTION_LOOK_IDS.map((id) => (
+                        <option key={id} value={id}>
+                          {CAPTION_LOOKS[id].name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!entry) return;
+                        const value = data.slides[current].captionLook;
+                        updateCardNewsData(entry.id, {
+                          ...data,
+                          slides: data.slides.map((sl) => {
+                            const { captionLook: _old, ...rest } = sl;
+                            void _old;
+                            return value ? { ...rest, captionLook: value } : rest;
+                          }),
+                        });
+                      }}
+                      className="py-2 px-3 rounded-lg border border-white/15 text-white/80 text-sm font-korean-reg hover:bg-white/5 whitespace-nowrap"
+                    >
+                      모든 장에 적용
+                    </button>
+                  </div>
+                  <p className="text-white/30 text-xs mt-2 font-korean-reg leading-relaxed">
+                    자동이면 장마다 사진에서 잘 읽히는 모양을 골라 돌아가며 씁니다. 밝은 사진에서는 외곽선·색 글씨가
+                    안 보여 고르지 않습니다.
                   </p>
                 </div>
               )}

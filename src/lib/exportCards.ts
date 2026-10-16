@@ -36,12 +36,22 @@ async function renderCard(node: HTMLElement, fontEmbedCSS: string): Promise<Blob
 }
 
 /**
- * 폰트 임베드 CSS는 파일이 커서(3종 약 2MB) 매번 새로 만들면 느리다.
- * 한 번만 만들어 카드 전체에 돌려쓴다.
+ * 폰트 임베드 CSS는 파일이 커서 매번 새로 만들면 느리다. 한 번 만들어 카드
+ * 전체에 돌려쓴다.
+ *
+ * **카드 전부에서 모은다.** html-to-image 의 `getFontEmbedCSS` 는 넘긴 노드에
+ * 쓰인 글꼴만 담는다. 예전에는 첫 장(표지)에서만 만들었는데, 사진 · 자막
+ * 템플릿은 장마다 서체가 달라서(도현·검은고딕·마루 부리) 표지에 없는 서체가
+ * PNG 에서 기본 고딕으로 바뀌었다(2026-10-16). 같은 규칙은 한 번만 넣는다.
  */
 async function prepare(nodes: HTMLElement[]): Promise<string> {
   await document.fonts.ready;
-  return nodes.length > 0 ? getFontEmbedCSS(nodes[0]) : "";
+  const rules = new Set<string>();
+  for (const node of nodes) {
+    const css = await getFontEmbedCSS(node);
+    for (const rule of css.split(/(?=@font-face)/)) if (rule.trim()) rules.add(rule.trim());
+  }
+  return [...rules].join("\n");
 }
 
 function triggerDownload(blob: Blob, filename: string) {

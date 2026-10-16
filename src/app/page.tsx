@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import TemplatePicker from "@/components/TemplatePicker";
+import TonePicker from "@/components/TonePicker";
 import { INFO_LINKS } from "@/components/InfoPage";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
@@ -163,8 +164,9 @@ export default function LandingPage() {
                 </button>
               </div>
               <p className="text-white/30 text-xs mt-2 text-center leading-relaxed">
-                <Lines lines={["예: “국제회의 유치”", "기사 주소를 넣으면 그 기사 내용으로만 만듭니다"]} />
+                <Lines lines={["예: “국제회의 유치”, “성수동 팝업스토어”", "기사 주소를 넣으면 그 기사 내용으로만 만듭니다"]} />
               </p>
+              <TonePicker />
               <TemplatePicker />
             </div>
 

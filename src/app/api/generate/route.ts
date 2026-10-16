@@ -117,9 +117,14 @@ ${article}
 
 [사진 검색어]
 - imageQuery 에 카드 배경 사진을 찾을 **영어** 검색어를 2~4 단어로 적으세요.
-- 기사 속 **장소·건물·도시·행사장** 이름 위주로 적습니다.
-  좋은 예: "BEXCO Busan", "KINTEX Goyang", "Seoul skyline", "Haeundae beach"
-- 사람 이름, 회사 로고, 상품명은 쓰지 마세요. 초상권·상표 문제가 생깁니다.
+  스톡 사진 사이트에서 검색합니다. 기사 속 행사장 그 자체가 아니어도 됩니다.
+- 기사 분위기에 맞는 **일반적인 장면**이면 됩니다. 이런 것들입니다.
+  - 장소·건물: "convention center", "Busan skyline", "exhibition hall"
+  - 장면: "conference audience", "business meeting", "trade show booth"
+  - 소재: 기사가 다루는 것(예: 반도체 박람회면 "semiconductor wafer",
+    반려동물 행사면 "dog", 뷰티 박람회면 "cosmetics")
+- **실존 인물 이름, 회사·브랜드 이름, 로고는 쓰지 마세요.** 초상권·상표 문제가
+  생깁니다. 사람이 나오는 장면은 "conference audience"처럼 일반 명사로만 씁니다.
 
 [디자인]
 - accent는 주제 분위기에 맞는 어두운 계열 포인트 컬러 하나를 "#rrggbb" 형식으로 고르세요.
@@ -149,7 +154,7 @@ ${article}
   ],
   "caption": "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)",
   "hashtags": ["해시태그1", "해시태그2", "해시태그3", "해시태그4", "해시태그5"],
-  "imageQuery": "BEXCO Busan",
+  "imageQuery": "convention center",
   "source": { "name": "출처 매체명", "url": "" }
 }
 

@@ -1,4 +1,4 @@
-import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
+import { CARD_HEIGHT, CARD_WIDTH, photoCredit } from "@/lib/cardnews";
 import { accentText, gradientFor, shade, readableOn, withAlpha } from "@/lib/templates/color";
 import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
@@ -208,7 +208,7 @@ export default function GradientCenter({ slide, accent, total, source, photo }: 
 
       {/* 사진 작가 표기. CC BY 계열은 표기가 의무다. 장마다 따로 게시될 수
           있으므로 모든 장에 단다. */}
-      {photo && (
+      {photo && photoCredit(photo) && (
         <div
           style={{
             position: "relative",
@@ -221,7 +221,7 @@ export default function GradientCenter({ slide, accent, total, source, photo }: 
             textOverflow: "ellipsis",
           }}
         >
-          사진 · {photo.credit} · Wikimedia Commons
+          사진 · {photoCredit(photo)}
         </div>
       )}
     </div>

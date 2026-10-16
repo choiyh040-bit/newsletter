@@ -3,7 +3,8 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, type CardNews, type CardSlide } from "@/lib/cardnews";
+import { CARD_HEIGHT, CARD_WIDTH, MAX_SLIDES, photoCredit, type CardNews, type CardSlide } from "@/lib/cardnews";
+import { toCardJpeg } from "@/lib/photoUpload";
 import SlideEditor from "@/components/SlideEditor";
 import AccentPicker from "@/components/AccentPicker";
 import {
@@ -82,13 +83,39 @@ function PreviewContent() {
   const choices = availableTemplates();
   const template = templateById(entry?.templateId);
   // 사진 템플릿일 때만 사진을 넘긴다. 사진은 생성할 때 찾아 둔 것이다.
-  const photo = template.background === "photo" && data?.photo ? data.photo : null;
+  // 직접 올린 사진이 있으면 그것을, 없으면 생성할 때 찾아 둔 사진을 쓴다.
+  const photo =
+    template.background === "photo" ? (data?.userPhoto ?? data?.photo ?? null) : null;
   // 사진을 쓰면 캡션 끝에 작가 표기를 붙인다(CC BY 계열은 의무). 사진을 안 쓰는
   // 템플릿이면 붙이지 않는다. 템플릿을 바꿀 때마다 따라 바뀌어야 해서 저장된
   // 캡션에 넣지 않고 보여 줄 때·복사할 때 만든다.
   const captionText =
     (data?.caption ?? "") +
-    (photo && data?.photo ? `\n사진: ${data.photo.credit} · Wikimedia Commons ${data.photo.pageUrl}` : "");
+    (photo && photoCredit(photo)
+      ? `\n사진: ${photoCredit(photo)}${photo.pageUrl ? ` ${photo.pageUrl}` : ""}`
+      : "");
+
+  // 내 사진 올리기. 아이스탁처럼 프로그램이 가져올 수 없는 곳의 사진을 쓴다.
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadPhoto = async (file: File | undefined) => {
+    if (!file || !entry || !data) return;
+    setUploadError(null);
+    try {
+      const url = await toCardJpeg(file);
+      updateCardNewsData(entry.id, {
+        ...data,
+        userPhoto: { url, credit: "직접 올린 사진", license: "사용자 제공", pageUrl: "", source: "upload" },
+      });
+    } catch {
+      setUploadError("사진을 읽지 못했습니다. JPG·PNG 사진인지 확인해 주세요.");
+    }
+  };
+  const removeUserPhoto = () => {
+    if (!entry || !data) return;
+    const { userPhoto: _removed, ...rest } = data;
+    void _removed;
+    updateCardNewsData(entry.id, rest);
+  };
   // 색 조합에 직접 고른 강조색을 덮은 실제 색.
   const variant = resolveColors(
     template,
@@ -467,22 +494,54 @@ function PreviewContent() {
                 </div>
               )}
 
-              {/* 사진 템플릿이면 쓴 사진의 출처를, 못 찾았으면 그렇다고 알린다. */}
+              {/* 사진 템플릿: 쓴 사진의 출처, 그리고 내 사진 올리기 */}
               {template.background === "photo" && (
-                <p className="text-white/40 text-xs mt-3 font-korean-reg leading-relaxed break-all">
-                  {data?.photo ? (
-                    <>
-                      사진: {data.photo.credit} ·{" "}
-                      <a href={data.photo.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        Wikimedia Commons
-                      </a>
-                      <br />
-                      상업적 사용이 허용된 라이선스의 사진입니다. 작가 표기는 카드와 캡션에 자동으로 들어갑니다.
-                    </>
-                  ) : (
-                    "이 기사에 맞는 저작권 안전한 사진을 찾지 못해 그라데이션으로 그렸습니다."
-                  )}
-                </p>
+                <div className="mt-5 pt-4 border-t border-white/5">
+                  <span className="block text-white/70 text-xs font-korean-bold mb-2">사진</span>
+                  <p className="text-white/40 text-xs font-korean-reg leading-relaxed [overflow-wrap:anywhere]">
+                    {photo?.source === "upload" ? (
+                      "직접 올린 사진을 쓰고 있습니다. 사진 표기는 붙이지 않습니다."
+                    ) : photo ? (
+                      <>
+                        사진: {photoCredit(photo)}{" "}
+                        <a href={photo.pageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          원본 보기
+                        </a>
+                        <br />
+                        상업적 사용이 허용된 라이선스의 사진입니다. 작가 표기는 카드와 캡션에 자동으로 들어갑니다.
+                      </>
+                    ) : (
+                      "이 기사에 맞는 저작권 안전한 사진을 찾지 못해 그라데이션으로 그렸습니다."
+                    )}
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <label className="flex-1 text-center py-2 rounded-lg border border-white/15 text-white/80 text-sm font-korean-reg cursor-pointer hover:bg-white/5">
+                      내 사진 올리기
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          void uploadPhoto(e.target.files?.[0]);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {data?.userPhoto && (
+                      <button
+                        type="button"
+                        onClick={removeUserPhoto}
+                        className="flex-1 py-2 rounded-lg border border-white/10 text-white/50 text-sm font-korean-reg hover:bg-white/5"
+                      >
+                        올린 사진 지우기
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-white/30 text-xs mt-2 font-korean-reg leading-relaxed">
+                    아이스탁 등에서 직접 받은 사진을 쓸 때. 사용 권한은 올리는 분이 확인해 주세요.
+                  </p>
+                  {uploadError && <p className="text-red-400 text-xs mt-2 font-korean-reg">{uploadError}</p>}
+                </div>
               )}
             </div>
 

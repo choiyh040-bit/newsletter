@@ -31,7 +31,7 @@ const USABLE = new Set(availableTemplates().map((t) => t.id));
  * 사진 템플릿 견본에 깔 그림. 실제 사진은 생성할 때 기사에 맞춰 찾으므로,
  * 여기서는 "사진이 깔린다"는 것만 보여 주는 그림을 쓴다(저장소에 있는 SVG).
  */
-const SAMPLE_PHOTO = { url: "/sample-photo.svg", credit: "견본" };
+const SAMPLE_PHOTO = { url: "/sample-photo.svg", credit: "견본", source: "upload" as const };
 
 /**
  * 미리보기에 그릴 견본 표지.

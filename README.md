@@ -138,18 +138,41 @@ DEVLOG 2026-10-05 항목에 있습니다.
 그라데이션 · 고딕과 같은 구성에 **기사 관련 사진을 바탕에 깝니다.** 사진은
 생성할 때 서버가 자동으로 찾습니다(`src/lib/photo.ts`).
 
-- **위키미디어 공용(Commons)에서만** 찾습니다. 구글 이미지 검색은 결과에
-  라이선스가 없어 저작권을 코드로 확인할 수 없습니다. Unsplash 는 쓰지 않습니다.
-- **상업적 사용이 되는 라이선스만**: CC0·퍼블릭 도메인·CC BY·CC BY-SA.
-  NC(비영리)·ND(변경 금지)·추가 제한(초상권 등) 표시가 있으면 버립니다.
-  로고·지도·도표·작은 사진도 버립니다.
-- 검색어는 AI 가 기사 속 장소·건물 이름으로 냅니다(`imageQuery`, 사람 이름 금지).
-- **작가 표기**(CC BY 계열은 의무)를 카드 모든 장 하단과 캡션 끝에 붙입니다.
-  캡션의 표기는 사진 템플릿일 때만 붙습니다(저장된 캡션이 아니라 보여 줄 때 만듦).
-- 사진은 `/api/photo` 를 거쳐 받습니다. PNG 로 구울 때 같은 출처여야 깨지지
-  않습니다. 허용한 호스트(`upload.wikimedia.org`)만 받습니다.
+**찾는 곳과 순서**: 픽사베이 → 언스플래쉬 → 위키미디어 공용. 앞의 두 곳은
+API 키가 있을 때만 씁니다(아래). 키가 없으면 위키미디어만 씁니다.
+
+| 곳 | 라이선스 | 카드·캡션 표기 |
+| --- | --- | --- |
+| 픽사베이 | Pixabay Content License (상업적 사용 가능) | `사진 · 작가 · Pixabay` |
+| 언스플래쉬 | Unsplash License (상업적 사용 가능) | `사진 · 작가 · Unsplash` (API 규정상 의무) |
+| 위키미디어 | CC0·PD·CC BY·CC BY-SA 만 | `사진 · 작가 · 라이선스 · Wikimedia Commons` |
+| 직접 올린 사진 | 올린 사람이 확인 | 붙이지 않음 |
+
+- 구글 이미지 검색은 쓰지 않습니다. 결과에 라이선스가 없어 저작권을 코드로
+  확인할 수 없습니다. 아이스탁은 프로그램 검색·내려받기가 열려 있지 않아
+  미리보기의 **내 사진 올리기**로 씁니다(카드 크기로 잘라 브라우저에 저장).
+- 위키미디어는 NC·ND·추가 제한(초상권 등)·로고·지도·작은 사진을 버립니다.
+- 검색어는 AI 가 영어로 냅니다(`imageQuery`). 행사장 그 자체가 아니어도 되고
+  장면("conference audience")·소재("semiconductor wafer")도 됩니다. 실존 인물·
+  브랜드 이름은 금지.
+- 사진은 `/api/photo` 를 거쳐 받습니다(PNG 로 구울 때 같은 출처여야 함).
+  픽사베이는 사진 주소가 한동안만 살아 있어 **사진 번호만 저장**하고 그릴 때마다
+  새 주소를 받습니다(`/api/photo?pixabay=번호`).
+- 언스플래쉬는 사진을 고르면 규정대로 사용 알림(download_location)을 보냅니다.
 - 못 찾으면 사진 없이 그라데이션으로 그립니다. 사진 때문에 생성이 실패하지 않습니다.
-- 로컬 시험: `COMMONS_API_URL`, `PHOTO_HOSTS` 환경 변수로 가짜 서버를 붙일 수 있습니다.
+- 로컬 시험: `COMMONS_API_URL`, `PIXABAY_API_URL`, `UNSPLASH_API_URL`, `PHOTO_HOSTS`
+  로 가짜 서버를 붙일 수 있습니다.
+
+#### API 키 넣기
+
+| 변수 이름 | 받는 곳 |
+| --- | --- |
+| `PIXABAY_API_KEY` | pixabay.com 가입 → https://pixabay.com/api/docs/ 에 로그인한 채로 들어가면 "key" 에 바로 나옴 |
+| `UNSPLASH_ACCESS_KEY` | https://unsplash.com/developers → Your apps → New Application → 약관 동의 → 앱 이름 입력 → 만들어진 앱의 "Access Key" (Secret Key 아님) |
+
+Vercel: 프로젝트 → Settings → Environment Variables 에 위 이름으로 넣고(Production),
+**Deployments 에서 Redeploy** 해야 반영됩니다. 언스플래쉬는 처음에 시간당 50회
+제한(Demo)이고, 앱 페이지에서 Production 신청을 하면 늘어납니다.
 
 ### 고른 디자인 기억
 

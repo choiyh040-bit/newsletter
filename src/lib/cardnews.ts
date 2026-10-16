@@ -106,15 +106,37 @@ export interface CardNews {
    * 찾아 붙인다(`lib/photo.ts`). 못 찾으면 없다 — 사진 템플릿은 그라데이션으로 그린다.
    */
   photo?: CardNewsPhoto;
+  /**
+   * 사용자가 직접 올린 사진(아이스탁 등에서 받은 것). 있으면 `photo` 보다
+   * 먼저 쓴다. 따로 두는 것은 지웠을 때 자동으로 찾은 사진으로 돌아가게 하려는 것.
+   */
+  userPhoto?: CardNewsPhoto;
 }
 
 export interface CardNewsPhoto {
-  /** 우리 서버를 거치는 주소(`/api/photo?src=…`) */
+  /** 우리 서버를 거치는 주소(`/api/photo?…`), 또는 직접 올린 사진(data URL) */
   url: string;
-  /** "작가 · 라이선스". CC BY 계열은 표기가 의무다. */
+  /** 작가. 예전 결과는 "작가 · 라이선스" 꼴로 들어 있다. */
   credit: string;
   license: string;
   pageUrl: string;
+  /** 어디서 왔는지. 예전 결과에는 없다(그때는 위키미디어뿐). */
+  source?: "Pixabay" | "Unsplash" | "Wikimedia Commons" | "upload";
+}
+
+/**
+ * 카드와 캡션에 적는 사진 표기. 직접 올린 사진이면 빈 문자열(표기하지 않음).
+ *
+ * 위키미디어는 CC 라이선스라 라이선스 이름까지 적어야 한다. 픽사베이·
+ * 언스플래쉬는 작가와 출처만 적는다(언스플래쉬는 표기가 API 규정상 의무,
+ * 픽사베이는 의무는 아니지만 같은 꼴로 맞춘다). 직접 올린 사진(아이스탁 등)은
+ * 사용자가 자기 라이선스로 쓰는 것이라 표기를 붙이지 않는다.
+ */
+export function photoCredit(photo: Pick<CardNewsPhoto, "credit" | "source"> & { license?: string }): string {
+  if (photo.source === "upload") return "";
+  if (!photo.source) return `${photo.credit} · Wikimedia Commons`;
+  if (photo.source === "Wikimedia Commons") return `${photo.credit} · ${photo.license} · Wikimedia Commons`;
+  return `${photo.credit} · ${photo.source}`;
 }
 
 /** 저장해 둔 사진 정보를 정리한다. 우리 사진 경로가 아니면 버린다. */
@@ -122,8 +144,17 @@ function normalizePhoto(raw: unknown): CardNewsPhoto | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const r = raw as Record<string, unknown>;
   const url = toText(r.url);
-  if (!url.startsWith("/api/photo?src=")) return undefined;
-  return { url, credit: toText(r.credit), license: toText(r.license), pageUrl: toText(r.pageUrl) };
+  // 우리 사진 경로이거나, 직접 올린 사진(브라우저에서 줄여 만든 JPEG)만 받는다.
+  if (!url.startsWith("/api/photo?") && !url.startsWith("data:image/jpeg;base64,")) return undefined;
+  const sources = ["Pixabay", "Unsplash", "Wikimedia Commons", "upload"] as const;
+  const source = sources.find((x) => x === r.source);
+  return {
+    url,
+    credit: toText(r.credit),
+    license: toText(r.license),
+    pageUrl: toText(r.pageUrl),
+    ...(source ? { source } : {}),
+  };
 }
 
 /** 출처 목록을 정리한다. http(s) 주소만, 최대 3개. */
@@ -341,6 +372,7 @@ export function normalizeCardNews(raw: unknown): CardNews {
     source: source && source.name ? source : null,
     ...(Array.isArray(input.sources) ? { sources: normalizeSources(input.sources) } : {}),
     ...(normalizePhoto(input.photo) ? { photo: normalizePhoto(input.photo) } : {}),
+    ...(normalizePhoto(input.userPhoto) ? { userPhoto: normalizePhoto(input.userPhoto) } : {}),
   };
 }
 

@@ -1,4 +1,4 @@
-import { PHOTO_HOSTS, WIKI_UA } from "@/lib/photo";
+import { PHOTO_HOSTS, pixabayImageUrl, WIKI_UA } from "@/lib/photo";
 
 /**
  * 카드 배경 사진을 우리 서버를 거쳐 내려준다.
@@ -8,7 +8,11 @@ import { PHOTO_HOSTS, WIKI_UA } from "@/lib/photo";
  * 남의 서버를 두드리는 통로가 되므로, 사진 검색이 돌려준 호스트만 받는다.
  */
 export async function GET(request: Request) {
-  const src = new URL(request.url).searchParams.get("src") ?? "";
+  const params = new URL(request.url).searchParams;
+  // 픽사베이는 번호로 받는다. 사진 주소가 한동안만 살아 있어서 그릴 때마다
+  // 새 주소를 받는다(lib/photo.ts 의 pixabayImageUrl).
+  const pixabayId = params.get("pixabay");
+  const src = pixabayId ? ((await pixabayImageUrl(pixabayId)) ?? "") : (params.get("src") ?? "");
   let target: URL;
   try {
     target = new URL(src);

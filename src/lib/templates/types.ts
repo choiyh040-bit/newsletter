@@ -96,8 +96,10 @@ export interface TemplateProps {
 
 export interface TemplatePhoto {
   url: string;
-  /** 출처를 모르는 사진은 쓰지 않는다. 그래서 필수 항목이다. */
   credit: string;
+  license?: string;
+  /** 어디서 왔는지. "upload" 면 직접 올린 사진이라 표기를 붙이지 않는다. */
+  source?: "Pixabay" | "Unsplash" | "Wikimedia Commons" | "upload";
 }
 
 export interface Template {

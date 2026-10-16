@@ -310,6 +310,16 @@ Vercel: 프로젝트 → Settings → Environment Variables 에 위 이름으로
 앞으로 만들 디자인의 참고 자료와, 그것을 넣기 전에 풀어야 할 구조적 문제는
 `docs/template-references.md`에 정리해 두었습니다.
 
+## 사이트 디자인
+
+카드가 아니라 **사이트 화면**(홈·미리보기·안내 페이지)의 규칙입니다(2026-10-16 사용자 결정).
+
+- 포인트 색은 **파랑 하나**. `tailwind.config.js` 의 `primary`(#5b9bff)와 `globals.css` 의
+  `.cta-gradient`(#3b82f6 → #1d4ed8). 청록·인스타그램식 주황분홍은 쓰지 않습니다.
+  빨강(오류)만 예외입니다.
+- **큰 박스와 글박스(입력칸)는 각지게.** 둥근 모서리는 아이콘 박스, 버튼, 작은 알약 칩, 점에만 남깁니다.
+- 홈의 견본 카드는 그림 파일이 아니라 실제 템플릿으로 그립니다(`components/SampleCards.tsx`).
+
 ## 안내 페이지와 광고 (애드센스)
 
 - 안내 페이지: `/about`, `/guide`, `/privacy`, `/terms` (`src/components/InfoPage.tsx` 틀).

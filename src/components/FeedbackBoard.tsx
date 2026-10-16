@@ -105,7 +105,7 @@ export default function FeedbackBoard() {
   return (
     <div>
       {/* 글쓰기 */}
-      <section className="glass-panel rounded-2xl p-5 md:p-6 border border-white/8 mb-10" aria-label="글쓰기">
+      <section className="glass-panel p-5 md:p-6 border border-white/8 mb-10" aria-label="글쓰기">
         <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="분류">
           {CATEGORIES.map((c) => (
             <button
@@ -128,7 +128,7 @@ export default function FeedbackBoard() {
           maxLength={20}
           placeholder="별명 (안 쓰면 익명)"
           aria-label="별명"
-          className="w-full mb-3 bg-white/5 border border-white/12 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30"
+          className="w-full mb-3 bg-white/5 border border-white/12 px-3 py-2 text-sm text-white placeholder-white/30"
         />
         <textarea
           value={body}
@@ -137,7 +137,7 @@ export default function FeedbackBoard() {
           rows={5}
           placeholder="내용을 적어 주세요 (5~1000자)"
           aria-label="내용"
-          className="w-full bg-white/5 border border-white/12 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 leading-relaxed"
+          className="w-full bg-white/5 border border-white/12 px-3 py-2 text-sm text-white placeholder-white/30 leading-relaxed"
         />
         {/* 사람에게는 안 보이는 칸. 자동 프로그램만 채운다. */}
         <input
@@ -164,7 +164,7 @@ export default function FeedbackBoard() {
         </div>
         <p className="text-white/30 text-xs mt-1 text-right tabular-nums">{length}/1000</p>
         {message && (
-          <p className={`text-sm mt-2 ${message.ok ? "text-emerald-300" : "text-red-400"}`} role="status">
+          <p className={`text-sm mt-2 ${message.ok ? "text-primary" : "text-red-400"}`} role="status">
             {message.text}
           </p>
         )}
@@ -178,7 +178,7 @@ export default function FeedbackBoard() {
         {state === "ready" && posts.length === 0 && <p className="text-white/50 text-sm">아직 글이 없습니다. 첫 글을 남겨 주세요.</p>}
         <ul className="space-y-4" style={{ listStyle: "none", paddingLeft: 0 }}>
           {posts.map((p) => (
-            <li key={p.number} className="glass-panel rounded-2xl p-5 border border-white/8" data-post={p.number}>
+            <li key={p.number} className="glass-panel p-5 border border-white/8" data-post={p.number}>
               <div className="flex items-center gap-2 text-xs mb-2">
                 <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-korean-bold">
                   {CATEGORIES.find((c) => c.id === p.category)?.name ?? "기타"}

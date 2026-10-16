@@ -32,7 +32,7 @@ export const PHOTO_HOSTS = (
 ).split(",");
 
 /** 위키미디어는 봇 요청에 연락처가 담긴 User-Agent 를 요구한다. */
-export const WIKI_UA = "CardGenAI/1.0 (https://newsletter-woad-seven.vercel.app)";
+export const WIKI_UA = "CardGenAI/1.0 (https://cardnewsmaker.com)";
 
 export interface FoundPhoto {
   /** 우리 서버를 거치는 주소(`/api/photo?…`). PNG 로 구울 때 같은 출처여야 한다. */

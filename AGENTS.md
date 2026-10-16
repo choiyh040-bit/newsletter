@@ -47,7 +47,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - 테스트는 바꾼 곳을 실제로 써 보는 것이다. 빌드·타입 검사만으로는 부족하다.
   화면을 바꿨으면 데스크톱과 **휴대폰 폭(360px 안팎)** 둘 다 본다.
-- 배포 사이트: https://newsletter-woad-seven.vercel.app (main 에 푸시하면
+- 배포 사이트: https://cardnewsmaker.com (2026-10-16 가비아에서 산 도메인, www 는 이리로
+  넘어감. 예전 주소 https://newsletter-woad-seven.vercel.app 도 그대로 작동. main 에 푸시하면
   Vercel 이 1분 안팎에 새로 만든다).
 - Gemini 호출은 할당량을 쓰므로 생성 테스트는 꼭 필요한 만큼만 한다. 화면만
   확인할 때는 이전 생성 결과를 `localStorage` 에 넣어 미리보기를 연다.

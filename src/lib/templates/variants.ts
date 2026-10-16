@@ -65,3 +65,40 @@ export const CREAM_VARIANTS: readonly TemplateVariant[] = [
   { id: "cream-orange", name: "크림 · 주황", base: "#F3EEE4", neon: "#E8590C" },
   { id: "cream-violet", name: "크림 · 보라", base: "#F3EEE4", neon: "#6B3FD4" },
 ];
+
+/**
+ * 사진 · 자막의 강조색. 제목은 흰색이고 강조어만 이 색이다. 참고 게시물이 쓴
+ * 분홍·노랑·형광 연두·민트에 흰색(강조 없이 담백하게)을 더했다.
+ * `base` 는 견본 동그라미의 바탕일 뿐 카드 배경은 사진이다.
+ */
+export const CAPTION_VARIANTS: readonly TemplateVariant[] = [
+  { id: "caption-yellow", name: "노랑", base: "#2A2A2A", neon: "#FFE873" },
+  { id: "caption-pink", name: "분홍", base: "#2A2A2A", neon: "#FFB3DA" },
+  { id: "caption-lime", name: "형광 연두", base: "#2A2A2A", neon: "#B5FF5A" },
+  { id: "caption-mint", name: "민트", base: "#2A2A2A", neon: "#6EF0C2" },
+  { id: "caption-white", name: "흰색", base: "#2A2A2A", neon: "#FFFFFF" },
+];
+
+/**
+ * 손글씨 메모의 종이색(`base`)과 형광펜 색(`neon`). 참고 게시물은 노란 메모지와
+ * 크림 종이였다. 강조어 빨간 펜은 색 조합과 상관없이 고정이다.
+ */
+export const HAND_VARIANTS: readonly TemplateVariant[] = [
+  { id: "hand-yellow", name: "노란 메모지", base: "#FBE59A", neon: "#F7B731" },
+  { id: "hand-cream", name: "크림 종이", base: "#FBF5EA", neon: "#FFD34D" },
+  { id: "hand-sky", name: "하늘 종이", base: "#E4F0FA", neon: "#8CC4F2" },
+  { id: "hand-pink", name: "분홍 종이", base: "#FCE8EC", neon: "#F7A3B8" },
+  { id: "hand-mint", name: "민트 종이", base: "#E3F4EA", neon: "#88D8B0" },
+];
+
+/**
+ * 문서 페이지의 강조색. 바탕(`base`)은 종이 바깥의 연회색이고 종이는 흰색이다.
+ * 문서 도구들이 쓰는 차분한 색 쪽으로 골랐다.
+ */
+export const DOC_VARIANTS: readonly TemplateVariant[] = [
+  { id: "doc-blue", name: "파랑", base: "#F1F0EC", neon: "#2F80ED" },
+  { id: "doc-green", name: "초록", base: "#F1F0EC", neon: "#0F8A6C" },
+  { id: "doc-orange", name: "주황", base: "#F1F0EC", neon: "#E0761A" },
+  { id: "doc-red", name: "빨강", base: "#F1F0EC", neon: "#E03E3E" },
+  { id: "doc-purple", name: "보라", base: "#F1F0EC", neon: "#8A56C2" },
+];

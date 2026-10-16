@@ -21,17 +21,19 @@ import type { CardNews, CardSlide } from "../cardnews";
 export type BackgroundKind = "color" | "photo";
 
 /**
- * 고딕은 원티드산스, 명조는 마루 부리를 쓴다.
+ * 고딕은 원티드산스, 명조는 마루 부리, 손글씨는 개구를 쓴다.
  *
  * 명조는 처음에 나눔명조였다. 2026-10-15 사용자가 바꾸자고 했다. 열린명조가
  * 먼저 후보였지만 웹 임베딩·형식 변환이 제한된다는 안내가 있어 넣지 않았고,
  * 나눔과 같은 OFL 인 마루 부리로 정했다.
  */
-export type FontKind = "sans" | "serif";
+export type FontKind = "sans" | "serif" | "hand";
 
 export const FONT_STACK: Record<FontKind, string> = {
   sans: "'Wanted Sans', -apple-system, BlinkMacSystemFont, sans-serif",
   serif: "'Maru Buri', serif",
+  // 손글씨(개구). 개구에 없는 드문 글자는 Hand Fallback(나눔손글씨 펜)이 채운다.
+  hand: "'Gaegu', 'Hand Fallback', 'Wanted Sans', sans-serif",
 };
 
 /**
@@ -82,7 +84,7 @@ export interface TemplateProps {
   source: CardNews["source"];
   /**
    * 배경 사진. `background`가 `"photo"`인 템플릿에서만 쓴다.
-   * 아직 사진 파이프라인이 없어 항상 null 이다.
+   * 그 장의 사진. 못 찾았으면 null 이다.
    */
   photo: TemplatePhoto | null;
   /**

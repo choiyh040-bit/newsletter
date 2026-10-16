@@ -95,6 +95,25 @@ body {
   font-display: swap;
 }
 
+/* 손글씨 템플릿. 개구(OFL)는 자주 쓰는 한글 2350자만 있어서, 나머지 글자는
+   나눔손글씨 펜(OFL)에서 그 글자들만 떼어 낸 보조 서체가 채운다. 나눔은 OFL
+   "예약 글꼴 이름"이 있어 떼어 낸 판은 이름을 Hand Fallback 으로 바꿨다. */
+@font-face {
+  font-family: 'Gaegu';
+  src: url('/fonts/Gaegu-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hand Fallback';
+  src: url('/fonts/HandFallback-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'HangamePoker';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/HangamePoker.woff2') format('woff2');

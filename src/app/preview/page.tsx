@@ -110,6 +110,33 @@ function PreviewContent() {
       setUploadError("사진을 읽지 못했습니다. JPG·PNG 사진인지 확인해 주세요.");
     }
   };
+  // 다른 사진. 같은 검색어로, 이미 본 사진은 빼고 하나 더 찾는다.
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const nextPhoto = async () => {
+    if (!entry || !data || photoBusy) return;
+    setUploadError(null);
+    setPhotoBusy(true);
+    try {
+      // 예전 결과에는 검색어가 남아 있지 않다. 그때는 일반적인 행사장 컷을 찾는다.
+      const query = data.photoQuery || "convention center";
+      const exclude = [...(data.photoSeen ?? []), data.photo?.pageUrl ?? ""].filter(Boolean);
+      const res = await fetch("/api/photo-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, exclude }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { photo?: CardNews["photo"] | null };
+      if (!res.ok || !body.photo) {
+        setUploadError("더 보여 드릴 사진을 찾지 못했습니다.");
+        return;
+      }
+      updateCardNewsData(entry.id, { ...data, photo: body.photo, photoSeen: exclude.slice(-30) });
+    } catch {
+      setUploadError("사진을 찾지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
   const removeUserPhoto = () => {
     if (!entry || !data) return;
     const { userPhoto: _removed, ...rest } = data;
@@ -515,6 +542,17 @@ function PreviewContent() {
                     )}
                   </p>
                   <div className="flex gap-2 mt-3">
+                    {/* 올린 사진을 쓰는 중이면 자동 사진이 안 보이므로 숨긴다. */}
+                    {!data?.userPhoto && (
+                      <button
+                        type="button"
+                        onClick={() => void nextPhoto()}
+                        disabled={photoBusy}
+                        className="flex-1 py-2 rounded-lg border border-white/15 text-white/80 text-sm font-korean-reg hover:bg-white/5 disabled:opacity-50"
+                      >
+                        {photoBusy ? "찾는 중…" : "다른 사진"}
+                      </button>
+                    )}
                     <label className="flex-1 text-center py-2 rounded-lg border border-white/15 text-white/80 text-sm font-korean-reg cursor-pointer hover:bg-white/5">
                       내 사진 올리기
                       <input

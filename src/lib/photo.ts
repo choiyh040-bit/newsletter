@@ -46,6 +46,27 @@ export interface FoundPhoto {
   source: "Pixabay" | "Unsplash" | "Wikimedia Commons";
 }
 
+/** 후보 하나. 고른 뒤에 할 일(언스플래쉬 사용 알림)을 함께 들고 다닌다. */
+interface Candidate extends FoundPhoto {
+  notify?: { url: string; headers: Record<string, string> };
+}
+
+/**
+ * 특정 인물이 중심인 사진인지(설명·태그로 어림).
+ *
+ * 사용자 기준: **군중·청중은 되고, 특정 인물은 안 된다**(2026-10-16). 뷰티엑스포
+ * 기사에 화장품을 든 모델 사진이 붙었는데, 라이선스상 문제는 없어도 그 사람이
+ * 행사와 관련 있는 것처럼 보인다. 사진 내용은 코드가 볼 수 없으므로 사이트가
+ * 주는 설명·태그의 낱말로 거른다. "crowd·audience·people" 같은 낱말이 있으면
+ * 여럿이 나오는 장면으로 보고 남긴다.
+ */
+const ONE_PERSON = /\b(woman|man|girl|boy|lady|guy|gentleman|portrait|model|selfie|face|businessman|businesswoman|person|child|kid|baby|bride|groom)\b/i;
+const MANY_PEOPLE = /\b(crowd|crowded|audience|people|group|team|spectators|visitors|attendees|participants|delegates|gathering)\b/i;
+
+function isOnePerson(text: string): boolean {
+  return ONE_PERSON.test(text) && !MANY_PEOPLE.test(text);
+}
+
 /** 배경으로 못 쓰는 것. 로고·지도·문장(紋章)·도표는 사진이 아니다. */
 const NOT_A_PHOTO = /(logo|map|flag|coat of arms|emblem|seal|diagram|chart|icon|symbol|signature|poster|screenshot)/i;
 
@@ -65,6 +86,7 @@ function allowedHost(url: string): boolean {
 
 interface PixabayHit {
   id: number;
+  tags?: string;
   pageURL?: string;
   largeImageURL?: string;
   imageWidth?: number;
@@ -94,28 +116,29 @@ export async function pixabayImageUrl(id: string): Promise<string | null> {
   return url && allowedHost(url) ? url : null;
 }
 
-async function searchPixabay(query: string, signal: AbortSignal): Promise<FoundPhoto | null> {
+async function searchPixabay(query: string, signal: AbortSignal): Promise<Candidate[]> {
   const hits = await pixabayQuery(
-    { q: query, image_type: "photo", safesearch: "true", per_page: "12", min_width: "1000" },
+    { q: query, image_type: "photo", safesearch: "true", per_page: "20", min_width: "1000" },
     signal
   );
-  for (const hit of hits ?? []) {
-    if ((hit.imageWidth ?? 0) < 1000 || (hit.imageHeight ?? 0) < 700) continue;
-    if (!hit.largeImageURL || !allowedHost(hit.largeImageURL)) continue;
-    return {
+  return (hits ?? [])
+    .filter((hit) => (hit.imageWidth ?? 0) >= 1000 && (hit.imageHeight ?? 0) >= 700)
+    .filter((hit) => !!hit.largeImageURL && allowedHost(hit.largeImageURL))
+    .filter((hit) => !isOnePerson(hit.tags ?? ""))
+    .map((hit) => ({
       url: `/api/photo?pixabay=${hit.id}`,
       credit: hit.user || "Pixabay",
       license: "Pixabay Content License",
-      pageUrl: hit.pageURL ?? "https://pixabay.com",
-      source: "Pixabay",
-    };
-  }
-  return null;
+      pageUrl: hit.pageURL ?? `https://pixabay.com/photos/${hit.id}/`,
+      source: "Pixabay" as const,
+    }));
 }
 
 // ─── 언스플래쉬 ──────────────────────────────────────────────────────────────
 
 interface UnsplashPhoto {
+  alt_description?: string | null;
+  description?: string | null;
   width?: number;
   height?: number;
   urls?: { raw?: string; regular?: string };
@@ -123,34 +146,35 @@ interface UnsplashPhoto {
   user?: { name?: string };
 }
 
-async function searchUnsplash(query: string, signal: AbortSignal): Promise<FoundPhoto | null> {
+async function searchUnsplash(query: string, signal: AbortSignal): Promise<Candidate[]> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
-  if (!key) return null;
+  if (!key) return [];
   const headers = { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" };
-  const params = new URLSearchParams({ query, per_page: "12", content_filter: "high" });
+  const params = new URLSearchParams({ query, per_page: "20", content_filter: "high" });
   const res = await fetch(`${UNSPLASH_API}/search/photos?${params}`, { headers, signal });
-  if (!res.ok) return null;
+  if (!res.ok) return [];
   const results = ((await res.json()) as { results?: UnsplashPhoto[] }).results ?? [];
-  for (const photo of results) {
-    if ((photo.width ?? 0) < 1000 || (photo.height ?? 0) < 700) continue;
-    const raw = photo.urls?.raw;
-    if (!raw || !allowedHost(raw)) continue;
-    // 카드 크기에 맞춰 잘라 받는다(언스플래쉬 주소 변수).
-    const sized = `${raw}${raw.includes("?") ? "&" : "?"}w=1080&h=1350&fit=crop&q=80&fm=jpg`;
-    // 언스플래쉬 API 규정: 사진을 쓰기로 했으면 download_location 을 한 번
-    // 불러 알려야 한다. 실패해도 사진은 쓴다(알림일 뿐).
-    if (photo.links?.download_location) {
-      await fetch(photo.links.download_location, { headers, signal }).catch(() => {});
-    }
-    return {
-      url: `/api/photo?src=${encodeURIComponent(sized)}`,
-      credit: photo.user?.name || "Unsplash",
-      license: "Unsplash License",
-      pageUrl: photo.links?.html ?? "https://unsplash.com",
-      source: "Unsplash",
-    };
-  }
-  return null;
+  return results
+    .filter((photo) => (photo.width ?? 0) >= 1000 && (photo.height ?? 0) >= 700)
+    .filter((photo) => !!photo.urls?.raw && allowedHost(photo.urls.raw))
+    .filter((photo) => !isOnePerson(`${photo.alt_description ?? ""} ${photo.description ?? ""}`))
+    .map((photo) => {
+      const raw = photo.urls!.raw!;
+      // 카드 크기에 맞춰 잘라 받는다(언스플래쉬 주소 변수).
+      const sized = `${raw}${raw.includes("?") ? "&" : "?"}w=1080&h=1350&fit=crop&q=80&fm=jpg`;
+      return {
+        url: `/api/photo?src=${encodeURIComponent(sized)}`,
+        credit: photo.user?.name || "Unsplash",
+        license: "Unsplash License",
+        pageUrl: photo.links?.html ?? "https://unsplash.com",
+        source: "Unsplash" as const,
+        // 언스플래쉬 API 규정: 사진을 쓰기로 했으면 download_location 을 한 번
+        // 불러 알려야 한다. **고른 사진에만** 보낸다(findPhoto).
+        ...(photo.links?.download_location
+          ? { notify: { url: photo.links.download_location, headers } }
+          : {}),
+      };
+    });
 }
 
 // ─── 위키미디어 공용 ─────────────────────────────────────────────────────────
@@ -176,7 +200,7 @@ interface CommonsPage {
   }[];
 }
 
-async function searchCommons(query: string, signal: AbortSignal): Promise<FoundPhoto | null> {
+async function searchCommons(query: string, signal: AbortSignal): Promise<Candidate[]> {
   const params = new URLSearchParams({
     action: "query",
     format: "json",
@@ -193,10 +217,11 @@ async function searchCommons(query: string, signal: AbortSignal): Promise<FoundP
     headers: { "User-Agent": WIKI_UA },
     signal,
   });
-  if (!res.ok) return null;
+  if (!res.ok) return [];
   const data = (await res.json()) as { query?: { pages?: Record<string, CommonsPage> } };
   const pages = Object.values(data.query?.pages ?? {}).sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
 
+  const found: Candidate[] = [];
   for (const page of pages) {
     const info = page.imageinfo?.[0];
     if (!info?.thumburl || !info.descriptionurl) continue;
@@ -204,6 +229,7 @@ async function searchCommons(query: string, signal: AbortSignal): Promise<FoundP
     // 카드 한 장(1080×1350)을 덮을 만큼은 커야 한다. 작으면 뭉개진다.
     if ((info.width ?? 0) < 1000 || (info.height ?? 0) < 700) continue;
     if (NOT_A_PHOTO.test(page.title ?? "")) continue;
+    if (isOnePerson(page.title ?? "")) continue;
 
     const meta = info.extmetadata ?? {};
     const license = stripHtml(meta.LicenseShortName?.value ?? "");
@@ -213,15 +239,15 @@ async function searchCommons(query: string, signal: AbortSignal): Promise<FoundP
     if (!allowedHost(info.thumburl)) continue;
 
     const artist = stripHtml(meta.Artist?.value ?? "") || "작자 미상";
-    return {
+    found.push({
       url: `/api/photo?src=${encodeURIComponent(info.thumburl)}`,
       credit: artist.slice(0, 60),
       license,
       pageUrl: info.descriptionurl,
       source: "Wikimedia Commons",
-    };
+    });
   }
-  return null;
+  return found;
 }
 
 // ─── 차례로 찾기 ─────────────────────────────────────────────────────────────
@@ -233,17 +259,35 @@ const PROVIDERS: { name: string; search: typeof searchCommons }[] = [
 ];
 
 /**
- * 검색어마다 세 곳을 차례로 본다. 하나도 못 찾으면 null — 템플릿은 사진 없이
- * 그라데이션으로 그린다. 사진 때문에 생성이 실패하면 안 된다.
+ * 무작위로 고를 후보의 수. 검색 결과 앞쪽에서만 고른다.
+ *
+ * 처음엔 늘 첫 사진을 썼다. 그러자 "부산 MICE"와 "국제회의 유치"에 **똑같은
+ * 사진**이 붙었다 — 비슷한 검색어엔 첫 사진도 같다. 그렇다고 아무 데서나
+ * 고르면 뒤로 갈수록 검색어와 멀어진다. 앞의 몇 장에서만 고른다.
  */
-export async function findPhoto(queries: string[], timeoutMs = 6_000): Promise<FoundPhoto | null> {
+const POOL = 6;
+
+/**
+ * 검색어마다 세 곳을 차례로 보고, 처음 후보가 나온 곳에서 무작위로 하나 고른다.
+ * `exclude`(이미 본 사진의 원본 페이지 주소)는 빼고 고른다 — "다른 사진" 버튼.
+ * 하나도 못 찾으면 null. 템플릿은 사진 없이 그라데이션으로 그린다.
+ */
+export async function findPhoto(
+  queries: string[],
+  timeoutMs = 6_000,
+  exclude: string[] = []
+): Promise<FoundPhoto | null> {
   const signal = AbortSignal.timeout(timeoutMs);
+  const seen = new Set(exclude);
   for (const q of queries.map((s) => s.trim()).filter(Boolean)) {
     for (const provider of PROVIDERS) {
       if (signal.aborted) return null;
       try {
-        const found = await provider.search(q, signal);
-        if (found) return found;
+        const pool = (await provider.search(q, signal)).filter((c) => !seen.has(c.pageUrl)).slice(0, POOL);
+        if (pool.length === 0) continue;
+        const { notify, ...picked } = pool[Math.floor(Math.random() * pool.length)];
+        if (notify) await fetch(notify.url, { headers: notify.headers, signal }).catch(() => {});
+        return picked;
       } catch (error) {
         console.warn(`[photo] ${provider.name} "${q}" 검색 실패:`, error);
       }

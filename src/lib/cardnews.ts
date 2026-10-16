@@ -111,6 +111,10 @@ export interface CardNews {
    * 먼저 쓴다. 따로 두는 것은 지웠을 때 자동으로 찾은 사진으로 돌아가게 하려는 것.
    */
   userPhoto?: CardNewsPhoto;
+  /** 사진을 찾은 검색어. "다른 사진" 버튼이 같은 검색어로 다시 찾는다. */
+  photoQuery?: string;
+  /** 이미 보여 준 사진들의 원본 페이지 주소. "다른 사진"이 이것을 빼고 고른다. */
+  photoSeen?: string[];
 }
 
 export interface CardNewsPhoto {
@@ -373,6 +377,12 @@ export function normalizeCardNews(raw: unknown): CardNews {
     ...(Array.isArray(input.sources) ? { sources: normalizeSources(input.sources) } : {}),
     ...(normalizePhoto(input.photo) ? { photo: normalizePhoto(input.photo) } : {}),
     ...(normalizePhoto(input.userPhoto) ? { userPhoto: normalizePhoto(input.userPhoto) } : {}),
+    ...(typeof input.photoQuery === "string" && input.photoQuery.trim()
+      ? { photoQuery: input.photoQuery.trim().slice(0, 80) }
+      : {}),
+    ...(Array.isArray(input.photoSeen)
+      ? { photoSeen: input.photoSeen.filter((x): x is string => typeof x === "string").slice(-30) }
+      : {}),
   };
 }
 

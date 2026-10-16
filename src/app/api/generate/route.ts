@@ -55,6 +55,17 @@ const TONE_RULES: Record<ToneId, { sentence: string; outro: string }> = {
   마세요. 감탄은 세트 전체에서 한두 번까지입니다.`,
     outro: `heading 이나 body 에서 참여·방문·신청을 권하며 끝내도 됩니다.`,
   },
+  mood: {
+    sentence: `- **반말 구어체의 SNS 감성 말투**로 쓰세요. 친구한테 말하듯 짧게 툭 던집니다.
+  "~함", "~임", "~더라", "~해 봐", "~각" 같은 끝맺음과 "..." 말줄임을 써도 됩니다.
+  예: "요즘 다 이렇게 입더라", "이건 진짜 저장각", "가을엔 무조건 이 조합임"
+- 카드 글에는 이모지를 쓰지 마세요(캡션에는 한두 개까지 괜찮습니다). 비속어와
+  남을 깎아내리는 말은 쓰지 마세요.
+- 말투만 가벼울 뿐 **사실은 자료 그대로**입니다. 자료에 없는 "역대급", "최초",
+  "품절 대란" 같은 말은 쓰지 마세요.
+- 캡션도 같은 반말 말투로 씁니다. 출처는 "OO 보도에 따르면 ~래" 처럼 흐름 안에서 밝힙니다.`,
+    outro: `heading 이나 body 에서 "저장해 둬", "같이 가 볼 사람" 처럼 가볍게 권해도 됩니다.`,
+  },
 };
 
 /**
@@ -168,7 +179,8 @@ ${copy === "caption" ? CAPTION_COPY_RULES + "\n" : ""}
   - 장소·건물: "convention center", "city skyline", "cafe interior", "office"
   - 장면: "conference audience", "shopping street", "people working"
   - 소재: 기사가 다루는 것(예: 반도체면 "semiconductor wafer",
-    반려동물이면 "dog", 화장품이면 "cosmetics", 음식이면 그 음식)
+    반려동물이면 "dog", 화장품이면 "cosmetics", 음식이면 그 음식,
+    패션이면 사람 대신 옷과 소품: "clothing rack", "sneakers", "handbag", "knit sweater flat lay")
 - **실존 인물 이름, 회사·브랜드 이름, 로고는 쓰지 마세요.** 초상권·상표 문제가
   생깁니다.
 - **한 사람이 중심인 장면은 피하세요**("woman holding cosmetics" 같은 것).

@@ -6,7 +6,7 @@ import TemplatePicker from "@/components/TemplatePicker";
 import TonePicker from "@/components/TonePicker";
 import MobileMenu from "@/components/MobileMenu";
 import { INFO_LINKS } from "@/components/InfoPage";
-import { FeatureCard, HeroCards } from "@/components/SampleCards";
+import { FeatureCard } from "@/components/SampleCards";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
 function Lines({ lines }: { lines: readonly string[] }) {
@@ -188,13 +188,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* 견본 카드. 예전 소개 그림(hero_mockup.png)은 트위터 게시물이 섞여 있어 바꿨다. */}
-          <div className="relative mt-14 w-full max-w-4xl mx-auto px-4">
-            <div className="relative rounded-3xl overflow-hidden glass-panel border border-white/10 py-10 px-4"
-              style={{ boxShadow: "0 40px 80px rgba(0,0,0,0.5)", background: "radial-gradient(ellipse at 50% 40%, rgba(37,99,235,0.28) 0%, rgba(11,19,38,0) 70%)" }}>
-              <HeroCards />
-            </div>
-          </div>
         </section>
 
         {/* ─── Features Section ─────────────────────────────── */}

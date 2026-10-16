@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { CARD_HEIGHT, CARD_WIDTH, normalizeCardNews } from "@/lib/cardnews";
 import { DEFAULT_ALIGN, resolveColors, templateById } from "@/lib/templates";
 
@@ -10,6 +9,9 @@ import { DEFAULT_ALIGN, resolveColors, templateById } from "@/lib/templates";
  * 전에는 소개 그림(`hero_mockup.png`)을 썼는데, SNS 전체 게시물을 만들던 시절 그림이라
  * 오른쪽 절반이 트위터 게시물이었다(2026-10-16 사용자 지적). 그림 파일은 템플릿을 고쳐도
  * 낡은 채로 남으므로, 템플릿 고르기 견본처럼 실제 컴포넌트로 그린다.
+ *
+ * 첫 화면의 세 장 부채꼴(HeroCards)은 꾸밈이라 뺐다(2026-10-16 사용자). 템플릿 고르기에 같은 견본이
+ * 이미 있다. 링크 미리보기 그림(app/opengraph-image.png)은 그 부채꼴을 찍어 둔 고정 파일이다.
  */
 const SAMPLE = normalizeCardNews({
   title: "견본",
@@ -22,20 +24,6 @@ const SAMPLE = normalizeCardNews({
       heading: ["국제회의에", "==210억 원==", "투입한다"],
       body: [],
     },
-    {
-      kind: "detail",
-      badge: "MICE 뉴스",
-      sub: "지원 대상",
-      heading: ["올해 유치할", "==국제회의 40건=="],
-      body: ["참가자 500명 이상", "외국인 비율 30% 넘는 행사"],
-    },
-    {
-      kind: "detail",
-      badge: "MICE 뉴스",
-      sub: "신청 방법",
-      heading: ["다음 달부터", "온라인 신청"],
-      body: ["누리집에서 서류를 내면", "두 주 안에 결과를 알린다"],
-    },
   ],
   caption: "",
   hashtags: [],
@@ -44,7 +32,7 @@ const SAMPLE = normalizeCardNews({
 
 const SAMPLE_PHOTO = { url: "/sample-photo.svg", credit: "견본", source: "upload" as const };
 
-function Card({ templateId, slideIndex, width }: { templateId: string; slideIndex: number; width: number }) {
+function Card({ templateId, width }: { templateId: string; width: number }) {
   const template = templateById(templateId);
   const Render = template.Render;
   const scale = width / CARD_WIDTH;
@@ -62,7 +50,7 @@ function Card({ templateId, slideIndex, width }: { templateId: string; slideInde
         }}
       >
         <Render
-          slide={SAMPLE.slides[slideIndex]}
+          slide={SAMPLE.slides[0]}
           accent={SAMPLE.accent}
           total={5}
           source={SAMPLE.source}
@@ -75,54 +63,7 @@ function Card({ templateId, slideIndex, width }: { templateId: string; slideInde
   );
 }
 
-/** 상자 폭을 재서 카드 크기를 맞춘다. 카드는 고정 크기(1080)를 줄여 그리므로 px 값이 필요하다. */
-function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, width] as const;
-}
-
-/** 첫 화면: 세 장을 부채꼴로. 가운데가 표지. */
-export function HeroCards() {
-  const [ref, width] = useWidth<HTMLDivElement>();
-  const card = Math.min(260, Math.round(width * (width < 500 ? 0.44 : 0.36)));
-  const cards = [
-    { templateId: "cream-bold", slide: 1, x: -0.74, r: -7 },
-    { templateId: "dark-neon", slide: 2, x: 0.74, r: 7 },
-    { templateId: "photo-caption", slide: 0, x: 0, r: 0 },
-  ];
-  return (
-    <div
-      ref={ref}
-      data-hero-cards
-      className="relative w-full flex items-center justify-center"
-      style={{ height: card ? (card * CARD_HEIGHT) / CARD_WIDTH + 40 : 0 }}
-    >
-      {card > 0 &&
-        cards.map((c) => (
-          <div
-            key={c.templateId}
-            className="absolute shadow-2xl"
-            style={{
-              transform: `translateX(${c.x * card}px) rotate(${c.r}deg)${c.x === 0 ? " translateY(-6px)" : " scale(0.9)"}`,
-              boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
-            }}
-          >
-            <Card templateId={c.templateId} slideIndex={c.slide} width={card} />
-          </div>
-        ))}
-    </div>
-  );
-}
-
 /** 기능 소개 상자 안의 한 장. */
 export function FeatureCard({ height }: { height: number }) {
-  return <Card templateId="photo-frame" slideIndex={0} width={Math.round((height * CARD_WIDTH) / CARD_HEIGHT)} />;
+  return <Card templateId="photo-frame" width={Math.round((height * CARD_WIDTH) / CARD_HEIGHT)} />;
 }

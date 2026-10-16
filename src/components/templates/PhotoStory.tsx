@@ -141,7 +141,14 @@ export default function PhotoStory({ slide, accent, total, source, photo, varian
             </div>
           )}
           <div style={{ fontSize: headingSize, fontWeight: 800, lineHeight: 1.18, letterSpacing: "-0.03em" }}>
-            <TextLines lines={slide.heading} accentColor={hl} markBackground={hl} markColor={readableOn(hl)} />
+            {/* 형광펜 칸은 글 상자다. 바깥 글로우가 칸 안까지 번지지 않게 끊는다. */}
+            <TextLines
+              lines={slide.heading}
+              accentColor={hl}
+              markBackground={hl}
+              markColor={readableOn(hl)}
+              markStyle={{ textShadow: "none" }}
+            />
           </div>
           {(slide.body.length > 0 || source) && (
             <div style={{ fontSize: 30, fontWeight: 600, color: "rgba(255,255,255,0.85)", marginTop: 56 }}>

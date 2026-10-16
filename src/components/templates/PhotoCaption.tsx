@@ -28,6 +28,12 @@ import TextLines from "./TextLines";
 // 않는다(2026-10-16 사용자: "글로우는 단색 바탕(글박스 포함)일 때만 없애라"). 띠·라벨·스티커
 // 같은 상자 모양에는 처음부터 이 그림자를 걸지 않는다.
 const SHADOW = "0 0 2px rgba(0,0,0,0.6), 0 3px 12px rgba(0,0,0,0.5), 0 0 36px rgba(0,0,0,0.3)";
+/**
+ * 형광펜 칸 안의 글씨. 칸이 곧 글 상자라 바깥 글씨의 글로우와 테두리를 끊는다.
+ * 끊지 않으면 칸 안까지 번지고(메인 견본의 "210억 원"), 스티커 모양에서는 검정 테두리가
+ * 검정 글씨를 덮어 글자가 덩어리로 뭉갰다(2026-10-16 "러블리 플리츠").
+ */
+const MARK_PLAIN: CSSProperties = { textShadow: "none", WebkitTextStroke: "0" };
 const SIDE = 80;
 
 export default function PhotoCaption({ slide, accent, total, source, photo, variant }: TemplateProps) {
@@ -204,7 +210,7 @@ function Heading({
     lineHeight: t.lineHeight,
     letterSpacing: look.id === "tall" || look.id === "sticker" ? "0" : "-0.035em",
   };
-  const mark = { markBackground: neon, markColor: readableOn(neon) };
+  const mark = { markBackground: neon, markColor: readableOn(neon), markStyle: MARK_PLAIN };
 
   switch (look.id) {
     case "bold":
@@ -230,13 +236,13 @@ function Heading({
             filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
           }}
         >
-          <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor="#111111" />
+          <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor="#111111" markStyle={MARK_PLAIN} />
         </div>
       );
     case "serif":
       return (
         <div style={{ ...box, color: neon, textShadow: SHADOW }}>
-          <TextLines lines={lines} accentColor="#ffffff" markBackground="#ffffff" markColor="#111111" />
+          <TextLines lines={lines} accentColor="#ffffff" markBackground="#ffffff" markColor="#111111" markStyle={MARK_PLAIN} />
         </div>
       );
     case "sticker":
@@ -252,13 +258,14 @@ function Heading({
             filter: "drop-shadow(0 6px 0 rgba(0,0,0,0.35))",
           }}
         >
-          <TextLines lines={lines} accentColor="#ffffff" markBackground="#ffffff" markColor="#111111" />
+          {/* 강조어는 검정 칸에 형광 글씨. 흰 칸에 검정 글씨를 두면 검정 테두리와 붙어 뭉갰다. */}
+          <TextLines lines={lines} accentColor="#ffffff" markBackground="#111111" markColor={neon} markStyle={MARK_PLAIN} />
         </div>
       );
     case "color":
       return (
         <div style={{ ...box, color: neon, textShadow: SHADOW }}>
-          <TextLines lines={lines} accentColor="#ffffff" markBackground="#ffffff" markColor="#111111" />
+          <TextLines lines={lines} accentColor="#ffffff" markBackground="#ffffff" markColor="#111111" markStyle={MARK_PLAIN} />
         </div>
       );
     case "band":
@@ -336,7 +343,7 @@ function Small({ look, lines, neon }: { look: CaptionLook; lines: TextLine[]; ne
         letterSpacing: look.id === "tall" ? "0" : "-0.015em",
       }}
     >
-      <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor={readableOn(neon)} />
+      <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor={readableOn(neon)} markStyle={MARK_PLAIN} />
     </div>
   );
 }

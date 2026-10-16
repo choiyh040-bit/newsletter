@@ -113,8 +113,9 @@ ${article}
 ${toneRules.sentence}
 
 [구성]
-- 슬라이드는 **${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장**. 첫 장은 표지, 마지막 장은 마무리, 나머지는 상세입니다.
-  자료가 적으면 ${MIN_SLIDES}장, 많으면 ${GENERATED_MAX_SLIDES}장까지 씁니다. 같은 사실을 나눠 장을 늘리지 마세요.
+- 슬라이드는 **기본 ${GENERATED_MAX_SLIDES}장**(표지 1 + 상세 ${GENERATED_MAX_SLIDES - 2} + 마무리 1)입니다. 첫 장은 표지, 마지막 장은 마무리, 나머지는 상세입니다.
+  자료에 상세 ${GENERATED_MAX_SLIDES - 2}장을 채울 만큼 서로 다른 사실이 없을 때만 ${GENERATED_MAX_SLIDES - 1}장이나 ${MIN_SLIDES}장으로 줄이세요.
+  같은 사실을 쪼개 장을 채우지는 마세요.
 - 표지(cover): sub에 짧은 소제목 한 줄(**12자 이내**), heading에 큰 헤드라인.
   body는 비우거나 한 줄만.
 - 상세(detail): heading은 그 장의 핵심 한 문장, body에 구체적인 사실과 수치.
@@ -181,7 +182,10 @@ ${copy === "caption" ? CAPTION_COPY_RULES + "\n" : ""}
   - 장면: "conference audience", "shopping street", "people working"
   - 소재: 기사가 다루는 것(예: 반도체면 "semiconductor wafer",
     반려동물이면 "dog", 화장품이면 "cosmetics", 음식이면 그 음식,
-    패션이면 사람 대신 옷과 소품: "clothing rack", "sneakers", "handbag", "knit sweater flat lay")
+    패션이면 사람 대신 옷과 소품: "clothing rack", "sneakers", "handbag", "knit sweater flat lay",
+    드레스면 "evening gown on hanger", "white dress mannequin")
+- **다른 뜻으로도 읽히는 낱말 하나만 쓰지 마세요.** 예: 의상 피팅을 "fitting" 으로 적으면
+  운동 사진이 나옵니다. "dress fitting room" 처럼 무엇인지 드러나게 적으세요.
 - **실존 인물 이름, 회사·브랜드 이름, 로고는 쓰지 마세요.** 초상권·상표 문제가
   생깁니다.
 - **한 사람이 중심인 장면은 피하세요**("woman holding cosmetics" 같은 것).

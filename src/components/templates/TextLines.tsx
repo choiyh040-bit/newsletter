@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { TextLine } from "@/lib/cardnews";
 
 /**
@@ -16,6 +17,7 @@ export default function TextLines({
   accentColor,
   markBackground,
   markColor,
+  markStyle,
 }: {
   lines: TextLine[];
   accentColor: string;
@@ -23,6 +25,11 @@ export default function TextLines({
   markBackground?: string;
   /** 형광펜 위에 올릴 글자색. */
   markColor?: string;
+  /**
+   * 형광펜 조각에만 더할 스타일. 바깥 글씨의 그림자·테두리가 형광펜 칸 안까지
+   * 물려 내려오는 것을 끊을 때 쓴다(사진 · 자막).
+   */
+  markStyle?: CSSProperties;
 }) {
   return (
     <>
@@ -43,6 +50,7 @@ export default function TextLines({
                     // 줄이 넘어가도 조각이 쪼개지지 않게 한다.
                     boxDecorationBreak: "clone",
                     WebkitBoxDecorationBreak: "clone",
+                    ...markStyle,
                   }}
                 >
                   {span.text}

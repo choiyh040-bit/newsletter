@@ -60,8 +60,13 @@ interface Candidate extends FoundPhoto {
  * 주는 설명·태그의 낱말로 거른다. "crowd·audience·people" 같은 낱말이 있으면
  * 여럿이 나오는 장면으로 보고 남긴다.
  */
-const ONE_PERSON = /\b(woman|man|girl|boy|lady|guy|gentleman|portrait|model|selfie|face|businessman|businesswoman|person|child|kid|baby|bride|groom)\b/i;
-const MANY_PEOPLE = /\b(crowd|crowded|audience|people|group|team|spectators|visitors|attendees|participants|delegates|gathering)\b/i;
+// 2026-10-16 패션 사진에서 "father, daughter"(아빠와 아이), "models, women"(런웨이 모델들)이
+// 빠져나갔다. 가족·관계 낱말과 복수형을 더했다. 몇 명이든 **알아볼 수 있는 특정 인물**이면 뺀다.
+const ONE_PERSON =
+  /\b(woman|women|man|men|girls?|boys?|lady|ladies|guy|gentleman|portrait|models?|selfie|face|businessman|businesswoman|person|child|children|kids?|baby|babies|toddler|teen|teenager|bride|groom|couple|family|father|mother|dad|mom|daughter|son|husband|wife|grandmother|grandfather|friends)\b/i;
+// 군중은 된다(사용자 기준). 다만 "people", "group", "team" 은 서너 명이 또렷이 나온 사진에도 붙어서
+// 인물 낱말을 덮어 주는 근거로 쓰지 않는다.
+const MANY_PEOPLE = /\b(crowd|crowded|audience|spectators|visitors|attendees|participants|delegates|gathering|festival|concert)\b/i;
 
 function isOnePerson(text: string): boolean {
   return ONE_PERSON.test(text) && !MANY_PEOPLE.test(text);

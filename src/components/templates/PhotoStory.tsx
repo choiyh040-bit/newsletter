@@ -27,7 +27,7 @@ export default function PhotoStory({ slide, accent, total, source, photo, varian
   const index = slide.slideNumber - 1;
   const hl = variant?.neon ?? accentText(accent);
   const credit = photo ? photoCredit(photo) : "";
-  const shadow = "none"; // 글로우는 쓰지 않는다(2026-10-16). 표지는 아래 어둡게 깔기로 읽힌다.
+  const shadow = "0 2px 14px rgba(0,0,0,0.45)";
 
   // 상자 안쪽 폭: 카드 폭 - 좌우 여백(72×2) - 상자 안쪽 여백(56×2)
   const innerWidth = CARD_WIDTH - 72 * 2 - 56 * 2;

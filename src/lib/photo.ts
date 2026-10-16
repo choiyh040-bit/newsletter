@@ -61,14 +61,21 @@ interface Candidate extends FoundPhoto {
  * 여럿이 나오는 장면으로 보고 남긴다.
  */
 // 2026-10-16 패션 사진에서 "father, daughter"(아빠와 아이), "models, women"(런웨이 모델들)이
-// 빠져나갔다. 가족·관계 낱말과 복수형을 더했다. 몇 명이든 **알아볼 수 있는 특정 인물**이면 뺀다.
+// 빠져나갔다. 가족·관계 낱말, 복수형, 직업 낱말을 더했다. 몇 명이든 **알아볼 수 있는 특정
+// 인물**이면 뺀다(사용자 기준: 군중은 되고 특정 인물은 안 된다).
 const ONE_PERSON =
-  /\b(woman|women|man|men|girls?|boys?|lady|ladies|guy|gentleman|portrait|models?|selfie|face|businessman|businesswoman|person|child|children|kids?|baby|babies|toddler|teen|teenager|bride|groom|couple|family|father|mother|dad|mom|daughter|son|husband|wife|grandmother|grandfather|friends)\b/i;
-// 군중은 된다(사용자 기준). 다만 "people", "group", "team" 은 서너 명이 또렷이 나온 사진에도 붙어서
+  /\b(woman|women|man|men|girls?|boys?|lady|ladies|guy|gentleman|person|businessman|businesswoman|students?|chef|doctor|nurse|workers?|athletes?|dancers?|singers?|musicians?|actor|actress|influencer)\b/i;
+
+/** 군중이 함께 있어도 빼는 낱말. 사진의 주인공이 특정 인물이라는 뜻이다(런웨이 모델 + 관객 등). */
+const PERSON_IN_FOCUS =
+  /\b(portrait|models?|selfie|face|bride|groom|child|children|kids?|baby|babies|toddler|teen|teenager|couple|family|father|mother|dad|mom|daughter|son|husband|wife|grandmother|grandfather|friends)\b/i;
+
+// 군중은 된다. 다만 "people", "group", "team" 은 서너 명이 또렷이 나온 사진에도 붙어서
 // 인물 낱말을 덮어 주는 근거로 쓰지 않는다.
 const MANY_PEOPLE = /\b(crowd|crowded|audience|spectators|visitors|attendees|participants|delegates|gathering|festival|concert)\b/i;
 
 function isOnePerson(text: string): boolean {
+  if (PERSON_IN_FOCUS.test(text)) return true;
   return ONE_PERSON.test(text) && !MANY_PEOPLE.test(text);
 }
 

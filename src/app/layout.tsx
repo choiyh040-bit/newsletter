@@ -9,6 +9,7 @@ const inter = Inter({
 
 import Script from "next/script";
 import FloatingHome from "@/components/FloatingHome";
+import SiteAnalytics from "@/components/SiteAnalytics";
 import { ADSENSE_CLIENT, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const TITLE = `${SITE_NAME} · 인스타그램 카드뉴스 만들기`;
@@ -52,6 +53,7 @@ export default function RootLayout({
       <body className="font-body-md selection:bg-primary-container selection:text-white bg-surface text-on-surface">
         {children}
         <FloatingHome />
+        <SiteAnalytics />
         {/* 애드센스. 게시자 번호(NEXT_PUBLIC_ADSENSE_CLIENT)가 없으면 싣지 않는다. */}
         {ADSENSE_CLIENT && (
           <Script

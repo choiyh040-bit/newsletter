@@ -16,6 +16,7 @@ export const metadata: Metadata = {
  * - 결과·디자인 선택·올린 사진은 브라우저 localStorage 에만 있다.
  * - 사진 사이트에는 서버가 대신 묻는다(`/api/photo` 경유). 이용자 IP 가 가지 않는다.
  * - 브라우저가 직접 부르는 외부: Google Fonts, jsDelivr(글꼴 하나).
+ * - 방문 통계: Vercel Web Analytics. 쿠키 없음, 주소의 `?` 뒤(키워드 등)는 잘라 보낸다(`SiteAnalytics`).
  * - 피드백 게시판 글은 GitHub 이슈로 공개 저장. IP 는 연속 글쓰기 막기용 해시로 10분만 메모리에.
  *
  * 광고 항목은 애드센스 번호(`ADSENSE_CLIENT`)가 있을 때만 나온다. 코드를 바꿔
@@ -99,8 +100,8 @@ export default function PrivacyPage() {
               </tr>
               <tr>
                 <td>Vercel (미국)</td>
-                <td>사이트 호스팅</td>
-                <td>접속 기록</td>
+                <td>사이트 호스팅, 방문 통계</td>
+                <td>접속 기록. 방문 통계는 쿠키 없이 페이지별 방문 수만 셉니다(입력한 키워드·주소는 보내지 않습니다).</td>
               </tr>
               <tr>
                 <td>Pixabay (독일), Unsplash (캐나다), Wikimedia Commons (미국)</td>

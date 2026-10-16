@@ -324,6 +324,15 @@ Vercel: 프로젝트 → Settings → Environment Variables 에 위 이름으로
 | `NEXT_PUBLIC_ADSENSE_SLOT_RESULT` | 결과 화면 맨 아래 광고 단위 번호 | 그 칸 없음 |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | 문의 이메일 | "문의처 준비 중" |
 
+## 피드백 게시판 (`/feedback`)
+
+익명 공개 게시판. 글은 이 저장소의 **GitHub 이슈**(`feedback` 표시)로 저장됩니다
+(`src/lib/feedback.ts`, `src/app/api/feedback/route.ts`).
+
+- 이슈를 **닫으면** 게시판에서 사라지고, 저장소 주인이 **댓글**을 달면 "운영자 답변"으로 보입니다.
+- 환경변수 `FEEDBACK_GITHUB_TOKEN`: 이 저장소만 Issues 읽기·쓰기 권한이 있는 fine-grained 토큰.
+  없으면 게시판은 "준비 중". `FEEDBACK_REPO`(기본 `choiyh040-bit/newsletter`)로 다른 저장소를 쓸 수 있습니다.
+
 ## 로컬에서 실행
 
 ```bash

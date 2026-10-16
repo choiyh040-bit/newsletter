@@ -17,6 +17,9 @@ async function renderCard(node: HTMLElement, fontEmbedCSS: string): Promise<Blob
     height: CARD_HEIGHT,
     pixelRatio: 1,
     cacheBust: false,
+    // 사진은 모두 /api/photo?… 로 받는다. 기본값(false)이면 html-to-image 가
+    // 물음표 뒤를 버리고 캐시해서, 장마다 다른 사진이 첫 장 사진 하나로 구워진다.
+    includeQueryParams: true,
     fontEmbedCSS,
   });
   if (!blob) throw new Error("이미지를 만들지 못했습니다.");

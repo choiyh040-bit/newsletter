@@ -7,6 +7,32 @@
 
 ---
 
+## 2026-10-16 (10) — 도메인 cardnewsmaker.com 연결
+
+### 배경
+
+애드센스는 사이트를 최상위 도메인 단위로 등록하므로 `…vercel.app` 로는 어렵다. 사용자가
+가비아에서 `cardnewsmaker.com` 을 샀다.
+
+### 결정과 근거
+
+- **대표 주소는 www 없는 `cardnewsmaker.com`.** 인스타 프로필·캡션에 적기 짧다. `www` 는 Vercel
+  에서 대표 주소로 넘기게(Redirect) 했다. 애드센스도 대표 주소 하나만 본다.
+- DNS 는 가비아에 두고 Vercel 이 보여 준 A(`@`)·CNAME(`www`) 값을 넣었다(사용자가 직접).
+  https 인증서는 Vercel 이 연결을 확인한 뒤 자동 발급·갱신한다. 가비아 SSL 상품은 필요 없다.
+- 예전 주소 `newsletter-woad-seven.vercel.app` 도 그대로 작동한다.
+- 코드 속 주소는 위키미디어 요청의 연락처(`WIKI_UA`) 하나뿐이라 새 주소로 바꿨다.
+
+### 저장소 밖 설정 (코드에서 안 보이는 것)
+
+- Vercel → 프로젝트 → Settings → **Domains**: cardnewsmaker.com(대표), www(→ 대표로 넘김).
+- 가비아 → My가비아 → DNS 관리툴: A `@` → Vercel IP, CNAME `www` → Vercel 이 준 `…vercel-dns…` 주소.
+- .com 은 등록자 이메일 인증을 15일 안에 해야 도메인이 정지되지 않는다.
+- 이 작업 환경(클라우드 세션)의 네트워크는 허용한 곳만 나갈 수 있어서, 새 도메인을 허용 목록에
+  넣기 전에는 여기서 새 주소로 시험할 수 없다.
+
+---
+
 ## 2026-10-16 (9) — 익명 피드백 게시판 (GitHub 이슈에 저장)
 
 ### 배경

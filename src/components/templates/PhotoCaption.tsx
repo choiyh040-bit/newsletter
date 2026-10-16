@@ -23,6 +23,8 @@ export default function PhotoCaption({ slide, accent, total, source, photo, vari
   const index = slide.slideNumber - 1;
   const credit = photo ? photoCredit(photo) : "";
   const width = CARD_WIDTH - 96 * 2;
+  // 아래 어둡게 깔기는 흰 회의실·흰 키보드 같은 아주 밝은 사진에서 본문이 흐려
+  // 보여 2026-10-16 배포 확인 뒤 한 번 더 진하게 했다.
   // 글자 테두리 대신 겹친 그림자. 밝은 사진에서도 윤곽이 남고, PNG 로 구워도 같다.
   const shadow = "0 0 2px rgba(0,0,0,0.55), 0 2px 10px rgba(0,0,0,0.45), 0 0 28px rgba(0,0,0,0.25)";
 
@@ -71,7 +73,7 @@ export default function PhotoCaption({ slide, accent, total, source, photo, vari
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.5) 72%, rgba(0,0,0,0.62) 100%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.05) 36%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.68) 80%, rgba(0,0,0,0.72) 100%)",
         }}
       />
 

@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { normalizeCardNews, type CardNews } from "./cardnews";
 import { isHexColor } from "./templates/color";
 import type { TextAlign } from "./templates/types";
+import { isTone, type ToneId } from "./tone";
 
 /**
  * 생성한 카드뉴스를 브라우저에 보관한다.
@@ -152,6 +153,8 @@ export interface DesignChoice {
   variantId?: string;
   align?: TextAlign;
   customAccents?: Record<string, string>;
+  /** 글의 말투(`lib/tone.ts`). 디자인은 아니지만 "다음에 만들 때 쓸 선택"이라 함께 둔다. */
+  tone?: ToneId;
 }
 
 /** 저장된 값에서 올바른 색만 남긴다. 손으로 고친 저장값이 화면을 깨지 않게. */
@@ -192,6 +195,7 @@ function parseDesign(raw: string): DesignChoice {
     if (typeof v.templateId === "string") out.templateId = v.templateId;
     if (typeof v.variantId === "string") out.variantId = v.variantId;
     if (v.align === "left" || v.align === "center") out.align = v.align;
+    if (isTone(v.tone)) out.tone = v.tone;
     const accents = cleanAccents(v.customAccents);
     if (accents) out.customAccents = accents;
     return out;
@@ -220,6 +224,11 @@ export function chooseTemplate(templateId: string): void {
 }
 
 /** 홈에서 정렬을 고른다. */
+/** 다음에 만들 글의 말투. */
+export function chooseTone(tone: ToneId): void {
+  rememberDesign({ tone });
+}
+
 export function chooseAlign(align: TextAlign): void {
   rememberDesign({ align });
 }

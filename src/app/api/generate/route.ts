@@ -9,6 +9,10 @@ import {
 } from "@/lib/cardnews";
 import { client, failure, startBudget, THINKING, withFallback } from "@/lib/gemini";
 import { findSlidePhotos } from "@/lib/photo";
+import { DEFAULT_TONE, isTone, type ToneId } from "@/lib/tone";
+
+/** 카드 글 길이. 사진 · 자막 템플릿을 고르면 "caption"(자막처럼 짧게). */
+type CopyMode = "full" | "caption";
 
 /**
  * 모은 자료로 카드뉴스를 짓는다. 두 단계 중 두 번째.
@@ -27,12 +31,53 @@ const MATERIALS = ["기사 본문", "검색 자료"] as const;
 /** 생성에 넘기는 근거가 무엇인지. 문구만 다르고 규칙은 같다. */
 type Material = "기사 본문" | "검색 자료";
 
+/**
+ * 말투마다 바뀌는 문장 규칙과 마무리 장 규칙. **사실 규칙은 말투와 상관없이 같다.**
+ * 처음엔 MICE 공공기관 뉴스 전용이라 뉴스형 하나였다(2026-10-16 셋으로).
+ */
+const TONE_RULES: Record<ToneId, { sentence: string; outro: string }> = {
+  news: {
+    sentence: `- **홍보 문구를 쓰지 마세요.** 권유("~해 보세요", "~만나요"), 감탄("무려",
+  "드디어"), 치켜세우기("완승", "저력", "도약")는 금지입니다. 뉴스이지 광고가
+  아닙니다. "~한다", "~했다" 같은 담담한 기사체로 끝내세요.`,
+    outro: `body 마지막 줄에서만 저장이나 공유를 담담하게 권합니다.`,
+  },
+  info: {
+    sentence: `- **친근한 설명체**로 쓰세요. "~해요", "~예요"처럼 독자에게 알려 주는 말투입니다.
+- 독자가 바로 써먹을 수 있게 정리하는 글입니다. 감탄과 치켜세우기("무려",
+  "역대급", "완승")는 쓰지 마세요. 권유는 마무리 장에서만 가볍게 합니다.`,
+    outro: `body 마지막 줄에서 저장이나 공유를 가볍게 권해도 됩니다.`,
+  },
+  promo: {
+    sentence: `- **독자에게 말을 거는 홍보 말투**로 쓰세요. "~해 보세요", "놓치지 마세요" 같은
+  권유를 써도 됩니다. 참여 방법, 기간, 혜택처럼 독자가 움직이는 데 필요한 정보를 앞세우세요.
+- 그래도 **사실보다 부풀리지 마세요.** 자료에 없는 "최초", "최대", "역대급"은 쓰지
+  마세요. 감탄은 세트 전체에서 한두 번까지입니다.`,
+    outro: `heading 이나 body 에서 참여·방문·신청을 권하며 끝내도 됩니다.`,
+  },
+};
+
+/**
+ * 사진 · 자막 템플릿을 골랐을 때 덧붙이는 규칙. 참고 자료 3번은 제목 두세 줄과
+ * 짧은 한 줄이 전부다. 카드에 다 못 담는 사실은 캡션으로 보낸다.
+ */
+const CAPTION_COPY_RULES = `
+[자막형 — 위 줄바꿈 규칙보다 이것이 우선합니다]
+- 이 카드뉴스는 사진 위에 **자막처럼** 글씨만 얹습니다. 글이 아주 짧아야 합니다.
+- 표지 heading 은 2~3줄, 한 줄 4~8자. sub 는 10자 이내 한 줄.
+- 상세·마무리 heading 은 **1~2줄, 한 줄 5~10자**. 그 장에서 남길 한마디만.
+- 상세·마무리 body 는 **딱 한 줄, 20자 이내**. 수치나 날짜 하나만 담습니다.
+- 카드에 다 못 담은 구체적인 사실은 **캡션**에 적으세요.`;
+
 function buildPrompt(
   keyword: string,
   article: string,
   material: Material = "기사 본문",
-  sourceNames: string[] = []
+  sourceNames: string[] = [],
+  tone: ToneId = DEFAULT_TONE,
+  copy: CopyMode = "full"
 ): string {
+  const toneRules = TONE_RULES[tone];
   return `당신은 인스타그램 카드뉴스를 만드는 한국어 에디터입니다.
 아래 규칙을 지켜 카드뉴스 한 세트를 JSON으로 만들어 주세요.
 
@@ -54,9 +99,7 @@ ${article}
 - 기사 문장을 그대로 옮기지 말고 반드시 새 문장으로 다시 쓰세요.
 - 직접인용은 15단어 미만으로, 세트 전체에서 최대 한 번만 쓰세요.
 - 관계자 발언은 따옴표로 인용하지 말고 "~라고 밝혔다" 같은 요약체로 처리하세요.
-- **홍보 문구를 쓰지 마세요.** 권유("~해 보세요", "~만나요"), 감탄("무려",
-  "드디어"), 치켜세우기("완승", "저력", "도약")는 금지입니다. 공공기관
-  뉴스이지 광고가 아닙니다. 담담한 서술로 끝내세요.
+${toneRules.sentence}
 
 [구성]
 - 슬라이드는 **${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장**. 첫 장은 표지, 마지막 장은 마무리, 나머지는 상세입니다.
@@ -66,8 +109,7 @@ ${article}
 - 상세(detail): heading은 그 장의 핵심 한 문장, body에 구체적인 사실과 수치.
   - sub에 그 장이 무엇을 다루는지 **6자 이내**로 적으세요. 장마다 달라야 합니다.
     예: "예산", "유치 대상", "신청 방법"
-- 마무리(outro): 내용을 한 줄로 정리합니다. body 마지막 줄에서만 저장이나
-  공유를 담담하게 권합니다. heading 은 권유가 아니라 **정리**여야 합니다.
+- 마무리(outro): 내용을 한 줄로 정리합니다. ${toneRules.outro}
 - 상세·마무리의 sub 는 상세 장에만 씁니다. 마무리에는 sub 를 비우세요.
 
 [줄바꿈 규칙 — 매우 중요]
@@ -82,7 +124,7 @@ ${article}
 - body 는 한 줄 **12~16자**, 3~4줄(표지는 0~2줄). 길게 늘여 쓰지 말고
   짧게 끊으세요. 줄이 짧아야 글자가 커지고 화면이 찹니다.
 - 별표와 등호는 글자 수에 세지 마세요.
-
+${copy === "caption" ? CAPTION_COPY_RULES + "\n" : ""}
 [강조 규칙]
 강조 표시가 두 가지입니다. 세기가 다릅니다.
 
@@ -106,8 +148,8 @@ ${article}
 [캡션]
 - 캡션은 **어디서 나온 소식인지 밝히며** 시작하세요. 출처를 흐름 안에서
   자연스럽게 말합니다.
-  좋은 예: "부산일보 보도에 따르면 부산관광공사가 ~를 연다."
-  좋은 예: "부산관광공사가 발표한 내용을 정리했습니다."
+  좋은 예: "OO일보 보도에 따르면 OO시가 ~를 연다."
+  좋은 예: "OO협회가 발표한 내용을 정리했습니다."
 - 출처는 **한 곳만** 밝히세요. 여러 매체를 나열하지 마세요.${
     sourceNames.length
       ? ` 밝힐 출처는 ${sourceNames[0]} 입니다(사이트 주소이면 그 매체의 한글 이름으로).`
@@ -120,13 +162,13 @@ ${article}
   2~4 단어로 적으세요. 세트 전체용 imageQuery 도 하나 적습니다(맨 바깥).
 - **장마다 다른 장면**이어야 합니다. 같은 사진이 이어지면 넘길 이유가 없습니다.
   표지는 주제를 대표하는 전경, 상세 장은 그 장 내용에 맞는 장면(일정이면
-  행사장 입구, 참여 대상이면 사람들, 분야면 그 분야의 사물)으로 고릅니다.
-- 스톡 사진 사이트에서 검색합니다. 기사 속 행사장 그 자체가 아니어도 됩니다.
+  장소 입구, 참여 대상이면 사람들, 분야면 그 분야의 사물)으로 고릅니다.
+- 스톡 사진 사이트에서 검색합니다. 기사 속 장소 그 자체가 아니어도 됩니다.
 - 기사 분위기에 맞는 **일반적인 장면**이면 됩니다. 이런 것들입니다.
-  - 장소·건물: "convention center", "Busan skyline", "exhibition hall"
-  - 장면: "conference audience", "business meeting", "trade show booth"
-  - 소재: 기사가 다루는 것(예: 반도체 박람회면 "semiconductor wafer",
-    반려동물 행사면 "dog", 뷰티 박람회면 "cosmetics")
+  - 장소·건물: "convention center", "city skyline", "cafe interior", "office"
+  - 장면: "conference audience", "shopping street", "people working"
+  - 소재: 기사가 다루는 것(예: 반도체면 "semiconductor wafer",
+    반려동물이면 "dog", 화장품이면 "cosmetics", 음식이면 그 음식)
 - **실존 인물 이름, 회사·브랜드 이름, 로고는 쓰지 마세요.** 초상권·상표 문제가
   생깁니다.
 - **한 사람이 중심인 장면은 피하세요**("woman holding cosmetics" 같은 것).
@@ -136,7 +178,8 @@ ${article}
 [디자인]
 - accent는 주제 분위기에 맞는 어두운 계열 포인트 컬러 하나를 "#rrggbb" 형식으로 고르세요.
   이 색 하나로 세트 전체 배경 그라데이션을 만들기 때문에, 흰 글씨가 또렷하게 보일 만큼 충분히 어두워야 합니다.
-- badge는 모든 슬라이드에 같은 값을 쓰고, 8자 이내의 분류 문구로 하세요.
+- badge는 이 소식의 **분야**를 나타내는 8자 이내 분류 문구입니다. 모든 슬라이드에
+  같은 값을 씁니다. 예: "MICE 뉴스", "IT 소식", "뷰티 트렌드", "여행 정보", "맛집 소식"
 
 아래 구조의 순수 JSON만 출력하세요. 설명 문장이나 코드블록을 붙이지 마세요.
 
@@ -146,7 +189,7 @@ ${article}
   "slides": [
     {
       "kind": "cover",
-      "badge": "MICE 뉴스",
+      "badge": "분야 분류",
       "sub": "표지 위쪽 작은 소제목",
       "heading": ["표지 첫 줄", "==둘째 줄==", "셋째 줄", "넷째 줄"],
       "body": [],
@@ -154,14 +197,14 @@ ${article}
     },
     {
       "kind": "detail",
-      "badge": "MICE 뉴스",
+      "badge": "분야 분류",
       "sub": "예산",
       "heading": ["상세 헤드라인"],
       "body": ["본문 첫 줄에 *수치 42건*", "본문 둘째 줄"],
       "imageQuery": "conference audience"
     }
   ],
-  "caption": "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)",
+  "caption": "${copy === "caption" ? "인스타그램 캡션 4~7줄. 카드에 못 담은 사실을 여기에. 줄바꿈은 \\n 으로 표기 (350자 이내)" : "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)"}",
   "hashtags": ["해시태그1", "해시태그2", "해시태그3", "해시태그4", "해시태그5"],
   "imageQuery": "convention center",
   "source": { "name": "출처 매체명", "url": "" }
@@ -304,6 +347,8 @@ export async function POST(request: Request) {
   let evidence: string;
   let material: Material;
   let links: CardNewsSource[];
+  let tone: ToneId;
+  let copy: CopyMode;
 
   try {
     const body = await request.json();
@@ -311,6 +356,8 @@ export async function POST(request: Request) {
     evidence = typeof body.evidence === "string" ? body.evidence.trim() : "";
     material = MATERIALS.includes(body.material) ? body.material : "기사 본문";
     links = normalizeSources(body.links);
+    tone = isTone(body.tone) ? body.tone : DEFAULT_TONE;
+    copy = body.copy === "caption" ? "caption" : "full";
   } catch {
     return Response.json({ error: "요청 본문을 읽을 수 없습니다." }, { status: 400 });
   }
@@ -327,7 +374,9 @@ export async function POST(request: Request) {
     subject,
     evidence.slice(0, EVIDENCE_MAX_CHARS),
     material,
-    links.map((l) => l.name)
+    links.map((l) => l.name),
+    tone,
+    copy
   );
   const generate = (p: string) => (model: string, signal: AbortSignal) =>
     generateOnce(model, p, signal);

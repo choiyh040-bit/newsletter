@@ -88,7 +88,16 @@ export interface CardSlide {
   userPhoto?: CardNewsPhoto;
   /** 이 장의 사진을 찾은 검색어. "다른 사진"이 다시 쓴다. */
   photoQuery?: string;
+  /**
+   * 사진 · 자막 템플릿에서 이 장의 글씨 모양. 없으면 사진 밝기를 보고 자동으로
+   * 고른다(`templates/captionLooks.ts`). 사람이 미리보기에서 고르면 여기 남는다.
+   */
+  captionLook?: CaptionLookId;
 }
+
+/** 사진 · 자막 템플릿의 글씨 모양. */
+export const CAPTION_LOOK_IDS = ["bold", "tall", "outline", "serif", "sticker", "color", "band"] as const;
+export type CaptionLookId = (typeof CAPTION_LOOK_IDS)[number];
 
 /** 이 장에 실제로 그릴 사진. 직접 올린 것 → 이 장 사진 → 세트 사진 순. */
 export function slidePhoto(slide: CardSlide, data: CardNews): CardNewsPhoto | null {
@@ -361,6 +370,9 @@ export function normalizeCardNews(raw: unknown): CardNews {
       ...(normalizePhoto(slide.userPhoto) ? { userPhoto: normalizePhoto(slide.userPhoto) } : {}),
       ...(typeof slide.photoQuery === "string" && slide.photoQuery.trim()
         ? { photoQuery: slide.photoQuery.trim().slice(0, 80) }
+        : {}),
+      ...((CAPTION_LOOK_IDS as readonly string[]).includes(slide.captionLook as string)
+        ? { captionLook: slide.captionLook as CaptionLookId }
         : {}),
     };
   });

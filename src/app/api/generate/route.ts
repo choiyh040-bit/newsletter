@@ -124,7 +124,10 @@ ${article}
   - 소재: 기사가 다루는 것(예: 반도체 박람회면 "semiconductor wafer",
     반려동물 행사면 "dog", 뷰티 박람회면 "cosmetics")
 - **실존 인물 이름, 회사·브랜드 이름, 로고는 쓰지 마세요.** 초상권·상표 문제가
-  생깁니다. 사람이 나오는 장면은 "conference audience"처럼 일반 명사로만 씁니다.
+  생깁니다.
+- **한 사람이 중심인 장면은 피하세요**("woman holding cosmetics" 같은 것).
+  사람이 나와야 하면 "conference audience", "exhibition visitors" 처럼 여럿이
+  나오는 장면으로 씁니다. 그 밖에는 공간·사물 위주로 적습니다.
 
 [디자인]
 - accent는 주제 분위기에 맞는 어두운 계열 포인트 컬러 하나를 "#rrggbb" 형식으로 고르세요.
@@ -233,8 +236,10 @@ async function finish(
   if (room < 1_500) return withSrc;
   const words = imageQuery.split(/\s+/).filter(Boolean);
   const photo = await findPhoto([imageQuery, words.slice(0, 2).join(" ")], room);
-  console.info(`[generate] 사진 "${imageQuery}" → ${photo ? photo.credit : "없음"}`);
-  return photo ? { ...withSrc, photo } : withSrc;
+  console.info(`[generate] 사진 "${imageQuery}" → ${photo ? `${photo.source} ${photo.credit}` : "없음"}`);
+  // 검색어를 남겨 둔다. 미리보기의 "다른 사진"이 같은 검색어로 다시 찾는다.
+  const withQuery = imageQuery ? { ...withSrc, photoQuery: imageQuery } : withSrc;
+  return photo ? { ...withQuery, photo } : withQuery;
 }
 
 /**

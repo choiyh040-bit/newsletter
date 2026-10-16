@@ -24,8 +24,12 @@ import TextLines from "./TextLines";
  * 원작자는 사진을 보고 글씨를 골랐다. 우리는 사진을 자동으로 찾으므로 사진 밝기를
  * 재서(`usePhotoTone`) 그 자리에서 읽히는 모양만 고른다. 미리보기에서 장마다 바꿀 수 있다.
  */
-const SHADOW = "0 0 2px rgba(0,0,0,0.6), 0 3px 12px rgba(0,0,0,0.5), 0 0 36px rgba(0,0,0,0.3)";
+// 글씨 둘레의 흐린 그림자(글로우)는 쓰지 않는다(2026-10-16 사용자: "촌스러워").
+// 읽히는 것은 글 덩어리 뒤를 옅게 누르는 것(Shade)과 스티커·띠·라벨 같은 모양 자체로 맡긴다.
+const SHADOW = "none";
 const SIDE = 80;
+/** 맨 아래 사진 표기·출처. 그림자 대신 옅은 바탕으로 밝은 사진에서도 읽히게. */
+const FOOT: CSSProperties = { background: "rgba(0,0,0,0.38)", borderRadius: 6, padding: "3px 8px" };
 
 export default function PhotoCaption({ slide, accent, total, source, photo, variant }: TemplateProps) {
   const { neon } = variant ?? CAPTION_VARIANTS[0];
@@ -111,13 +115,12 @@ export default function PhotoCaption({ slide, accent, total, source, photo, vari
           justifyContent: "space-between",
           gap: 24,
           fontSize: 19,
-          color: "rgba(255,255,255,0.78)",
-          textShadow: "0 1px 4px rgba(0,0,0,0.6)",
+          color: "rgba(255,255,255,0.9)",
           whiteSpace: "nowrap",
         }}
       >
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{credit && `사진 · ${credit}`}</span>
-        {source && <span>출처 · {source.name}</span>}
+        <span style={{ ...FOOT, overflow: "hidden", textOverflow: "ellipsis" }}>{credit && `사진 · ${credit}`}</span>
+        {source && <span style={FOOT}>출처 · {source.name}</span>}
       </div>
     </div>
   );
@@ -144,7 +147,8 @@ function blockStyle(place: CaptionLook["place"]): CSSProperties {
  */
 function shadeFor(look: CaptionLook, light: "dark" | "mid" | "bright"): number {
   if (look.id === "sticker" || look.id === "band") return light === "bright" ? 0 : 0.12;
-  return light === "dark" ? 0.18 : 0.42;
+  // 글씨 그림자를 없앤 만큼 조금 더 누른다.
+  return light === "dark" ? 0.34 : 0.52;
 }
 
 function Shade({ place, strength }: { place: CaptionLook["place"]; strength: number }) {
@@ -224,7 +228,6 @@ function Heading({
             ...box,
             color: "transparent",
             WebkitTextStroke: `${Math.max(3, Math.round(size / 42))}px #ffffff`,
-            filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
           }}
         >
           <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor="#111111" />
@@ -309,6 +312,7 @@ function Label({ look, text }: { look: CaptionLook; text: string }) {
 
 /** 제목 아래 작은 줄. 늘 흰색. 서체는 제목 모양을 따라간다. */
 function Small({ look, lines, neon }: { look: CaptionLook; lines: TextLine[]; neon: string }) {
+  const onBand = look.id === "band" || look.id === "sticker";
   const family =
     look.id === "tall" ? TYPE.tall.family : look.id === "serif" ? FONT_STACK.serif : FONT_STACK.sans;
   const size = fitFontSize({
@@ -333,7 +337,23 @@ function Small({ look, lines, neon }: { look: CaptionLook; lines: TextLine[]; ne
         letterSpacing: look.id === "tall" ? "0" : "-0.015em",
       }}
     >
-      <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor={readableOn(neon)} />
+      {onBand ? (
+        // 스티커·띠는 밝은 사진에도 쓰는 모양이라 뒤를 누르지 않는다. 작은 흰 줄이 그대로
+        // 사진에 얹히면 안 읽혀서(글로우를 뺀 뒤 드러남) 줄마다 검정 띠를 깐다.
+        lines.map((line, i) => (
+          <div key={i} style={{ marginTop: i ? 8 : 0 }}>
+            <span style={{ background: "rgba(17,17,17,0.88)", padding: "2px 14px", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}>
+              {line.map((span, j) => (
+                <span key={j} style={span.style === "plain" ? undefined : { color: neon }}>
+                  {span.text}
+                </span>
+              ))}
+            </span>
+          </div>
+        ))
+      ) : (
+        <TextLines lines={lines} accentColor={neon} markBackground={neon} markColor={readableOn(neon)} />
+      )}
     </div>
   );
 }

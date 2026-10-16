@@ -300,7 +300,7 @@ export function parseLines(text: string, maxLines: number): TextLine[] {
 function toLines(value: unknown, maxLines: number): TextLine[] {
   const raw = Array.isArray(value) ? value : [value];
 
-  return raw
+  const lines = raw
     .flatMap((line): TextLine[] => {
       if (typeof line === "string") {
         return line
@@ -323,8 +323,27 @@ function toLines(value: unknown, maxLines: number): TextLine[] {
         return lineText(spans).trim() ? [spans] : [];
       }
       return [];
-    })
-    .slice(0, maxLines);
+    });
+  return cutAtSentence(lines, maxLines);
+}
+
+/** 문장이 끝나는 줄인지(마침표·물음표, 또는 "~다/요/음/함/임/됨"으로 끝남). */
+const SENTENCE_END = /([.!?。]|[다요음함임됨])["'”’)]?$/;
+
+/**
+ * 줄 수 상한으로 자른다. **잘리면 문장이 끝나는 마지막 줄까지만** 남긴다.
+ *
+ * 모델이 본문을 다섯 줄 넘게 쓰면 넷째 줄에서 잘려 "…공동 세일즈를"처럼 문장이 끊긴 채
+ * 카드에 나왔다(2026-10-16). 끊긴 문장보다 한 줄 짧은 게 낫다. 문장 끝을 못 찾으면(제목처럼
+ * 마침표 없는 줄) 그냥 상한에서 자른다.
+ */
+function cutAtSentence(lines: TextLine[], maxLines: number): TextLine[] {
+  if (lines.length <= maxLines) return lines;
+  const head = lines.slice(0, maxLines);
+  for (let i = head.length - 1; i >= 0; i--) {
+    if (SENTENCE_END.test(lineText(head[i]).trim())) return head.slice(0, i + 1);
+  }
+  return head;
 }
 
 function toText(value: unknown, fallback = ""): string {

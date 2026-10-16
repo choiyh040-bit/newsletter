@@ -145,19 +145,7 @@ export default function DarkNeon({
         }}
       />
 
-      {/* 우하단 글로우. 네온 한 색을 배경에도 한 번 풀어 놓아, 포인트 컬러가
-          글자에만 찍힌 스티커처럼 떠 보이지 않게 한다. */}
-      <div
-        style={{
-          position: "absolute",
-          right: -160,
-          bottom: -200,
-          width: 900,
-          height: 760,
-          background: `radial-gradient(50% 50% at 50% 50%, ${withAlpha(neon, ink.glow)} 0%, ${withAlpha(neon, ink.glow * 0.32)} 45%, transparent 72%)`,
-          pointerEvents: "none",
-        }}
-      />
+      {/* 우하단 글로우는 뺐다(2026-10-16 사용자: "글로우 촌스러워, 색 바탕에는 넣지 마"). */}
 
       {/* 상단: 모든 장에 공통으로 들어가는 바 + 카테고리 라벨.
           SKILL.md 는 흰 알약 배지를 쓰라고 하지만, 이 계열은 면을 쓰지 않고

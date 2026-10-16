@@ -295,6 +295,20 @@ Vercel: 프로젝트 → Settings → Environment Variables 에 위 이름으로
 앞으로 만들 디자인의 참고 자료와, 그것을 넣기 전에 풀어야 할 구조적 문제는
 `docs/template-references.md`에 정리해 두었습니다.
 
+## 안내 페이지와 광고 (애드센스)
+
+- 안내 페이지: `/about`, `/guide`, `/privacy`, `/terms` (`src/components/InfoPage.tsx` 틀).
+  개인정보처리방침은 코드가 실제로 다루는 정보만 적었다. 다루는 정보가 바뀌면 함께 고친다.
+- **광고는 환경변수를 넣기 전까지 꺼져 있다.** 아래 값을 Vercel 환경변수에 넣고 다시
+  배포하면 켜진다.
+
+| 환경변수 | 내용 | 없으면 |
+|---|---|---|
+| `NEXT_PUBLIC_ADSENSE_CLIENT` | 애드센스 게시자 번호 `ca-pub-…` | 광고 스크립트·광고 칸·`/ads.txt`·소유 확인 태그·방침의 광고 항목 모두 없음 |
+| `NEXT_PUBLIC_ADSENSE_SLOT_LOADING` | 생성 대기 화면 광고 단위 번호 | 그 칸 없음 |
+| `NEXT_PUBLIC_ADSENSE_SLOT_RESULT` | 결과 화면 맨 아래 광고 단위 번호 | 그 칸 없음 |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | 문의 이메일 | "문의처 준비 중" |
+
 ## 로컬에서 실행
 
 ```bash

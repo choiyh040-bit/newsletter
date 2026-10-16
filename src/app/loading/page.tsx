@@ -1,7 +1,9 @@
 "use client";
+
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import AdSlot, { AD_SLOTS } from "@/components/AdSlot";
 import { saveCardNews } from "@/lib/cardNewsStore";
 
 /**
@@ -361,6 +363,9 @@ function LoadingContent() {
               cardgen_ai · instagram · {keyword ? <>keyword=&quot;{keyword}&quot;</> : <>url=&quot;{url}&quot;</>}
             </code>
           </div>
+
+          {/* 기다리는 동안 보는 광고 칸. 애드센스 번호가 없으면 아무것도 그리지 않는다. */}
+          <AdSlot slot={AD_SLOTS.loading} height={100} className="mt-6 max-w-[728px]" />
         </div>
       </main>
     </>

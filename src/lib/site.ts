@@ -14,6 +14,16 @@ export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || "c
 /** 서비스 이름. 화면 머리의 이름과 같다. */
 export const SITE_NAME = "CardGen AI";
 
+/**
+ * 대표 주소. 링크 미리보기(카톡·페이스북 등)의 주소·그림 주소를 이 주소로 적는다.
+ * www 를 붙인 주소는 Vercel 에서 이 주소로 넘어간다(2026-10-16 가비아 도메인).
+ */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://cardnewsmaker.com").replace(/\/$/, "");
+
+/** 한 줄 소개. 검색 결과와 링크 미리보기에 나온다. */
+export const SITE_DESCRIPTION =
+  "키워드나 기사 주소 하나로 인스타그램 카드뉴스(1080×1350) 5~7장과 캡션을 만듭니다. 가입 없이 무료.";
+
 /** 안내 문서의 시행일. 내용을 바꾸면 함께 고친다. */
 export const POLICY_DATE = "2026년 10월 16일";
 

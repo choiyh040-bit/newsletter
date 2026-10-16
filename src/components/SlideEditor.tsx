@@ -131,7 +131,7 @@ export default function SlideEditor({
           <input
             value={slide.badge}
             onChange={(e) => patchSlide({ badge: e.target.value })}
-            className="w-full bg-white/5 border border-white/10 px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
           />
         </label>
         <label className="block">
@@ -141,7 +141,7 @@ export default function SlideEditor({
           <input
             value={slide.sub}
             onChange={(e) => patchSlide({ sub: e.target.value })}
-            className="w-full bg-white/5 border border-white/10 px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none disabled:opacity-40"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none disabled:opacity-40"
             disabled={slide.kind === "outro"}
           />
         </label>
@@ -194,7 +194,7 @@ export default function SlideEditor({
               onChange={(e) => setField(field, e.target.value)}
               rows={Math.min(Math.max(lines, 2), 6)}
               spellCheck={false}
-              className="w-full bg-white/5 border border-white/10 px-3 py-2 text-white text-sm leading-relaxed focus:border-primary/50 focus:outline-none resize-y font-korean-reg"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm leading-relaxed focus:border-primary/50 focus:outline-none resize-y font-korean-reg"
             />
           </div>
         );

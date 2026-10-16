@@ -128,7 +128,7 @@ export default function FeedbackBoard() {
           maxLength={20}
           placeholder="별명 (안 쓰면 익명)"
           aria-label="별명"
-          className="w-full mb-3 bg-white/5 border border-white/12 px-3 py-2 text-sm text-white placeholder-white/30"
+          className="w-full mb-3 bg-white/5 border border-white/12 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30"
         />
         <textarea
           value={body}
@@ -137,7 +137,7 @@ export default function FeedbackBoard() {
           rows={5}
           placeholder="내용을 적어 주세요 (5~1000자)"
           aria-label="내용"
-          className="w-full bg-white/5 border border-white/12 px-3 py-2 text-sm text-white placeholder-white/30 leading-relaxed"
+          className="w-full bg-white/5 border border-white/12 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 leading-relaxed"
         />
         {/* 사람에게는 안 보이는 칸. 자동 프로그램만 채운다. */}
         <input

@@ -241,10 +241,8 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {["키워드로 최신 기사 검색", "기사 URL이면 본문까지 읽어옴", "디자인은 만든 뒤에도 바로 바꾸기", "표지 + 상세 + 마무리 자동 구성", "캡션 + 해시태그 + 출처 자동 작성", "PNG 한 장씩 또는 전체 ZIP으로 저장"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
-                    <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center"
-                      style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}>
-                      <span className="material-symbols-outlined text-white text-[12px]">check</span>
-                    </span>
+                    {/* 동그라미 없이 체크만(2026-10-16 사용자 지정 색). */}
+                    <span className="material-symbols-outlined flex-shrink-0 text-[20px] leading-none" style={{ color: "#D1F9FF" }}>check</span>
                     {item}
                   </li>
                 ))}

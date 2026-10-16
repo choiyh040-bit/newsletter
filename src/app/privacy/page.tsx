@@ -16,6 +16,7 @@ export const metadata: Metadata = {
  * - 결과·디자인 선택·올린 사진은 브라우저 localStorage 에만 있다.
  * - 사진 사이트에는 서버가 대신 묻는다(`/api/photo` 경유). 이용자 IP 가 가지 않는다.
  * - 브라우저가 직접 부르는 외부: Google Fonts, jsDelivr(글꼴 하나).
+ * - 피드백 게시판 글은 GitHub 이슈로 공개 저장. IP 는 연속 글쓰기 막기용 해시로 10분만 메모리에.
  *
  * 광고 항목은 애드센스 번호(`ADSENSE_CLIENT`)가 있을 때만 나온다. 코드를 바꿔
  * 다루는 정보가 달라지면 이 페이지와 `POLICY_DATE` 를 함께 고친다.
@@ -54,6 +55,16 @@ export default function PrivacyPage() {
                 <td>사진 검색어(영어 낱말)</td>
                 <td>사진 템플릿에 쓸 사진을 찾기 위해 서버가 사진 사이트에 보냅니다.</td>
                 <td>서버에 저장하지 않습니다.</td>
+              </tr>
+              <tr>
+                <td>피드백 게시판에 쓴 별명과 글</td>
+                <td>게시판에 <strong>모두에게 공개</strong>됩니다. GitHub(저장소의 이슈)에 저장되며 GitHub에서도 보입니다.</td>
+                <td>운영자가 지우기 전까지 보관합니다. 지우고 싶으면 문의해 주세요.</td>
+              </tr>
+              <tr>
+                <td>게시판에 글을 쓸 때의 IP 주소</td>
+                <td>짧은 시간에 글을 여러 번 올리는 것을 막는 데만 씁니다.</td>
+                <td>주소를 그대로 두지 않고 바꾼 값(해시)으로, 서버 메모리에 10분만 둡니다.</td>
               </tr>
               <tr>
                 <td>접속 기록(IP 주소, 브라우저 종류, 접속 시각 등)</td>
@@ -95,6 +106,11 @@ export default function PrivacyPage() {
                 <td>Pixabay (독일), Unsplash (캐나다), Wikimedia Commons (미국)</td>
                 <td>사진 검색과 사진 받기</td>
                 <td>사진 검색어. 서버가 대신 요청하므로 이용자의 IP 주소는 전달되지 않습니다.</td>
+              </tr>
+              <tr>
+                <td>GitHub (미국)</td>
+                <td>피드백 게시판 글 저장</td>
+                <td>별명, 글 내용, 분류</td>
               </tr>
               <tr>
                 <td>Google Fonts, jsDelivr</td>

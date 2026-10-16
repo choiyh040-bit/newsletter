@@ -87,6 +87,7 @@ export default function LandingPage() {
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="#features">기능</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="#examples">예시</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/guide">사용법</Link>
+            <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/feedback">피드백</Link>
           </nav>
           <button
             onClick={handleGenerate}

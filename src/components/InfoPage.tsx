@@ -11,6 +11,7 @@ import { SITE_NAME } from "@/lib/site";
 export const INFO_LINKS = [
   { href: "/about", label: "서비스 소개" },
   { href: "/guide", label: "사용법·자주 묻는 질문" },
+  { href: "/feedback", label: "피드백 게시판" },
   { href: "/privacy", label: "개인정보처리방침" },
   { href: "/terms", label: "이용약관" },
 ] as const;

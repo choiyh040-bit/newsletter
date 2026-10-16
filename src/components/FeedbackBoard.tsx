@@ -77,14 +77,22 @@ export default function FeedbackBoard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, nickname, body, website }),
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; post?: Post };
       if (!res.ok || !data.ok) {
         setMessage({ ok: false, text: data.error ?? "글을 올리지 못했습니다." });
         return;
       }
       setBody("");
       setMessage({ ok: true, text: "고맙습니다. 글이 올라갔습니다." });
-      apply(await fetchPosts());
+      // 목록을 새로 받되, 방금 쓴 글은 늘 맨 위에 둔다. 다른 서버가 1분 기억해 둔 목록에는
+      // 아직 없을 수 있다.
+      const fresh = await fetchPosts();
+      const mine = data.post;
+      apply(
+        mine && !fresh.posts.some((p) => p.number === mine.number)
+          ? { state: fresh.state === "error" ? "ready" : fresh.state, posts: [mine, ...fresh.posts] }
+          : fresh
+      );
     } catch {
       setMessage({ ok: false, text: "글을 올리지 못했습니다. 잠시 후 다시 시도해 주세요." });
     } finally {

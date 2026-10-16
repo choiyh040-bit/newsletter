@@ -125,12 +125,14 @@ export async function POST(request: Request) {
   }
 
   const { repo } = feedbackConfig();
+  let created: GitHubIssue;
   try {
     const res = await gh(`/repos/${repo}/issues`, {
       method: "POST",
       body: JSON.stringify(toIssue(category, nickname, text)),
     });
     if (!res.ok) throw new Error(`GitHub ${res.status} ${await res.text().catch(() => "")}`.slice(0, 300));
+    created = (await res.json()) as GitHubIssue;
   } catch (error) {
     console.warn("[feedback] 글을 저장하지 못했습니다:", error);
     return Response.json({ error: "글을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요." }, { status: 502 });
@@ -138,5 +140,8 @@ export async function POST(request: Request) {
 
   recent.set(key, [...mine, now]);
   cache = null;
-  return Response.json({ ok: true });
+  // 방금 쓴 글을 돌려준다. 화면이 목록 맨 위에 바로 넣는다. 서버가 여러 대라 다른 서버의
+  // 1분 기억에서 목록을 받으면 방금 쓴 글이 빠져 보였다(2026-10-16 배포 시험에서 발견).
+  const post: FeedbackPost = { ...fromIssue(created), replies: [] };
+  return Response.json({ ok: true, post });
 }

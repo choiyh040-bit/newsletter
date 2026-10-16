@@ -4,6 +4,9 @@ import { getFontEmbedCSS, toBlob } from "html-to-image";
 import JSZip from "jszip";
 import { CARD_HEIGHT, CARD_WIDTH } from "./cardnews";
 
+const TRANSPARENT_PIXEL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 /**
  * 카드 DOM을 PNG로 굽는다.
  *
@@ -20,6 +23,12 @@ async function renderCard(node: HTMLElement, fontEmbedCSS: string): Promise<Blob
     // 사진은 모두 /api/photo?… 로 받는다. 기본값(false)이면 html-to-image 가
     // 물음표 뒤를 버리고 캐시해서, 장마다 다른 사진이 첫 장 사진 하나로 구워진다.
     includeQueryParams: true,
+    // 사진 하나를 못 받아도(사이트에서 지워진 사진 등) 전체 내보내기가 멈추지
+    // 않게 한다. 받기가 실패하면 투명한 1px 로 대신하고(`imagePlaceholder`),
+    // 받았는데 그림이 아니면(오류 응답) 그 그림만 건너뛴다(`onImageErrorHandler`).
+    // 기본값은 둘 다 내보내기 전체를 실패시킨다. 빈 자리는 템플릿의 대체 배경이 보인다.
+    imagePlaceholder: TRANSPARENT_PIXEL,
+    onImageErrorHandler: () => undefined,
     fontEmbedCSS,
   });
   if (!blob) throw new Error("이미지를 만들지 못했습니다.");

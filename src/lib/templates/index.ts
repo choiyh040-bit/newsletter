@@ -3,9 +3,21 @@ import GradientCenter from "@/components/templates/GradientCenter";
 import DarkNeonSerif from "@/components/templates/DarkNeonSerif";
 import PhotoStory from "@/components/templates/PhotoStory";
 import CreamBold from "@/components/templates/CreamBold";
+import PhotoFrame from "@/components/templates/PhotoFrame";
+import PhotoCaption from "@/components/templates/PhotoCaption";
+import HandNote from "@/components/templates/HandNote";
+import DocPage from "@/components/templates/DocPage";
 import type { BackgroundKind, Template, TemplateVariant } from "./types";
 import { isHexColor } from "./color";
-import { CREAM_VARIANTS, LIGHT_VARIANTS, NEON_VARIANTS, PHOTO_VARIANTS } from "./variants";
+import {
+  CAPTION_VARIANTS,
+  CREAM_VARIANTS,
+  DOC_VARIANTS,
+  HAND_VARIANTS,
+  LIGHT_VARIANTS,
+  NEON_VARIANTS,
+  PHOTO_VARIANTS,
+} from "./variants";
 
 export * from "./types";
 export * from "./variants";
@@ -50,6 +62,43 @@ export const TEMPLATES: Template[] = [
     font: "sans",
     Render: CreamBold,
     variants: CREAM_VARIANTS,
+  },
+  // 2026-10-16 사용자가 보낸 참고 자료 네 묶음(docs/template-references.md 의 H)에서 하나씩.
+  {
+    id: "photo-frame",
+    name: "흰 바탕 · 사진 상자",
+    description: "흰 바탕에 둥근 사진을 크게 얹는다. 좌측 정렬",
+    background: "photo",
+    font: "sans",
+    Render: PhotoFrame,
+    variants: LIGHT_VARIANTS,
+  },
+  {
+    id: "photo-caption",
+    name: "사진 · 자막",
+    description: "장마다 다른 사진에 상자 없이 자막처럼. 강조어만 한 색",
+    background: "photo",
+    font: "sans",
+    Render: PhotoCaption,
+    variants: CAPTION_VARIANTS,
+  },
+  {
+    id: "hand-note",
+    name: "손글씨 메모",
+    description: "종이 위 손글씨, 형광펜과 빨간 펜. 중앙 정렬",
+    background: "color",
+    font: "hand",
+    Render: HandNote,
+    variants: HAND_VARIANTS,
+  },
+  {
+    id: "doc-page",
+    name: "문서 페이지",
+    description: "흰 문서 한 쪽처럼. 굵은 제목, 구분선, 체크한 주제",
+    background: "color",
+    font: "sans",
+    Render: DocPage,
+    variants: DOC_VARIANTS,
   },
   {
     id: "dark-neon",

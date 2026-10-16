@@ -27,6 +27,7 @@ import {
   type TextAlign,
 } from "@/lib/templates";
 import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
+import AdSlot, { AD_SLOTS } from "@/components/AdSlot";
 
 /** 미리보기에서 카드를 줄여 보여줄 비율. 캡처는 항상 원본 크기로 한다. */
 const PREVIEW_SCALE = 0.42;
@@ -781,6 +782,9 @@ function PreviewContent() {
             )}
           </div>
         </div>
+
+        {/* 결과 화면 맨 아래 광고 칸. 버튼들과 떨어진 자리. 애드센스 번호가 없으면 그리지 않는다. */}
+        <AdSlot slot={AD_SLOTS.result} height={120} className="mt-14" />
       </main>
     </>
   );

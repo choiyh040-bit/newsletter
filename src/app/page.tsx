@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import TemplatePicker from "@/components/TemplatePicker";
+import { INFO_LINKS } from "@/components/InfoPage";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
 function Lines({ lines }: { lines: readonly string[] }) {
@@ -84,6 +85,7 @@ export default function LandingPage() {
             <Link className="text-white/80 font-medium hover:text-primary transition-colors text-sm" href="/">홈</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="#features">기능</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="#examples">예시</Link>
+            <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/guide">사용법</Link>
           </nav>
           <button
             onClick={handleGenerate}
@@ -354,10 +356,13 @@ export default function LandingPage() {
             </div>
             <span className="font-korean-bold text-white text-base">CardGen AI</span>
           </div>
-          <p className="text-white/30 text-xs">© 2025 CardGen AI. Powered by Gemini.</p>
-          <div className="flex gap-6">
-            <a className="text-white/30 hover:text-white/60 transition-colors text-xs" href="#">개인정보처리방침</a>
-            <a className="text-white/30 hover:text-white/60 transition-colors text-xs" href="#">이용약관</a>
+          <p className="text-white/30 text-xs">© 2026 CardGen AI. Powered by Gemini.</p>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+            {INFO_LINKS.map((l) => (
+              <Link key={l.href} className="text-white/30 hover:text-white/60 transition-colors text-xs" href={l.href}>
+                {l.label}
+              </Link>
+            ))}
           </div>
         </div>
       </footer>

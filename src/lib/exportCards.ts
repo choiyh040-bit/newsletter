@@ -1,6 +1,6 @@
 "use client";
 
-import { getFontEmbedCSS, toBlob } from "html-to-image";
+import { getFontEmbedCSS, toCanvas } from "html-to-image";
 import JSZip from "jszip";
 import { CARD_HEIGHT, CARD_WIDTH } from "./cardnews";
 
@@ -15,7 +15,7 @@ const TRANSPARENT_PIXEL =
  * 대체 글꼴로 찍히기 때문에 document.fonts.ready 를 먼저 기다린다.
  */
 async function renderCard(node: HTMLElement, fontEmbedCSS: string): Promise<Blob> {
-  const blob = await toBlob(node, {
+  const canvas = await toCanvas(node, {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     pixelRatio: 1,
@@ -31,28 +31,95 @@ async function renderCard(node: HTMLElement, fontEmbedCSS: string): Promise<Blob
     onImageErrorHandler: () => undefined,
     fontEmbedCSS,
   });
-  if (!blob) throw new Error("이미지를 만들지 못했습니다.");
-  return blob;
+  try {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("이미지를 만들지 못했습니다.");
+    return blob;
+  } finally {
+    // 다 쓴 캔버스를 바로 비운다. 아이폰 사파리는 캔버스 메모리 한도가 낮고 캔버스를 늦게
+    // 치워서, 여러 장을 연달아 그리면 한도를 넘는다(2026-10-17 "다운이 중간에 꺼져").
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
+/** `@font-face` 규칙 하나의 글꼴 이름(소문자)과 굵기. */
+function faceOf(rule: string): { family: string; weight: number } | null {
+  const family = rule.match(/font-family:\s*["']?([^;"']+)["']?\s*;/i)?.[1]?.trim();
+  if (!family) return null;
+  const w = rule.match(/font-weight:\s*([^;]+);/i)?.[1]?.trim() ?? "400";
+  const weight = w === "bold" ? 700 : w === "normal" ? 400 : Number.parseInt(w, 10) || 400;
+  return { family: family.toLowerCase(), weight };
+}
+
+/** 노드 안 글자들이 쓰는 글꼴(대체 글꼴까지)과 굵기. */
+function usedFaces(node: HTMLElement): Map<string, Set<number>> {
+  const used = new Map<string, Set<number>>();
+  for (const el of [node, ...node.querySelectorAll<HTMLElement>("*")]) {
+    if (!el.textContent?.trim()) continue;
+    const style = getComputedStyle(el);
+    const weight = Number.parseInt(style.fontWeight, 10) || 400;
+    for (const name of style.fontFamily.split(",")) {
+      const family = name.trim().replace(/^["']|["']$/g, "").toLowerCase();
+      if (!family) continue;
+      if (!used.has(family)) used.set(family, new Set());
+      used.get(family)!.add(weight);
+    }
+  }
+  return used;
 }
 
 /**
- * 폰트 임베드 CSS는 파일이 커서 매번 새로 만들면 느리다. 한 번 만들어 카드
- * 전체에 돌려쓴다.
- *
- * **카드 전부에서 모은다.** html-to-image 의 `getFontEmbedCSS` 는 넘긴 노드에
- * 쓰인 글꼴만 담는다. 예전에는 첫 장(표지)에서만 만들었는데, 사진 · 자막
- * 템플릿은 장마다 서체가 달라서(도현·검은고딕·마루 부리) 표지에 없는 서체가
- * PNG 에서 기본 고딕으로 바뀌었다(2026-10-16). 같은 규칙은 한 번만 넣는다.
+ * 원하는 굵기에 브라우저가 실제로 고르는 굵기(CSS 글꼴 굵기 맞추기 규칙).
+ * 400~500 은 위로 500 까지 → 아래 → 그 위, 400 미만은 아래 → 위, 500 초과는 위 → 아래.
  */
-async function prepare(nodes: HTMLElement[]): Promise<string> {
-  await document.fonts.ready;
-  const rules = new Set<string>();
-  for (const node of nodes) {
-    const css = await getFontEmbedCSS(node);
-    for (const rule of css.split(/(?=@font-face)/)) if (rule.trim()) rules.add(rule.trim());
+function pickWeight(want: number, have: number[]): number {
+  if (have.includes(want)) return want;
+  const up = have.filter((w) => w > want).sort((a, b) => a - b);
+  const down = have.filter((w) => w < want).sort((a, b) => b - a);
+  if (want >= 400 && want <= 500) {
+    const toFive = up.filter((w) => w <= 500);
+    return toFive[0] ?? down[0] ?? up[0];
   }
-  return [...rules].join("\n");
+  return want < 400 ? (down[0] ?? up[0]) : (up[0] ?? down[0]);
 }
+
+/**
+ * 한 장에 넣을 글꼴 CSS. **그 장에 실제로 쓰인 글꼴·굵기만** 남긴다.
+ *
+ * 글꼴은 파일을 통째로 글자 데이터(base64)로 넣어야 PNG 에 찍힌다. 카드 글꼴은 합쳐
+ * 4MB 가 넘는다. 2026-10-16 판은 사진 · 자막의 장마다 다른 서체를 살리려고 **모든 장의
+ * 글꼴을 모아 장마다** 넣었는데, 그러자 장마다 4~6MB 짜리 그림 데이터가 생겨 휴대폰에서
+ * 내보내기 중에 탭이 꺼졌다(2026-10-17). 장마다 자기 글꼴만 넣으면 서체도 살고 크기도 준다.
+ *
+ * html-to-image 의 `getFontEmbedCSS` 는 글꼴 이름으로만 거르고 굵기는 다 넣는다(원티드
+ * 산스 세 굵기가 각 0.9MB). 그래서 쓰는 굵기마다 브라우저가 고를 굵기(`pickWeight`)만 남긴다.
+ */
+async function fontCSSFor(node: HTMLElement): Promise<string> {
+  const used = usedFaces(node);
+  const rules = (await getFontEmbedCSS(node))
+    .split(/(?=@font-face)/)
+    .map((r) => r.trim())
+    .filter(Boolean);
+  const faces = rules.map(faceOf);
+  const keep = new Map<string, Set<number>>();
+  for (const [family, weights] of used) {
+    const have = [...new Set(faces.filter((f) => f?.family === family).map((f) => f!.weight))];
+    if (!have.length) continue;
+    keep.set(family, new Set([...weights].map((w) => pickWeight(w, have))));
+  }
+  return rules
+    .filter((_, i) => {
+      const f = faces[i];
+      // 굵기를 범위로 적은 글꼴(가변 글꼴, 예: "100 900")은 이름만 맞으면 넣는다.
+      if (!f) return true;
+      return keep.get(f.family)?.has(f.weight) ?? false;
+    })
+    .join("\n");
+}
+
+/** 장 사이에 숨 돌릴 틈. 휴대폰 브라우저가 앞 장의 메모리를 치울 시간을 준다. */
+const breathe = () => new Promise((resolve) => setTimeout(resolve, 60));
 
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -70,23 +137,24 @@ function triggerDownload(blob: Blob, filename: string) {
 
 /** 카드 한 장을 PNG로 내려받는다. */
 export async function downloadCard(node: HTMLElement, filename: string) {
-  const fontEmbedCSS = await prepare([node]);
-  triggerDownload(await renderCard(node, fontEmbedCSS), filename);
+  await document.fonts.ready;
+  triggerDownload(await renderCard(node, await fontCSSFor(node)), filename);
 }
 
-/** 카드 전체를 PNG로 구워 ZIP 하나로 내려받는다. */
+/** 카드 전체를 PNG로 구워 ZIP 하나로 내려받는다. 장마다 그 장의 글꼴만 넣어 한 장씩 굽는다. */
 export async function downloadAllCards(
   nodes: HTMLElement[],
   zipName: string,
   onProgress?: (done: number, total: number) => void
 ) {
-  const fontEmbedCSS = await prepare(nodes);
+  await document.fonts.ready;
   const zip = new JSZip();
 
   for (let i = 0; i < nodes.length; i++) {
-    const blob = await renderCard(nodes[i], fontEmbedCSS);
+    const blob = await renderCard(nodes[i], await fontCSSFor(nodes[i]));
     zip.file(`card-${String(i + 1).padStart(2, "0")}.png`, blob);
     onProgress?.(i + 1, nodes.length);
+    await breathe();
   }
 
   triggerDownload(await zip.generateAsync({ type: "blob" }), zipName);

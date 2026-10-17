@@ -12,6 +12,7 @@ export interface MenuItem {
 
 export const SITE_MENU: MenuItem[] = [
   { href: "/", label: "홈 · 카드뉴스 만들기" },
+  { href: "/my", label: "내 카드뉴스" },
   { href: "/guide", label: "사용법 · 자주 묻는 질문" },
   { href: "/feedback", label: "피드백 게시판" },
   { href: "/about", label: "서비스 소개" },

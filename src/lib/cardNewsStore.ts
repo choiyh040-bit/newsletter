@@ -60,11 +60,30 @@ function readRaw(): string {
   }
 }
 
-function writeRaw(value: string): void {
-  try {
-    localStorage.setItem(KEY, value);
-  } catch {
-    // 용량이 찼거나 저장이 막힌 경우. 저장만 실패하고 화면은 그대로 둔다.
+/**
+ * 목록을 저장한다. 공간이 모자라면 **`keepId` 가 아닌 것 중 가장 오래된 결과부터** 빼고 다시 시도한다.
+ *
+ * 직접 올린 사진은 한 장에 300~400KB 라 저장소(보통 5MB)가 찰 수 있다. 전에는 차면 저장이 조용히
+ * 실패해서 **방금 만든 결과가 목록에 없었다.** 오래된 것을 밀어내는 편이 낫다(2026-10-17).
+ * 저장이 아예 막힌 환경(시크릿 창 등)이면 끝까지 실패하고 화면만 그대로 둔다.
+ */
+function writeHistory(entries: CardNewsEntry[], keepId?: string): void {
+  let list = entries;
+  for (;;) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(list));
+      return;
+    } catch {
+      let drop = -1;
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i].id !== keepId) {
+          drop = i;
+          break;
+        }
+      }
+      if (drop < 0) return;
+      list = list.filter((_, i) => i !== drop);
+    }
   }
 }
 
@@ -286,7 +305,7 @@ export function saveCardNews(
   };
 
   const next = [entry, ...parseHistory(readRaw())].slice(0, MAX_ENTRIES);
-  writeRaw(JSON.stringify(next));
+  writeHistory(next, entry.id);
   notify();
   return entry.id;
 }
@@ -302,7 +321,7 @@ export function setCardNewsTemplate(id: string, templateId: string): void {
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, templateId } : entry
   );
-  writeRaw(JSON.stringify(next));
+  writeHistory(next, id);
   notify();
 }
 
@@ -318,7 +337,7 @@ export function setCardNewsVariant(id: string, templateId: string, variantId: st
       ? { ...entry, variantId, customAccents: withAccent(entry.customAccents, templateId, null) }
       : entry
   );
-  writeRaw(JSON.stringify(next));
+  writeHistory(next, id);
   notify();
 }
 
@@ -330,7 +349,7 @@ export function setCardNewsCustomAccent(id: string, templateId: string, color: s
       ? { ...entry, customAccents: withAccent(entry.customAccents, templateId, color) }
       : entry
   );
-  writeRaw(JSON.stringify(next));
+  writeHistory(next, id);
   notify();
 }
 
@@ -340,7 +359,7 @@ export function setCardNewsAlign(id: string, align: TextAlign): void {
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, align } : entry
   );
-  writeRaw(JSON.stringify(next));
+  writeHistory(next, id);
   notify();
 }
 
@@ -355,13 +374,13 @@ export function updateCardNewsData(id: string, data: CardNews): void {
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, data: normalizeCardNews(data) } : entry
   );
-  writeRaw(JSON.stringify(next));
+  writeHistory(next, id);
   notify();
 }
 
 export function deleteCardNews(id: string): void {
   const next = parseHistory(readRaw()).filter((entry) => entry.id !== id);
-  writeRaw(JSON.stringify(next));
+  writeHistory(next);
   notify();
 }
 

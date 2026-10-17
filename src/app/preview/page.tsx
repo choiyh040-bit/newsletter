@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { formatWhen } from "@/lib/formatWhen";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -37,7 +37,8 @@ import {
   DEFAULT_ALIGN,
   type TextAlign,
 } from "@/lib/templates";
-import { downloadAllCards, downloadCard, safeFileName } from "@/lib/exportCards";
+import { downloadAllCards, downloadCard, renderCardImages, safeFileName } from "@/lib/exportCards";
+import { inAppBrowserName } from "@/lib/inApp";
 import AdSlot, { AD_SLOTS } from "@/components/AdSlot";
 import MobileMenu from "@/components/MobileMenu";
 import { assignLooks, CAPTION_LOOKS } from "@/lib/templates/captionLooks";
@@ -52,6 +53,9 @@ const MAX_VISIBLE_HISTORY = 8;
 type CopyTarget = "caption" | "hashtags" | "sources";
 
 /** 오늘 만든 것인지 한눈에 보이게 짧게 적는다. */
+/** 바뀌지 않는 값(브라우저 종류)을 읽을 때 쓰는 빈 구독. */
+const noopSubscribe = () => () => {};
+
 function PreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -102,6 +106,13 @@ function PreviewContent() {
   const [copied, setCopied] = useState<CopyTarget | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  // 앱 안 브라우저(카톡 등)면 이름. 내려받기가 막혀 있어 카드 이미지를 펼쳐 보여 준다(`lib/inApp.ts`).
+  const inApp = useSyncExternalStore(
+    noopSubscribe,
+    () => inAppBrowserName(navigator.userAgent),
+    () => null
+  );
+  const [gallery, setGallery] = useState<string[] | null>(null);
 
   // 캡처 대상은 화면 밖에 원본 크기로 그려둔 카드들이다.
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -284,7 +295,8 @@ function PreviewContent() {
     setExportError(null);
     setExporting("한 장 저장 중...");
     try {
-      await downloadCard(node, `${baseName}-${String(current + 1).padStart(2, "0")}.png`);
+      if (inApp) setGallery(await renderCardImages([node]));
+      else await downloadCard(node, `${baseName}-${String(current + 1).padStart(2, "0")}.png`);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : "저장에 실패했습니다.");
     } finally {
@@ -298,9 +310,9 @@ function PreviewContent() {
     setExportError(null);
     setExporting(`0 / ${nodes.length} 저장 중...`);
     try {
-      await downloadAllCards(nodes, `${baseName}.zip`, (done, count) =>
-        setExporting(`${done} / ${count} 저장 중...`)
-      );
+      const progress = (done: number, count: number) => setExporting(`${done} / ${count} 저장 중...`);
+      if (inApp) setGallery(await renderCardImages(nodes, progress));
+      else await downloadAllCards(nodes, `${baseName}.zip`, progress);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : "저장에 실패했습니다.");
     } finally {
@@ -376,6 +388,40 @@ function PreviewContent() {
 
   return (
     <>
+      {gallery && (
+        <div
+          role="dialog"
+          aria-label="카드 이미지 저장"
+          data-gallery
+          className="fixed inset-0 z-[10000] bg-black/90 overflow-y-auto"
+        >
+          <div className="sticky top-0 bg-black/80 backdrop-blur px-4 py-3 flex items-center gap-3 border-b border-white/10">
+            <p className="flex-1 text-white/85 text-sm font-korean-reg leading-snug">
+              사진을 <strong className="text-white">길게 눌러</strong> &lsquo;이미지 저장&rsquo;을 누르세요.
+              {gallery.length > 1 && ` (${gallery.length}장)`}
+            </p>
+            <button
+              onClick={() => setGallery(null)}
+              className="px-4 py-2 rounded-full bg-white/15 text-white text-sm font-korean-bold flex-shrink-0"
+            >
+              닫기
+            </button>
+          </div>
+          <div className="max-w-md mx-auto px-4 py-5 space-y-5">
+            {gallery.map((src, i) => (
+              <figure key={i}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- 방금 만든 data: 그림이라 최적화 대상이 아니다 */}
+                <img src={src} alt={`카드 ${i + 1}`} className="w-full h-auto block" />
+                {gallery.length > 1 && (
+                  <figcaption className="text-white/40 text-xs mt-1.5 text-center">
+                    {i + 1} / {gallery.length}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        </div>
+      )}
       {/* 캡처용 원본 카드. 화면 밖에 두되 display:none 은 쓰지 않는다.
           렌더링이 안 된 노드는 이미지로 구울 수 없기 때문이다. */}
       <div aria-hidden style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none" }}>
@@ -723,16 +769,22 @@ function PreviewContent() {
                   disabled={exporting !== null}
                   className="py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-white text-sm font-korean-bold disabled:opacity-40"
                 >
-                  이 카드 PNG
+                  {inApp ? "이 카드 저장" : "이 카드 PNG"}
                 </button>
                 <button
                   onClick={saveAll}
                   disabled={exporting !== null}
                   className="py-3 rounded-xl cta-gradient text-white text-sm font-korean-bold hover:brightness-110 transition-all disabled:opacity-40"
                 >
-                  전체 ZIP
+                  {inApp ? "전체 저장" : "전체 ZIP"}
                 </button>
               </div>
+              {inApp && (
+                <p className="text-white/50 text-xs mt-3 font-korean-reg leading-relaxed" data-inapp-note>
+                  {inApp} 안에서는 파일 내려받기가 막혀 있어요. 누르면 카드 이미지를 펼쳐 보여 드리니,
+                  사진을 <strong className="text-white/80">길게 눌러 저장</strong>하세요.
+                </p>
+              )}
               {exporting && (
                 <p className="text-primary text-xs mt-3 font-korean-reg">{exporting}</p>
               )}

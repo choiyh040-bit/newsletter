@@ -160,6 +160,35 @@ export async function downloadAllCards(
   triggerDownload(await zip.generateAsync({ type: "blob" }), zipName);
 }
 
+function toDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 카드를 PNG 그림(data URL)으로 만든다. 파일로 내려받지 않는다. 앱 안 브라우저처럼 내려받기가
+ * 막힌 곳에서 화면에 펼쳐 보여 주고 길게 눌러 저장하게 할 때 쓴다(`lib/inApp.ts`).
+ * blob: 주소가 아니라 data: 주소인 이유: 앱이 "이미지 저장"을 할 때 주소를 앱이 직접 다시 읽는데,
+ * blob: 주소는 웹 화면 밖에서는 읽을 수 없다.
+ */
+export async function renderCardImages(
+  nodes: HTMLElement[],
+  onProgress?: (done: number, total: number) => void
+): Promise<string[]> {
+  await document.fonts.ready;
+  const images: string[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    images.push(await toDataURL(await renderCard(nodes[i], await fontCSSFor(nodes[i]))));
+    onProgress?.(i + 1, nodes.length);
+    await breathe();
+  }
+  return images;
+}
+
 /** 파일 이름에 쓸 수 없는 문자를 걸러낸다. */
 export function safeFileName(text: string, fallback = "cardnews"): string {
   const cleaned = text.replace(/[\\/:*?"<>|]/g, "").trim().slice(0, 40);

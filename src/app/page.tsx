@@ -7,6 +7,7 @@ import TonePicker from "@/components/TonePicker";
 import MobileMenu from "@/components/MobileMenu";
 import { INFO_LINKS } from "@/components/InfoPage";
 import { FeatureCard } from "@/components/SampleCards";
+import { useCardNewsHistory, useIsHydrated } from "@/lib/cardNewsStore";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
 function Lines({ lines }: { lines: readonly string[] }) {
@@ -26,6 +27,9 @@ export default function LandingPage() {
   const [query, setQuery] = useState("");
   const [animatedStats, setAnimatedStats] = useState([0, 0, 0]);
   const heroRef = useRef<HTMLDivElement>(null);
+  // 이 브라우저에서 만든 결과. 있으면 입력칸 아래에 "내 카드뉴스"로 가는 길을 보여 준다.
+  const history = useCardNewsHistory();
+  const hydrated = useIsHydrated();
 
   const stats = [
     { value: 1080, label: "카드 가로", suffix: "px" },
@@ -87,6 +91,7 @@ export default function LandingPage() {
             <Link className="text-white/80 font-medium hover:text-primary transition-colors text-sm" href="/">홈</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="#features">기능</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="#examples">예시</Link>
+            <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/my">내 카드뉴스</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/guide">사용법</Link>
             <Link className="text-white/50 font-medium hover:text-primary transition-colors text-sm" href="/feedback">피드백</Link>
           </nav>
@@ -171,6 +176,16 @@ export default function LandingPage() {
               <p className="text-white/30 text-xs mt-2 text-center leading-relaxed">
                 <Lines lines={["예: “국제회의 유치”, “성수동 팝업스토어”", "기사 주소를 넣으면 그 기사 내용으로만 만듭니다"]} />
               </p>
+              {hydrated && history.length > 0 && (
+                <Link
+                  href="/my"
+                  data-my-link
+                  className="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-korean-bold hover:bg-primary/20 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">history</span>
+                  내 카드뉴스 {history.length}건 보기 →
+                </Link>
+              )}
               <TonePicker />
               <TemplatePicker />
             </div>

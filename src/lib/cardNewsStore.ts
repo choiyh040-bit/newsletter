@@ -20,7 +20,7 @@ import { isTone, type ToneId } from "./tone";
 const KEY = "cardNewsHistory";
 
 /** 보관할 최대 개수. 한 건이 대략 2~4KB 라 넉넉하다. */
-const MAX_ENTRIES = 20;
+export const MAX_ENTRIES = 20;
 
 export interface CardNewsEntry {
   id: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatWhen } from "@/lib/formatWhen";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -51,14 +52,6 @@ const MAX_VISIBLE_HISTORY = 8;
 type CopyTarget = "caption" | "hashtags" | "sources";
 
 /** 오늘 만든 것인지 한눈에 보이게 짧게 적는다. */
-function formatWhen(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  const today = new Date().toDateString() === date.toDateString();
-  const time = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-  return today ? `오늘 ${time}` : `${date.getMonth() + 1}월 ${date.getDate()}일 ${time}`;
-}
-
 function PreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -830,7 +823,12 @@ function PreviewContent() {
 
             {history.length > 1 && (
               <div className="glass-panel p-5">
-                <h4 className="text-white font-korean-bold text-sm mb-1">최근 생성</h4>
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-white font-korean-bold text-sm">최근 생성</h4>
+                  <Link href="/my" className="text-primary text-xs font-korean-reg hover:underline">
+                    전체 보기 →
+                  </Link>
+                </div>
                 <p className="text-white/40 text-xs mb-4 font-korean-reg">
                   이 브라우저에만 저장됩니다. 최대 {MAX_VISIBLE_HISTORY}건까지 보여줍니다.
                 </p>

@@ -1,3 +1,4 @@
+import { pressName } from "@/lib/pressNames";
 import {
   extractJson,
   GENERATED_MAX_SLIDES,
@@ -343,7 +344,9 @@ async function finish(
 function withSources(result: CardNews, links: CardNewsSource[], material: Material): CardNews {
   if (links.length === 0) return { ...result, source: result.source && { ...result.source, url: "" } };
   const [first] = links;
-  const name = material === "기사 본문" && result.source?.name ? result.source.name : first.name;
+  // 아는 언론사면 표의 한글 이름(`pressNames.ts`)을 먼저 쓴다.
+  const name =
+    pressName(first.url) ?? (material === "기사 본문" && result.source?.name ? result.source.name : first.name);
   // 목록 첫 줄도 같은 이름으로 맞춘다. 안 그러면 기사 URL 로 만든 결과가
   // 출처 목록에 매체명 대신 사이트 주소(도메인)로 나온다.
   const sources = [{ name, url: first.url }, ...links.slice(1)];

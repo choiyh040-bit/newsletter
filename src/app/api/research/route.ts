@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { pressName } from "@/lib/pressNames";
 import {
   client,
   failure,
@@ -110,7 +111,7 @@ async function resolveLinks(
         const url = location ? new URL(location, web.uri).toString() : "";
         if (!/^https?:\/\//.test(url) || url.includes("vertexaisearch.cloud.google.com")) return null;
         if (NOT_A_SOURCE.test(new URL(url).hostname)) return null;
-        return { name: web.title || new URL(url).hostname, url };
+        return { name: pressName(url) ?? (web.title || new URL(url).hostname), url };
       } catch {
         return null;
       }
@@ -215,7 +216,7 @@ export async function POST(request: Request) {
     console.info(`[research] 기사 본문 ${article.length}자를 읽었습니다. 검색하지 않습니다.`);
     // 출처 주소는 모델에게 받아 적게 하지 않고 **서버가 아는 주소**를 붙인다.
     // 모델은 주소를 지어낸다. 기사 URL 로 만든 경우 그 URL 이 곧 출처다.
-    const links: Link[] = [{ name: new URL(url).hostname.replace(/^www\./, ""), url }];
+    const links: Link[] = [{ name: pressName(url) ?? new URL(url).hostname.replace(/^www\./, ""), url }];
     return Response.json({ subject, material: "기사 본문", evidence: article, links });
   }
   if (url) console.warn("[research] 기사 본문을 읽지 못해 검색으로 자료를 모읍니다:", url);

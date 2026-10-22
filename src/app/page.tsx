@@ -7,6 +7,7 @@ import TonePicker from "@/components/TonePicker";
 import MobileMenu from "@/components/MobileMenu";
 import { INFO_LINKS } from "@/components/InfoPage";
 import { FeatureCard } from "@/components/SampleCards";
+import InAppBanner from "@/components/InAppBanner";
 import { useCardNewsHistory, useIsHydrated } from "@/lib/cardNewsStore";
 
 /** 설명 문장을 줄 단위로 그린다. 한 원소가 한 줄이다. 좁은 화면에서는 줄 안에서 띄어쓰기 기준으로 한 번 더 넘어간다. */
@@ -122,6 +123,7 @@ export default function LandingPage() {
           </div>
 
           <div className="relative z-10 w-full max-w-4xl mx-auto">
+            <InAppBanner />
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel mb-6 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-primary"></span>

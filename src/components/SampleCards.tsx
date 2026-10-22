@@ -19,9 +19,9 @@ const SAMPLE = normalizeCardNews({
   slides: [
     {
       kind: "cover",
-      badge: "MICE 뉴스",
-      sub: "국제회의 유치",
-      heading: ["국제회의에", "==210억 원==", "투입한다"],
+      badge: "트렌드 소식",
+      sub: "요즘 뜨는 팝업",
+      heading: ["성수동 팝업", "==방문객 2배==", "늘었다"],
       body: [],
     },
   ],

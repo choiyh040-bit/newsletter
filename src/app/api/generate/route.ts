@@ -1,3 +1,4 @@
+import { pressName } from "@/lib/pressNames";
 import {
   extractJson,
   GENERATED_MAX_SLIDES,
@@ -210,7 +211,7 @@ ${copy === "caption" ? CAPTION_COPY_RULES + "\n" : ""}
       "sub": "표지 위쪽 작은 소제목",
       "heading": ["표지 첫 줄", "==둘째 줄==", "셋째 줄", "넷째 줄"],
       "body": [],
-      "imageQuery": "convention center exterior"
+      "imageQuery": "영어 2~4단어, 이 장의 장면"
     },
     {
       "kind": "detail",
@@ -218,12 +219,12 @@ ${copy === "caption" ? CAPTION_COPY_RULES + "\n" : ""}
       "sub": "예산",
       "heading": ["상세 헤드라인"],
       "body": ["본문 첫 줄에 *수치 42건*", "본문 둘째 줄"],
-      "imageQuery": "conference audience"
+      "imageQuery": "영어 2~4단어, 이 장의 장면"
     }
   ],
   "caption": "${copy === "caption" ? "인스타그램 캡션 4~7줄. 카드에 못 담은 사실을 여기에. 줄바꿈은 \\n 으로 표기 (350자 이내)" : "인스타그램 캡션 3~5줄. 줄바꿈은 \\n 으로 표기 (200자 이내)"}",
   "hashtags": ["해시태그1", "해시태그2", "해시태그3", "해시태그4", "해시태그5"],
-  "imageQuery": "convention center",
+  "imageQuery": "영어 2~4단어, 세트를 대표하는 장면",
   "source": { "name": "출처 매체명", "url": "" }
 }
 
@@ -262,11 +263,11 @@ async function generateOnce(
   });
   const raw = extractJson(response.text ?? "");
   const result = normalizeCardNews(raw);
+  // 사진 검색어는 영어여야 한다. 출력 예시의 설명 문구("영어 2~4단어, …")를 그대로 따라 쓰거나 한글로
+  // 적으면 버린다. 장 검색어가 비면 세트 검색어로, 그것도 비면 미리보기의 기본 검색어로 찾는다.
+  const englishQuery = (q: unknown) => (typeof q === "string" && !/[가-힣]/.test(q) ? q.trim().slice(0, 80) : "");
   // 사진 검색어는 카드 데이터가 아니라서 정리 함수가 버린다. 따로 꺼낸다.
-  const imageQuery =
-    typeof raw === "object" && raw !== null && typeof (raw as { imageQuery?: unknown }).imageQuery === "string"
-      ? ((raw as { imageQuery: string }).imageQuery).slice(0, 80)
-      : "";
+  const imageQuery = englishQuery(typeof raw === "object" && raw !== null ? (raw as { imageQuery?: unknown }).imageQuery : "");
   // 장수가 범위를 벗어나면 형식 오류와 같이 다룬다. 바깥의 재시도가 더 엄한
   // 안내로 다시 부른다. 넘친 장을 잘라 내면 마무리 장이 사라진다.
   const count = result.slides.length;
@@ -279,8 +280,7 @@ async function generateOnce(
       ? ((raw as { slides: unknown[] }).slides)
       : [];
   const slideQueries = result.slides.map((_, i) => {
-    const q = (rawSlides[i] as { imageQuery?: unknown } | undefined)?.imageQuery;
-    return typeof q === "string" ? q.slice(0, 80) : "";
+    return englishQuery((rawSlides[i] as { imageQuery?: unknown } | undefined)?.imageQuery);
   });
   return { result, imageQuery, slideQueries };
 }
@@ -344,7 +344,9 @@ async function finish(
 function withSources(result: CardNews, links: CardNewsSource[], material: Material): CardNews {
   if (links.length === 0) return { ...result, source: result.source && { ...result.source, url: "" } };
   const [first] = links;
-  const name = material === "기사 본문" && result.source?.name ? result.source.name : first.name;
+  // 아는 언론사면 표의 한글 이름(`pressNames.ts`)을 먼저 쓴다.
+  const name =
+    pressName(first.url) ?? (material === "기사 본문" && result.source?.name ? result.source.name : first.name);
   // 목록 첫 줄도 같은 이름으로 맞춘다. 안 그러면 기사 URL 로 만든 결과가
   // 출처 목록에 매체명 대신 사이트 주소(도메인)로 나온다.
   const sources = [{ name, url: first.url }, ...links.slice(1)];

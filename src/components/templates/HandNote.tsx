@@ -25,9 +25,52 @@ import TextLines from "./TextLines";
 const INK = "#1D1B19";
 const PEN = "#D9412F";
 
+type Spot = React.CSSProperties;
+/**
+ * 장마다 테이프·낙서 자리. 모든 장이 같은 자리면 찍어 낸 티가 나서 장 번호로 돌려 쓴다
+ * (2026-10-22). 무작위가 아니라 장 번호로 정해서 다시 열어도, 내보내도 같은 모양이다.
+ * 표지는 첫 배치. 낙서는 글이 들어가는 가운데(좌우 110px 안쪽)와 분류(왼쪽 위)·쪽 번호(오른쪽 위)·
+ * 출처(오른쪽 아래)를 피한 가장자리에만 둔다.
+ */
+const LAYOUTS: { tape: Spot; tape2?: Spot; sparkle: Spot; star: Spot & { size: number } }[] = [
+  {
+    tape: { left: CARD_WIDTH / 2 - 130, transform: "rotate(-2.5deg)" },
+    sparkle: { top: 250, right: 92 },
+    star: { bottom: 210, left: 74, size: 58 },
+  },
+  {
+    tape: { left: 330, transform: "rotate(3deg)" },
+    sparkle: { bottom: 230, left: 70 },
+    star: { top: 270, right: 80, size: 50 },
+  },
+  {
+    // 두 귀퉁이에 짧은 테이프 두 장.
+    tape: { left: -40, top: 20, width: 220, transform: "rotate(-38deg)" },
+    tape2: { right: -40, top: 20, width: 220, transform: "rotate(38deg)" },
+    sparkle: { top: 290, left: 60 },
+    star: { bottom: 240, right: 84, size: 54 },
+  },
+  {
+    tape: { left: CARD_WIDTH / 2 - 60, transform: "rotate(-5deg)" },
+    sparkle: { bottom: 250, right: 78 },
+    star: { top: 300, left: 66, size: 46 },
+  },
+];
+
+const TAPE: Spot = {
+  position: "absolute",
+  top: -18,
+  width: 260,
+  height: 92,
+  background: "rgba(232, 222, 196, 0.82)",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+};
+
 export default function HandNote({ slide, total, source, variant }: TemplateProps) {
   const { base, neon } = variant ?? HAND_VARIANTS[0];
   const isCover = slide.kind === "cover";
+  const layout = LAYOUTS[isCover ? 0 : (slide.slideNumber - 1) % LAYOUTS.length];
+  const { size: starSize, ...starSpot } = layout.star;
   const width = CARD_WIDTH - 110 * 2;
   // 개구는 한글 한 자가 0.82em 인데 획이 그 안에 작게 들어 있어 글자 사이가 넓다. 자간을 -0.1em 좁힌다.
   // 그래서 한 자 0.72em 쯤. 넉넉하게 0.78 로 잡는다.
@@ -80,18 +123,8 @@ export default function HandNote({ slide, total, source, variant }: TemplateProp
       }}
     >
       {/* 마스킹테이프 */}
-      <div
-        style={{
-          position: "absolute",
-          top: -18,
-          left: CARD_WIDTH / 2 - 130,
-          width: 260,
-          height: 92,
-          background: "rgba(232, 222, 196, 0.82)",
-          transform: "rotate(-2.5deg)",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-        }}
-      />
+      <div data-hand-tape style={{ ...TAPE, ...layout.tape }} />
+      {layout.tape2 && <div data-hand-tape style={{ ...TAPE, ...layout.tape2 }} />}
 
       {/* 왼쪽 위: 분류를 손으로 그린 타원 안에 */}
       {slide.badge && (
@@ -132,8 +165,8 @@ export default function HandNote({ slide, total, source, variant }: TemplateProp
         {slide.slideNumber}/{total}
       </div>
 
-      <Sparkle style={{ position: "absolute", top: 250, right: 92 }} color={INK} />
-      <Star style={{ position: "absolute", bottom: 210, left: 74 }} color={shade(neon, -0.25)} size={58} />
+      <Sparkle style={{ position: "absolute", ...layout.sparkle }} color={INK} />
+      <Star style={{ position: "absolute", ...starSpot }} color={shade(neon, -0.25)} size={starSize} />
 
       {/* 제목 */}
       {/* 개구 굵은체도 붓펜보다는 가늘어서 제목만 같은 색 테두리로 획을 두껍게 한다. */}

@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { pressName } from "@/lib/pressNames";
 import {
   client,
   failure,
@@ -110,7 +111,7 @@ async function resolveLinks(
         const url = location ? new URL(location, web.uri).toString() : "";
         if (!/^https?:\/\//.test(url) || url.includes("vertexaisearch.cloud.google.com")) return null;
         if (NOT_A_SOURCE.test(new URL(url).hostname)) return null;
-        return { name: web.title || new URL(url).hostname, url };
+        return { name: pressName(url) ?? (web.title || new URL(url).hostname), url };
       } catch {
         return null;
       }
@@ -122,19 +123,34 @@ async function resolveLinks(
     .slice(0, MAX_LINKS);
 }
 
+/**
+ * 오늘 날짜(한국 시간). 모델은 오늘이 언제인지 모른다. 알려 주지 않으면 "가을 패션 트렌드"처럼
+ * 해마다 나오는 주제에서 묵은 해(2024년) 기사를 골라 왔다(2026-10-16 발견, 10-22 고침).
+ */
+function todayKST(now = new Date()): { label: string; year: string } {
+  const parts = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric" }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return { label: `${get("year")}년 ${get("month")} ${get("day")}일`, year: get("year") };
+}
+
 async function research(
   model: string,
   subject: string,
   signal?: AbortSignal
 ): Promise<{ text: string; links: Link[] }> {
+  const today = todayKST();
   const response = await client().models.generateContent({
     model,
     contents: `Google 검색으로 다음 주제의 최신 한국 기사를 찾아, 카드뉴스의 근거로 쓸 사실을 정리하세요.
 
+오늘은 ${today.label}입니다.
 주제: ${subject}
 
 - **답하기 전에 반드시 Google 검색 도구를 실행하세요.** 기억에 의존해 답하지 마세요.
 - 가장 최근의 기사 한두 건을 중심으로 정리하세요. 여러 사건을 섞지 마세요.
+- **오늘 기준으로 최근 기사**를 고르세요. 계절 트렌드·연례 행사처럼 해마다 같은 주제의 기사가 나오는
+  경우에는 반드시 **${today.year}년 기사**를 쓰고, 지난해 이전 기사는 쓰지 마세요. 검색할 때 "${today.year}"를 붙이세요.
+- 사실마다 그 기사가 나온 날짜를 함께 적으세요.
 - 기관명, 날짜, 금액·건수 같은 수치, 사업 이름, 일정처럼 확인된 사실만 적으세요.
 - 검색에서 확인하지 못한 것은 적지 마세요. 추측이나 평가는 넣지 마세요.
 - 기사 문장을 그대로 옮기지 말고 짧은 사실 단위로 적으세요.
@@ -200,7 +216,7 @@ export async function POST(request: Request) {
     console.info(`[research] 기사 본문 ${article.length}자를 읽었습니다. 검색하지 않습니다.`);
     // 출처 주소는 모델에게 받아 적게 하지 않고 **서버가 아는 주소**를 붙인다.
     // 모델은 주소를 지어낸다. 기사 URL 로 만든 경우 그 URL 이 곧 출처다.
-    const links: Link[] = [{ name: new URL(url).hostname.replace(/^www\./, ""), url }];
+    const links: Link[] = [{ name: pressName(url) ?? new URL(url).hostname.replace(/^www\./, ""), url }];
     return Response.json({ subject, material: "기사 본문", evidence: article, links });
   }
   if (url) console.warn("[research] 기사 본문을 읽지 못해 검색으로 자료를 모읍니다:", url);

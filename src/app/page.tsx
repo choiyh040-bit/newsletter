@@ -174,7 +174,7 @@ export default function LandingPage() {
                 </button>
               </div>
               <p className="text-white/30 text-xs mt-2 text-center leading-relaxed">
-                <Lines lines={["예: “국제회의 유치”, “성수동 팝업스토어”", "기사 주소를 넣으면 그 기사 내용으로만 만듭니다"]} />
+                <Lines lines={["예: “가을 패션 트렌드”, “성수동 팝업스토어”", "기사 주소를 넣으면 그 기사 내용으로만 만듭니다"]} />
               </p>
               {hydrated && history.length > 0 && (
                 <Link

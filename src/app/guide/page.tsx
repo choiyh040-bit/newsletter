@@ -74,7 +74,7 @@ export default function GuidePage() {
             사진도 함께 찾습니다.
           </li>
           <li>
-            <strong>키워드나 기사 주소 넣기</strong> — 예: <code>부산 MICE</code>, <code>킨텍스 전시회</code>, 또는
+            <strong>키워드나 기사 주소 넣기</strong> — 예: <code>성수동 팝업스토어</code>, <code>가을 패션 트렌드</code>, 또는
             기사 주소. ‘생성하기’를 누릅니다.
           </li>
           <li>

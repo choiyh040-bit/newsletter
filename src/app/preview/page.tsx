@@ -203,8 +203,9 @@ function PreviewContent() {
     setUploadError(null);
     setPhotoBusy(true);
     try {
-      // 예전 결과에는 검색어가 남아 있지 않다. 그때는 일반적인 행사장 컷을 찾는다.
-      const query = slide.photoQuery || data.photoQuery || "convention center";
+      // 예전 결과에는 검색어가 남아 있지 않다. 그때는 어느 분야에도 어울리는 배경을 찾는다.
+      // (처음엔 MICE 전용이라 "convention center" 였다.)
+      const query = slide.photoQuery || data.photoQuery || "abstract background";
       const inUse = data.slides.map((sl) => slidePhoto(sl, data)?.pageUrl ?? "");
       const exclude = [...new Set([...(data.photoSeen ?? []), ...inUse])].filter(Boolean);
       const res = await fetch("/api/photo-search", {

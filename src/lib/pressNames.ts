@@ -91,6 +91,10 @@ const PRESS: Record<string, string> = {
   "ihalla.com": "한라일보",
   // 분야 전문
   "fashionn.com": "패션엔",
+  "fi.co.kr": "패션인사이트",
+  "apparelnews.co.kr": "어패럴뉴스",
+  "fashionseoul.com": "패션서울",
+  "wwdkorea.com": "WWD코리아",
   "fashionbiz.co.kr": "패션비즈",
   "ktnews.com": "한국섬유신문",
   "traveltimes.co.kr": "여행신문",

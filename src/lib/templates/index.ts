@@ -7,6 +7,7 @@ import PhotoFrame from "@/components/templates/PhotoFrame";
 import PhotoCaption from "@/components/templates/PhotoCaption";
 import HandNote from "@/components/templates/HandNote";
 import DocPage from "@/components/templates/DocPage";
+import DarkNumbered from "@/components/templates/DarkNumbered";
 import type { BackgroundKind, Template, TemplateVariant } from "./types";
 import { isHexColor } from "./color";
 import {
@@ -16,6 +17,7 @@ import {
   HAND_VARIANTS,
   LIGHT_VARIANTS,
   NEON_VARIANTS,
+  NUMBERED_VARIANTS,
   PHOTO_VARIANTS,
 } from "./variants";
 
@@ -81,6 +83,17 @@ export const TEMPLATES: Template[] = [
     font: "sans",
     Render: PhotoCaption,
     variants: CAPTION_VARIANTS,
+  },
+  {
+    // 2026-10-30 사용자가 보낸 참고 게시물("웹사이트를 완성하는 8가지 프롬프트").
+    id: "dark-numbered",
+    name: "검정 · 번호 정리",
+    description: "표지는 사진 아래 큰 제목, 상세는 큰 번호와 글 상자. 목록·팁 정리에",
+    background: "photo",
+    font: "sans",
+    Render: DarkNumbered,
+    variants: NUMBERED_VARIANTS,
+    coverPhotoOnly: true,
   },
   {
     id: "hand-note",

@@ -43,7 +43,8 @@ export default function DarkNumbered({ slide, total, source, photo, variant }: T
   };
 
   if (isCover) {
-    const size = fitFontSize({ lines: slide.heading, width: CARD_WIDTH - 140, height: 560, max: 150, min: 84, lineHeight: 1.12, charWidth: 0.98 });
+    // 원티드산스 ExtraBold 에 자간 -0.045em 이라 한 자가 0.93em 쯤.
+    const size = fitFontSize({ lines: slide.heading, width: CARD_WIDTH - 140, height: 560, max: 150, min: 84, lineHeight: 1.14, charWidth: 0.95 });
     return (
       <div style={shell}>
         {photo && (
@@ -75,7 +76,9 @@ export default function DarkNumbered({ slide, total, source, photo, variant }: T
           {slide.sub && (
             <div style={{ fontSize: 34, fontWeight: 700, color: LABEL, letterSpacing: "0.04em", marginBottom: 26 }}>{slide.sub}</div>
           )}
-          <div style={{ fontFamily: "'Black Han Sans', 'Wanted Sans', sans-serif", fontSize: size, lineHeight: 1.12, letterSpacing: "-0.01em" }}>
+          {/* 처음엔 검은고딕이었는데 사용자가 "안 예쁘다"(2026-10-30). 원본처럼 획이 깔끔한 아주 굵은 고딕으로. */}
+          {/* 원티드산스는 800 이 가장 굵다. 원본은 그보다 묵직해서 같은 색 테두리로 한 단계 더 굵게(손글씨 제목과 같은 방법). */}
+          <div style={{ fontWeight: 800, fontSize: size, lineHeight: 1.14, letterSpacing: "-0.04em", WebkitTextStrokeWidth: Math.max(2, Math.round(size / 42)) }}>
             <TextLines lines={slide.heading} accentColor={neon} />
           </div>
         </div>

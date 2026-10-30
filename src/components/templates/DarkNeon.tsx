@@ -2,7 +2,7 @@ import { CARD_HEIGHT, CARD_WIDTH } from "@/lib/cardnews";
 import { inkFor, legibleOn, readableOn, withAlpha } from "@/lib/templates/color";
 import { fitFontSize } from "@/lib/templates/fit";
 import { NEON_VARIANTS } from "@/lib/templates/variants";
-import { FONT_STACK, type FontKind, type TemplateProps } from "@/lib/templates/types";
+import { FONT_STACK, type TemplateProps } from "@/lib/templates/types";
 import TextLines from "./TextLines";
 
 /**
@@ -27,7 +27,7 @@ export default function DarkNeon({
   variant,
   align,
   font = "sans",
-}: TemplateProps & { font?: FontKind }) {
+}: TemplateProps) {
   // 명조 버전은 레이아웃은 그대로 두고 서체만 바꾼다. 명조(마루 부리)는
   // 굵기를 셋(400·600·700)만 싣는다. 고딕용 굵기를 가까운 단계로 옮긴다.
   // 800 을 그대로 주면 브라우저가 굵기를 흉내 내서(가짜 볼드) 획이 뭉개진다.

@@ -75,6 +75,19 @@ export const ALIGN_LABEL: Record<TextAlign, string> = {
   center: "중앙",
 };
 
+/**
+ * 고를 수 있는 서체. 처음엔 명조를 별도 템플릿("… · 명조")으로 두었는데, 배치는 같고 서체만 다른 것이라
+ * 정렬처럼 **고르는 값**으로 바꿨다(2026-10-30 사용자: "명조는 처음부터 옵션으로 넣고 싶었다").
+ */
+export type CardFont = "sans" | "serif";
+
+export const DEFAULT_FONT: CardFont = "sans";
+
+export const FONT_LABEL: Record<CardFont, string> = {
+  sans: "고딕",
+  serif: "명조",
+};
+
 /** 카드 한 장을 그릴 때 템플릿이 받는 값. */
 export interface TemplateProps {
   slide: CardSlide;
@@ -94,6 +107,8 @@ export interface TemplateProps {
   variant: TemplateVariant | null;
   /** 글 정렬. `alignable` 이 아닌 템플릿은 무시한다. */
   align: TextAlign;
+  /** 서체. `serifable` 이 아닌 템플릿은 무시한다. */
+  font?: CardFont;
 }
 
 export interface TemplatePhoto {
@@ -130,4 +145,6 @@ export interface Template {
    * 상세 장 사진까지 적지 않게 한다.
    */
   coverPhotoOnly?: boolean;
+  /** 서체(고딕/명조)를 고를 수 있는 템플릿인지. */
+  serifable?: boolean;
 }

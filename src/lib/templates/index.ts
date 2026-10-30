@@ -1,6 +1,5 @@
 import DarkNeon from "@/components/templates/DarkNeon";
 import GradientCenter from "@/components/templates/GradientCenter";
-import DarkNeonSerif from "@/components/templates/DarkNeonSerif";
 import PhotoStory from "@/components/templates/PhotoStory";
 import CreamBold from "@/components/templates/CreamBold";
 import PhotoFrame from "@/components/templates/PhotoFrame";
@@ -8,7 +7,7 @@ import PhotoCaption from "@/components/templates/PhotoCaption";
 import HandNote from "@/components/templates/HandNote";
 import DocPage from "@/components/templates/DocPage";
 import DarkNumbered from "@/components/templates/DarkNumbered";
-import type { BackgroundKind, Template, TemplateVariant } from "./types";
+import { DEFAULT_FONT, type BackgroundKind, type CardFont, type Template, type TemplateVariant } from "./types";
 import { isHexColor } from "./color";
 import {
   CAPTION_VARIANTS,
@@ -122,16 +121,7 @@ export const TEMPLATES: Template[] = [
     Render: DarkNeon,
     variants: NEON_VARIANTS,
     alignable: true,
-  },
-  {
-    id: "dark-neon-serif",
-    name: "어두운 바탕 · 네온 · 명조",
-    description: "네온과 같은 구성에 서체만 명조",
-    background: "color",
-    font: "serif",
-    Render: DarkNeonSerif,
-    variants: NEON_VARIANTS,
-    alignable: true,
+    serifable: true,
   },
   {
     id: "light-accent",
@@ -143,16 +133,7 @@ export const TEMPLATES: Template[] = [
     Render: DarkNeon,
     variants: LIGHT_VARIANTS,
     alignable: true,
-  },
-  {
-    id: "light-accent-serif",
-    name: "흰 바탕 · 강조색 · 명조",
-    description: "흰 바탕 구성에 서체만 명조",
-    background: "color",
-    font: "serif",
-    Render: DarkNeonSerif,
-    variants: LIGHT_VARIANTS,
-    alignable: true,
+    serifable: true,
   },
 ];
 
@@ -165,10 +146,26 @@ export const TEMPLATES: Template[] = [
  * 서체까지 바뀐다.
  */
 const RETIRED: Record<string, string> = {
-  "solid-serif": "light-accent-serif",
+  "solid-serif": "light-accent",
+  // 2026-10-30 명조를 템플릿에서 서체 고르기로 옮겼다. 이 id 로 저장된 결과는 같은 배치 + 명조로 연다(`fontFor`).
+  "dark-neon-serif": "dark-neon",
+  "light-accent-serif": "light-accent",
 };
 
+/** 명조 템플릿이던 id. 서체를 따로 저장하지 않은 옛 결과는 이것으로 명조인지 안다. */
+const SERIF_IDS = new Set(["solid-serif", "dark-neon-serif", "light-accent-serif"]);
+
 export const DEFAULT_TEMPLATE_ID = TEMPLATES[0].id;
+
+/**
+ * 실제로 그릴 서체. 서체를 고를 수 없는 템플릿이면 늘 고딕(템플릿 자기 서체).
+ * 저장된 서체가 있으면 그것, 없으면 옛 명조 템플릿 id 로 저장된 결과만 명조.
+ */
+export function fontFor(template: Template, savedTemplateId: string | null | undefined, savedFont: CardFont | null | undefined): CardFont {
+  if (!template.serifable) return DEFAULT_FONT;
+  if (savedFont === "sans" || savedFont === "serif") return savedFont;
+  return savedTemplateId && SERIF_IDS.has(savedTemplateId) ? "serif" : DEFAULT_FONT;
+}
 
 /** 모르는 id 가 들어와도 화면이 비지 않도록 기본값으로 떨어뜨린다. */
 export function templateById(id: string | null | undefined): Template {

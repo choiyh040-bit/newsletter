@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CARD_HEIGHT, CARD_WIDTH, normalizeCardNews } from "@/lib/cardnews";
 import {
   chooseAlign,
+  chooseFont,
   chooseCustomAccent,
   chooseTemplate,
   chooseVariant,
@@ -12,6 +13,8 @@ import {
 import AccentPicker from "./AccentPicker";
 import {
   ALIGN_LABEL,
+  FONT_LABEL,
+  fontFor,
   availableTemplates,
   DEFAULT_ALIGN,
   type TextAlign,
@@ -81,6 +84,9 @@ export default function TemplatePicker() {
   const colorsFor = (t: typeof selected) =>
     resolveColors(t, design.variantId, design.customAccents?.[t.id]);
   const align: TextAlign = design.align ?? DEFAULT_ALIGN;
+  // 서체는 정렬처럼 템플릿을 바꿔도 남는 선택이다. 고를 수 있는 템플릿 견본에만 적용된다.
+  const fontOf = (t: typeof selected) => fontFor(t, design.templateId, design.font);
+  const font = fontOf(selected);
   const hasAccent = !!selected.variants && selected.variants.length > 0;
 
   // 가로 넘김 상태: 넘치는지, 양 끝에 닿았는지.
@@ -178,6 +184,7 @@ export default function TemplatePicker() {
                       photo={template.background === "photo" ? SAMPLE_PHOTO : null}
                       variant={colorsFor(template)}
                       align={template.alignable ? align : DEFAULT_ALIGN}
+                      font={fontOf(template)}
                     />
                   </div>
                 </div>
@@ -216,7 +223,7 @@ export default function TemplatePicker() {
         })}
       </div>
 
-      {(hasAccent || selected.alignable) && (
+      {(hasAccent || selected.alignable || selected.serifable) && (
         <div className="mt-4 max-w-sm mx-auto text-left glass-panel rounded-xl p-4 space-y-4">
           {hasAccent && (
             <AccentPicker
@@ -244,6 +251,30 @@ export default function TemplatePicker() {
                     }`}
                   >
                     {ALIGN_LABEL[option]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {selected.serifable && (
+            <div>
+              <span className="block text-white/70 text-xs font-korean-bold mb-2">서체</span>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="서체">
+                {(["sans", "serif"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={option === font}
+                    onClick={() => chooseFont(option)}
+                    className={`py-2 rounded-lg border text-sm transition-colors ${
+                      option === font
+                        ? "border-primary/50 bg-primary/10 text-white"
+                        : "border-white/10 text-white/60 hover:bg-white/5"
+                    }`}
+                    style={{ fontFamily: option === "serif" ? "'Maru Buri', serif" : undefined }}
+                  >
+                    {FONT_LABEL[option]}
                   </button>
                 ))}
               </div>

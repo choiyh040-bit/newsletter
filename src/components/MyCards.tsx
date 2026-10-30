@@ -10,7 +10,7 @@ import {
   type CardNewsEntry,
 } from "@/lib/cardNewsStore";
 import { formatWhen } from "@/lib/formatWhen";
-import { DEFAULT_ALIGN, resolveColors, templateById } from "@/lib/templates";
+import { DEFAULT_ALIGN, fontFor, resolveColors, templateById } from "@/lib/templates";
 
 /** 목록 썸네일 폭(px). 휴대폰(360px)에서 두 장이 나란히 들어간다. */
 const THUMB = 148;
@@ -44,6 +44,7 @@ function CoverThumb({ entry }: { entry: CardNewsEntry }) {
           photo={template.background === "photo" ? slidePhoto(cover, data) : null}
           variant={resolveColors(template, entry.variantId, entry.customAccents?.[template.id])}
           align={entry.align ?? DEFAULT_ALIGN}
+          font={fontFor(template, entry.templateId, entry.font)}
         />
       </div>
     </div>

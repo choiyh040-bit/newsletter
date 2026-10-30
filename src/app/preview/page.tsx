@@ -24,6 +24,7 @@ import {
   setCardNewsVariant,
   setCardNewsCustomAccent,
   setCardNewsAlign,
+  setCardNewsFont,
   updateCardNewsData,
   useCardNewsHistory,
   useIsHydrated,
@@ -34,6 +35,8 @@ import {
   templateById,
   resolveColors,
   ALIGN_LABEL,
+  FONT_LABEL,
+  fontFor,
   DEFAULT_ALIGN,
   type TextAlign,
 } from "@/lib/templates";
@@ -100,6 +103,7 @@ function PreviewContent() {
     entry?.customAccents?.[template.id]
   );
   const align: TextAlign = entry?.align ?? DEFAULT_ALIGN;
+  const font = fontFor(template, entry?.templateId, entry?.font);
   const Render = template.Render;
 
   const [editing, setEditing] = useState(false);
@@ -441,6 +445,7 @@ function PreviewContent() {
               photo={photoOf(i)}
               variant={variant}
               align={align}
+              font={font}
             />
           </div>
         ))}
@@ -508,6 +513,7 @@ function PreviewContent() {
                   photo={photo}
               variant={variant}
               align={align}
+              font={font}
                 />
               </div>
             </div>
@@ -638,6 +644,34 @@ function PreviewContent() {
                   <p className="text-white/30 text-xs mt-2 font-korean-reg">
                     본문이 길면 좌측이 읽기 좋습니다. 중앙은 짧고 단정적인 세트에 어울립니다.
                   </p>
+                </div>
+              )}
+
+              {/* 서체. 고를 수 있는 템플릿에서만. */}
+              {template.serifable && (
+                <div className="mt-5 pt-4 border-t border-white/5">
+                  <span className="block text-white/70 text-xs font-korean-bold mb-3">서체</span>
+                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="서체">
+                    {(["sans", "serif"] as const).map((option) => {
+                      const isCurrent = option === font;
+                      return (
+                        <button
+                          key={option}
+                          role="radio"
+                          aria-checked={isCurrent}
+                          onClick={() => entry && setCardNewsFont(entry.id, option)}
+                          className={`py-2 rounded-xl border text-sm transition-colors ${
+                            isCurrent
+                              ? "border-primary/50 bg-primary/10 text-primary font-korean-bold"
+                              : "border-white/10 text-white/70 hover:bg-white/5"
+                          }`}
+                          style={{ fontFamily: option === "serif" ? "'Maru Buri', serif" : undefined }}
+                        >
+                          {FONT_LABEL[option]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

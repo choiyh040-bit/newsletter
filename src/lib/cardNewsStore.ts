@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { normalizeCardNews, type CardNews } from "./cardnews";
 import { isHexColor } from "./templates/color";
-import type { TextAlign } from "./templates/types";
+import type { CardFont, TextAlign } from "./templates/types";
 import { isTone, type ToneId } from "./tone";
 
 /**
@@ -38,6 +38,8 @@ export interface CardNewsEntry {
   variantId?: string;
   /** 고른 정렬. 없으면 좌측으로 본다. */
   align?: TextAlign;
+  /** 고른 서체(고딕/명조). 없으면 템플릿 id 로 판단한다(`fontFor`). */
+  font?: CardFont;
   /**
    * 사용자가 직접 고른 강조색. **템플릿 id 별로** 둔다.
    * 있으면 색 조합의 강조색을 덮는다(바탕은 색 조합 그대로).
@@ -171,6 +173,7 @@ export interface DesignChoice {
   templateId?: string;
   variantId?: string;
   align?: TextAlign;
+  font?: CardFont;
   customAccents?: Record<string, string>;
   /** 글의 말투(`lib/tone.ts`). 디자인은 아니지만 "다음에 만들 때 쓸 선택"이라 함께 둔다. */
   tone?: ToneId;
@@ -214,6 +217,7 @@ function parseDesign(raw: string): DesignChoice {
     if (typeof v.templateId === "string") out.templateId = v.templateId;
     if (typeof v.variantId === "string") out.variantId = v.variantId;
     if (v.align === "left" || v.align === "center") out.align = v.align;
+    if (v.font === "sans" || v.font === "serif") out.font = v.font;
     if (isTone(v.tone)) out.tone = v.tone;
     const accents = cleanAccents(v.customAccents);
     if (accents) out.customAccents = accents;
@@ -250,6 +254,11 @@ export function chooseTone(tone: ToneId): void {
 
 export function chooseAlign(align: TextAlign): void {
   rememberDesign({ align });
+}
+
+/** 홈에서 서체(고딕/명조)를 고른다. */
+export function chooseFont(font: CardFont): void {
+  rememberDesign({ font });
 }
 
 /** 홈에서 색 조합을 고른다. 그 템플릿의 직접 고른 색은 지운다. */
@@ -358,6 +367,16 @@ export function setCardNewsAlign(id: string, align: TextAlign): void {
   rememberDesign({ align });
   const next = parseHistory(readRaw()).map((entry) =>
     entry.id === id ? { ...entry, align } : entry
+  );
+  writeHistory(next, id);
+  notify();
+}
+
+/** 고른 서체를 기억한다. 이유는 `setCardNewsTemplate` 와 같다. */
+export function setCardNewsFont(id: string, font: CardFont): void {
+  rememberDesign({ font });
+  const next = parseHistory(readRaw()).map((entry) =>
+    entry.id === id ? { ...entry, font } : entry
   );
   writeHistory(next, id);
   notify();

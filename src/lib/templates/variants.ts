@@ -71,6 +71,17 @@ export const CREAM_VARIANTS: readonly TemplateVariant[] = [
  * 분홍·노랑·형광 연두·민트에 흰색(강조 없이 담백하게)을 더했다.
  * `base` 는 견본 동그라미의 바탕일 뿐 카드 배경은 사진이다.
  */
+/**
+ * 검정 · 번호 정리의 강조색. 참고 게시물은 검정에 분홍이었다. 바탕은 거의 검정 하나.
+ */
+export const NUMBERED_VARIANTS: readonly TemplateVariant[] = [
+  { id: "numbered-pink", name: "분홍", base: "#0E0E10", neon: "#F0508C" },
+  { id: "numbered-blue", name: "파랑", base: "#0E0E10", neon: "#5B9BFF" },
+  { id: "numbered-lime", name: "형광 연두", base: "#0E0E10", neon: "#B5FF5A" },
+  { id: "numbered-orange", name: "주황", base: "#0E0E10", neon: "#FF8A3D" },
+  { id: "numbered-violet", name: "보라", base: "#0E0E10", neon: "#A78BFA" },
+];
+
 export const CAPTION_VARIANTS: readonly TemplateVariant[] = [
   { id: "caption-yellow", name: "노랑", base: "#2A2A2A", neon: "#FFE873" },
   { id: "caption-pink", name: "분홍", base: "#2A2A2A", neon: "#FFB3DA" },

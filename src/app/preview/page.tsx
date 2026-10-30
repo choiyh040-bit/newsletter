@@ -155,7 +155,7 @@ function PreviewContent() {
   const creditLines = (() => {
     if (!isPhotoTemplate || !data) return [] as string[];
     const seen = new Set<string>();
-    const photos = data.slides
+    const photos = (template.coverPhotoOnly ? data.slides.slice(0, 1) : data.slides)
       .map((sl) => slidePhoto(sl, data))
       .filter((p): p is NonNullable<typeof p> => !!p && !!photoCredit(p) && !seen.has(p.url) && !!seen.add(p.url));
     const lines: string[] = [];
@@ -694,8 +694,13 @@ function PreviewContent() {
                 </div>
               )}
 
-              {/* 사진 템플릿: 쓴 사진의 출처, 그리고 내 사진 올리기 */}
-              {template.background === "photo" && (
+              {/* 사진 템플릿: 쓴 사진의 출처, 그리고 내 사진 올리기. 표지에만 사진을 쓰는 템플릿은 표지에서만. */}
+              {template.background === "photo" && template.coverPhotoOnly && current > 0 && (
+                <p className="mt-5 pt-4 border-t border-white/5 text-white/40 text-xs font-korean-reg" data-cover-photo-note>
+                  이 디자인은 표지에만 사진을 씁니다. 사진은 1번째 장에서 바꿀 수 있습니다.
+                </p>
+              )}
+              {template.background === "photo" && !(template.coverPhotoOnly && current > 0) && (
                 <div className="mt-5 pt-4 border-t border-white/5">
                   <span className="block text-white/70 text-xs font-korean-bold mb-2">사진</span>
                   <p className="text-white/50 text-xs font-korean-reg mb-1">

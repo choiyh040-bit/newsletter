@@ -125,4 +125,9 @@ export interface Template {
    * 정체성이라, 바꾸면 다른 템플릿이 되어 버린다.
    */
   alignable?: boolean;
+  /**
+   * 사진을 표지에만 쓰는 사진 템플릿(검정 · 번호 정리). 캡션 끝 사진 출처에 화면에 안 나온
+   * 상세 장 사진까지 적지 않게 한다.
+   */
+  coverPhotoOnly?: boolean;
 }

@@ -35,6 +35,11 @@ const SHADOW = "0 0 2px rgba(0,0,0,0.6), 0 3px 12px rgba(0,0,0,0.5), 0 0 36px rg
  */
 const MARK_PLAIN: CSSProperties = { textShadow: "none", WebkitTextStroke: "0" };
 const SIDE = 80;
+/**
+ * 글 덩어리(제목)의 좌우 여백. 작은 줄(`SIDE`)보다 좁다. 제목이 폭에 걸려 작아지지 않게 칸을 넓혔다
+ * (2026-10-30 사용자: "제목과 내용 크기 차이가 많이 안 나서 애매하다"). 기울인 모양(-9°)도 카드 안에 든다.
+ */
+const HEAD_SIDE = 56;
 
 export default function PhotoCaption({ slide, accent, total, source, photo, variant }: TemplateProps) {
   const { neon } = variant ?? CAPTION_VARIANTS[0];
@@ -136,8 +141,8 @@ export default function PhotoCaption({ slide, accent, total, source, photo, vari
 function blockStyle(place: CaptionLook["place"]): CSSProperties {
   const base: CSSProperties = {
     position: "absolute",
-    left: SIDE,
-    right: SIDE,
+    left: HEAD_SIDE,
+    right: HEAD_SIDE,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -196,9 +201,10 @@ function Heading({
   const t = TYPE[look.id];
   const size = fitFontSize({
     lines,
-    width: CARD_WIDTH - SIDE * 2 - (look.id === "sticker" ? 40 : look.id === "band" ? 60 : 0),
-    height: isCover ? 560 : look.place === "middle" ? 520 : 440,
-    max: look.id === "sticker" ? 200 : look.id === "tall" ? 160 : look.id === "band" ? 92 : isCover ? 136 : 120,
+    width: CARD_WIDTH - HEAD_SIDE * 2 - (look.id === "sticker" ? 40 : look.id === "band" ? 60 : 0),
+    // 제목이 작은 줄의 3배 안팎은 돼야 "제목 - 내용"으로 읽힌다. 전에는 2~3.4배라 애매했다(2026-10-30).
+    height: isCover ? 640 : look.place === "middle" ? 620 : 540,
+    max: look.id === "sticker" ? 230 : look.id === "tall" ? 200 : look.id === "band" ? 112 : isCover ? 190 : 170,
     min: look.id === "band" ? 56 : 64,
     lineHeight: t.lineHeight,
     charWidth: t.charWidth,
@@ -325,8 +331,9 @@ function Small({ look, lines, neon }: { look: CaptionLook; lines: TextLine[]; ne
     lines,
     width: CARD_WIDTH - SIDE * 2,
     height: 230,
-    max: look.id === "tall" ? 54 : 44,
-    min: 32,
+    // 제목과 크기 차이를 벌리려고 조금 줄였다(44 → 38, 좁은 고딕 54 → 46). 한 줄짜리 보조 문장이라 충분히 읽힌다.
+    max: look.id === "tall" ? 46 : 38,
+    min: 30,
     lineHeight: 1.45,
     charWidth: look.id === "tall" ? 0.8 : 0.97,
   });

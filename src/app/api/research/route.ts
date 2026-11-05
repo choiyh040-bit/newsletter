@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { pickOfficial } from "@/lib/officialSite";
 import { pressName } from "@/lib/pressNames";
 import { isTone, type ToneId } from "@/lib/tone";
 import {
@@ -119,10 +120,10 @@ async function resolveLinks(
     })
   );
   const seen = new Set<string>();
-  return settled
-    .filter((l): l is Link => !!l && !seen.has(l.url) && !!seen.add(l.url))
-    .slice(0, MAX_LINKS);
+  // 몇 개를 쓸지는 부르는 쪽이 정한다(`MAX_LINKS`). 홍보형은 이 후보 중 공식 사이트를 고른다.
+  return settled.filter((l): l is Link => !!l && !seen.has(l.url) && !!seen.add(l.url));
 }
+
 
 /**
  * 오늘 날짜(한국 시간). 모델은 오늘이 언제인지 모른다. 알려 주지 않으면 "가을 패션 트렌드"처럼
@@ -153,6 +154,7 @@ function promoPrompt(subject: string, today: { label: string; year: string }): s
   개인 후기·블로그의 주관적 평가는 적지 마세요.
 - 짧은 사실 단위로, 서로 겹치지 않게 여덟 개 이상 모으세요.
 - 맨 끝에 "출처:" 줄을 두고 근거로 삼은 곳(공식 사이트 이름 등)을 적으세요.
+- 공식 홈페이지를 확인했으면 그 아래 "공식 사이트: 주소" 한 줄을 적으세요. 확인하지 못했으면 쓰지 마세요.
 - 평문 목록으로 ${RESEARCH_MAX_CHARS / 2}자 이내. 머리말이나 맺음말은 쓰지 마세요.`;
 }
 
@@ -204,7 +206,10 @@ async function research(
   if (!grounding?.groundingChunks?.length && !grounding?.webSearchQueries?.length) {
     console.warn(`[research] ${model}: 검색 근거 표시 없음 (답은 받음)`);
   }
-  const links = await resolveLinks(grounding?.groundingChunks ?? []);
+  const resolved = await resolveLinks(grounding?.groundingChunks ?? []);
+  const links = (
+    tone === "promo" ? await pickOfficial(text, resolved, { notSource: NOT_A_SOURCE, timeoutMs: RESOLVE_TIMEOUT_MS }) : resolved
+  ).slice(0, MAX_LINKS);
   console.info(
     `[research] ${model}: 출처 주소 ${links.length}개 (근거 ${grounding?.groundingChunks?.length ?? 0}개 중)`
   );

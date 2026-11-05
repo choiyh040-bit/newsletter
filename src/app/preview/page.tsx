@@ -183,17 +183,35 @@ function PreviewContent() {
     });
   };
 
-  // 내 사진 올리기(지금 보는 장). 아이스탁처럼 프로그램이 가져올 수 없는 곳의 사진.
+  // 내 사진 올리기. 아이스탁처럼 프로그램이 가져올 수 없는 곳의 사진, 그리고 내 가게·제품 사진.
+  // **여러 장을 고르면 지금 보는 장부터 순서대로** 넣는다(2026-11-05: 홍보형은 자동 사진이 제품과 안 맞을 때가
+  // 많아 한 장씩 올리기가 번거로웠다). 장이 모자라면 남는 사진은 넣지 않고 알린다.
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const uploadPhoto = async (file: File | undefined) => {
-    if (!file || !data) return;
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
+  const uploadPhotos = async (fileList: FileList | null) => {
+    // 바로 복사한다. 부르는 쪽이 입력칸을 비우면(e.target.value = "") 같은 FileList 가 0장이 된다.
+    const files = fileList ? [...fileList] : [];
+    if (!files.length || !data || !entry) return;
     setUploadError(null);
+    setUploadNote(null);
+    const room = template.coverPhotoOnly ? (current === 0 ? 1 : 0) : data.slides.length - current;
+    const picked = files.slice(0, room);
     try {
-      const url = await toCardJpeg(file);
-      updateSlide((sl) => ({
-        ...sl,
-        userPhoto: { url, credit: "직접 올린 사진", license: "사용자 제공", pageUrl: "", source: "upload" },
-      }));
+      // 한 장씩 차례로 줄인다. 한꺼번에 하면 휴대폰에서 메모리가 모자랄 수 있다.
+      const urls: string[] = [];
+      for (const file of picked) urls.push(await toCardJpeg(file));
+      updateCardNewsData(entry.id, {
+        ...data,
+        slides: data.slides.map((sl, i) =>
+          i >= current && i < current + urls.length
+            ? { ...sl, userPhoto: { url: urls[i - current], credit: "직접 올린 사진", license: "사용자 제공", pageUrl: "", source: "upload" } }
+            : sl
+        ),
+      });
+      if (urls.length > 1) setUploadNote(`${current + 1}~${current + urls.length}번째 장에 사진 ${urls.length}장을 넣었습니다.`);
+      if (files.length > urls.length) {
+        setUploadNote((n) => `${n ? n + " " : ""}장이 모자라 ${files.length - urls.length}장은 넣지 않았습니다.`);
+      }
     } catch {
       setUploadError("사진을 읽지 못했습니다. JPG·PNG 사진인지 확인해 주세요.");
     }
@@ -773,9 +791,10 @@ function PreviewContent() {
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
+                        multiple={!template.coverPhotoOnly}
                         className="hidden"
                         onChange={(e) => {
-                          void uploadPhoto(e.target.files?.[0]);
+                          void uploadPhotos(e.target.files);
                           e.target.value = "";
                         }}
                       />
@@ -791,8 +810,11 @@ function PreviewContent() {
                     )}
                   </div>
                   <p className="text-white/30 text-xs mt-2 font-korean-reg leading-relaxed">
-                    아이스탁 등에서 직접 받은 사진을 쓸 때. 사용 권한은 올리는 분이 확인해 주세요.
+                    내 가게·제품 사진이나 직접 받은 사진을 쓸 때.
+                    {!template.coverPhotoOnly && " 여러 장을 고르면 이 장부터 순서대로 들어갑니다."} 사용 권한은 올리는 분이
+                    확인해 주세요.
                   </p>
+                  {uploadNote && <p className="text-primary text-xs mt-2 font-korean-reg" data-upload-note>{uploadNote}</p>}
                   {uploadError && <p className="text-red-400 text-xs mt-2 font-korean-reg">{uploadError}</p>}
                 </div>
               )}

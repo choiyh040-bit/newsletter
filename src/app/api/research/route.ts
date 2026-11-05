@@ -207,9 +207,10 @@ async function research(
     console.warn(`[research] ${model}: 검색 근거 표시 없음 (답은 받음)`);
   }
   const resolved = await resolveLinks(grounding?.groundingChunks ?? []);
-  const links = (
-    tone === "promo" ? await pickOfficial(text, resolved, { notSource: NOT_A_SOURCE, timeoutMs: RESOLVE_TIMEOUT_MS }) : resolved
-  ).slice(0, MAX_LINKS);
+  // 홍보형은 확인된 공식 사이트만 링크로 쓴다. 없으면 비운다(캡션에 "자세히 보기" 줄이 안 붙는다).
+  const official =
+    tone === "promo" ? await pickOfficial(text, resolved, { notSource: NOT_A_SOURCE, timeoutMs: RESOLVE_TIMEOUT_MS }) : null;
+  const links = tone === "promo" ? (official ? [official] : []) : resolved.slice(0, MAX_LINKS);
   console.info(
     `[research] ${model}: 출처 주소 ${links.length}개 (근거 ${grounding?.groundingChunks?.length ?? 0}개 중)`
   );

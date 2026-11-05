@@ -15,7 +15,7 @@ import { DEFAULT_TONE } from "@/lib/tone";
  * 넘지 못하게 막는다. 자료를 다 모으기 전에 "캡션 작성 중"이 뜨면 거짓말이다.
  */
 const STAGES = {
-  research: { cap: 45, messages: ["기사 본문 확인 중...", "최신 사실 관계 검색 중..."] },
+  research: { cap: 45, messages: ["자료 확인 중...", "최신 정보 검색 중..."] },
   generate: {
     cap: 95,
     messages: ["카드 구성 설계 중...", "문장 다시 쓰는 중...", "줄바꿈 다듬는 중...", "캡션과 해시태그 작성 중..."],
@@ -113,7 +113,8 @@ function LoadingContent() {
         // 요청을 둘로 나눈 것은 시간 제한 때문이다. 한 요청에서 검색과
         // 생성을 다 하면 합이 서버의 55초 예산을 넘었다. 요청마다 예산이
         // 따로이므로 나누면 단계마다 온전히 쓴다.
-        const material = await call("/api/research", { keyword, url });
+        // 말투도 자료 모으기에 넘긴다. 홍보형이면 기사가 아니라 제품·서비스 정보를 모은다(2026-11-05).
+        const material = await call("/api/research", { keyword, url, tone: readDesignChoice().tone ?? DEFAULT_TONE });
 
         currentStage = "generate";
         currentProgress = Math.max(currentProgress, STAGES.research.cap);

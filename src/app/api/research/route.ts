@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { pressName } from "@/lib/pressNames";
+import { isTone, type ToneId } from "@/lib/tone";
 import {
   client,
   failure,
@@ -133,15 +134,38 @@ function todayKST(now = new Date()): { label: string; year: string } {
   return { label: `${get("year")}년 ${get("month")} ${get("day")}일`, year: get("year") };
 }
 
+/**
+ * 홍보형 자료 모으기. 홍보형은 키워드·주소가 **홍보할 대상**(제품·서비스·가게·행사)이다. 기사를 찾아 사실을
+ * 정리하면 홍보글이 아니라 기사 요약이 된다(2026-11-05 사용자: "기사 검색이 홍보에도 적용돼 남았다").
+ */
+function promoPrompt(subject: string, today: { label: string; year: string }): string {
+  return `Google 검색으로 다음 제품·서비스·가게·행사에 대한 정보를 찾아, 홍보 카드뉴스의 근거로 쓸 사실을 정리하세요.
+
+오늘은 ${today.label}입니다.
+홍보할 대상: ${subject}
+
+- **답하기 전에 반드시 Google 검색 도구를 실행하세요.** 기억에 의존해 답하지 마세요.
+- **공식 홈페이지·공식 안내**를 먼저 보고, 없으면 믿을 만한 소개 기사를 보세요.
+- 이런 것을 모으세요: 무엇인지(한 줄 소개), 특징·장점, 누구에게 좋은지, 가격·요금, 기간·운영 시간,
+  위치·찾아가는 법, 신청·구매·예약 방법, 혜택·이벤트.
+- 행사·이벤트처럼 기간이 있는 것은 **${today.year}년 것**을 쓰세요. 지난 행사는 쓰지 마세요.
+- 확인된 사실만 적으세요. 효능·순위·"최초/최대" 같은 말은 공식 자료에 있을 때만 적고, 없으면 빼세요.
+  개인 후기·블로그의 주관적 평가는 적지 마세요.
+- 짧은 사실 단위로, 서로 겹치지 않게 여덟 개 이상 모으세요.
+- 맨 끝에 "출처:" 줄을 두고 근거로 삼은 곳(공식 사이트 이름 등)을 적으세요.
+- 평문 목록으로 ${RESEARCH_MAX_CHARS / 2}자 이내. 머리말이나 맺음말은 쓰지 마세요.`;
+}
+
 async function research(
   model: string,
   subject: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  tone: ToneId = "news"
 ): Promise<{ text: string; links: Link[] }> {
   const today = todayKST();
   const response = await client().models.generateContent({
     model,
-    contents: `Google 검색으로 다음 주제의 최신 한국 기사를 찾아, 카드뉴스의 근거로 쓸 사실을 정리하세요.
+    contents: tone === "promo" ? promoPrompt(subject, today) : `Google 검색으로 다음 주제의 최신 한국 기사를 찾아, 카드뉴스의 근거로 쓸 사실을 정리하세요.
 
 오늘은 ${today.label}입니다.
 주제: ${subject}
@@ -191,11 +215,13 @@ export async function POST(request: Request) {
   const left = startBudget();
   let keyword: string;
   let url: string;
+  let tone: ToneId;
 
   try {
     const body = await request.json();
     keyword = typeof body.keyword === "string" ? body.keyword.trim() : "";
     url = typeof body.url === "string" ? body.url.trim() : "";
+    tone = isTone(body.tone) ? body.tone : "news";
   } catch {
     return Response.json({ error: "요청 본문을 읽을 수 없습니다." }, { status: 400 });
   }
@@ -210,21 +236,23 @@ export async function POST(request: Request) {
   const article = url ? await readArticle(url) : "";
   // 본문을 못 읽었는데 키워드도 없으면 검색할 거리가 없다. 그럴 때는 주소
   // 자체를 준다. "입력된 기사 내용 요약" 같은 문구로는 아무것도 못 찾는다.
-  const subject = keyword || (article ? "아래 기사 본문의 내용" : url);
+  const promo = tone === "promo";
+  const subject = keyword || (article ? (promo ? "아래 소개 페이지의 제품·서비스" : "아래 기사 본문의 내용") : url);
 
   if (article) {
-    console.info(`[research] 기사 본문 ${article.length}자를 읽었습니다. 검색하지 않습니다.`);
+    console.info(`[research] ${promo ? "소개 페이지" : "기사 본문"} ${article.length}자를 읽었습니다. 검색하지 않습니다.`);
     // 출처 주소는 모델에게 받아 적게 하지 않고 **서버가 아는 주소**를 붙인다.
     // 모델은 주소를 지어낸다. 기사 URL 로 만든 경우 그 URL 이 곧 출처다.
     const links: Link[] = [{ name: pressName(url) ?? new URL(url).hostname.replace(/^www\./, ""), url }];
-    return Response.json({ subject, material: "기사 본문", evidence: article, links });
+    // 홍보형이면 주소는 기사가 아니라 홍보할 대상의 소개 페이지다.
+    return Response.json({ subject, material: promo ? "소개 페이지" : "기사 본문", evidence: article, links });
   }
   if (url) console.warn("[research] 기사 본문을 읽지 못해 검색으로 자료를 모읍니다:", url);
 
   try {
     // 검색은 flash 부터 쓴다. lite 는 출처 주소를 주지 않는다(gemini.ts 의 Tier).
     const { text: evidence, links } = await withFallback(
-      (model, signal) => research(model, subject, signal),
+      (model, signal) => research(model, subject, signal, tone),
       left,
       "검색",
       "flash"

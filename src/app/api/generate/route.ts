@@ -27,10 +27,24 @@ const RETRY_NEEDS_MS = 22_000;
 /** 받아 줄 자료의 최대 길이. 수집 단계가 자르는 선과 같다. */
 const EVIDENCE_MAX_CHARS = 6_000;
 
-const MATERIALS = ["기사 본문", "검색 자료"] as const;
+const MATERIALS = ["기사 본문", "검색 자료", "소개 페이지"] as const;
 
-/** 생성에 넘기는 근거가 무엇인지. 문구만 다르고 규칙은 같다. */
-type Material = "기사 본문" | "검색 자료";
+/** 생성에 넘기는 근거가 무엇인지. 문구만 다르고 규칙은 같다. "소개 페이지"는 홍보형에 주소를 넣었을 때. */
+type Material = (typeof MATERIALS)[number];
+
+/**
+ * 홍보형 구성. 홍보형은 기사 요약이 아니라 **키워드·주소가 가리키는 대상을 소개하고 권하는 글**이다
+ * (2026-11-05 사용자). 사실 규칙은 그대로다: 자료에 없는 효능·수치·최상급은 쓰지 않는다.
+ */
+const PROMO_RULES = `
+[홍보형 — 이 세트는 기사 요약이 아니라 홍보글입니다. 아래가 [구성]·[캡션]보다 우선합니다]
+- 키워드·자료가 가리키는 **제품·서비스·가게·행사**를 소개하고 권하는 글입니다. 뉴스처럼 "~라고 밝혔다", "~할 예정이다"로 전하지 마세요.
+- 표지: 무엇인지 + 가장 끌리는 점 하나. 읽는 사람이 "나한테 필요하겠다"고 느끼게.
+- 상세: 장마다 하나씩 — 특징·장점, 누구에게 좋은지, 가격·기간·위치, 이용·신청·구매 방법, 혜택. 자료에 있는 것만.
+  sub 예: "특징", "이런 분께", "가격", "이용 방법", "혜택"
+- 마무리: 방문·신청·구매를 권하며 끝냅니다.
+- 캡션: 소개로 시작해 핵심 정보(기간·가격·방법)를 정리하고 행동을 권하세요. "OO일보 보도에 따르면"처럼 보도를 인용하지 마세요.
+`;
 
 /**
  * 말투마다 바뀌는 문장 규칙과 마무리 장 규칙. **사실 규칙은 말투와 상관없이 같다.**
@@ -108,6 +122,7 @@ ${article}
 - **기사에 없는 평가·감탄을 보태지 마세요.** 사실은 맞는데 말투만 과장되는 것도
   지어내는 것입니다. "무려", "완승", "압도적", "역대급" 같은 말을 쓰지 마세요.
 
+${tone === "promo" ? PROMO_RULES : ""}
 [문장 규칙]
 - 기사 문장을 그대로 옮기지 말고 반드시 새 문장으로 다시 쓰세요.
 - 직접인용은 15단어 미만으로, 세트 전체에서 최대 한 번만 쓰세요.
@@ -307,9 +322,10 @@ async function finish(
   { result, imageQuery, slideQueries }: Generated,
   links: CardNewsSource[],
   material: Material,
-  left: () => number
+  left: () => number,
+  tone: ToneId = DEFAULT_TONE
 ): Promise<CardNews> {
-  const withSrc = withSources(result, links, material);
+  const withSrc = withSources(result, links, material, tone);
   const withQuery = imageQuery ? { ...withSrc, photoQuery: imageQuery } : withSrc;
   const room = Math.min(PHOTO_MAX_MS, left() - 3_000);
   if (room < 1_500) return withQuery;
@@ -342,12 +358,12 @@ async function finish(
  * (그 주소가 바로 그 기사다). 키워드 검색이면 모델이 적은 매체명과 첫 주소의
  * 기사가 서로 다를 수 있어서, 이름도 주소 쪽(검색 근거의 사이트명)을 쓴다.
  */
-function withSources(result: CardNews, links: CardNewsSource[], material: Material): CardNews {
+function withSources(result: CardNews, links: CardNewsSource[], material: Material, tone: ToneId = DEFAULT_TONE): CardNews {
   if (links.length === 0) return { ...result, source: result.source && { ...result.source, url: "" } };
   const [first] = links;
   // 아는 언론사면 표의 한글 이름(`pressNames.ts`)을 먼저 쓴다.
   const name =
-    pressName(first.url) ?? (material === "기사 본문" && result.source?.name ? result.source.name : first.name);
+    pressName(first.url) ?? (material !== "검색 자료" && result.source?.name ? result.source.name : first.name);
   // 목록 첫 줄도 같은 이름으로 맞춘다. 안 그러면 기사 URL 로 만든 결과가
   // 출처 목록에 매체명 대신 사이트 주소(도메인)로 나온다.
   const sources = [{ name, url: first.url }, ...links.slice(1)];
@@ -355,7 +371,7 @@ function withSources(result: CardNews, links: CardNewsSource[], material: Materi
   // 올라가게 하려는 것이다(사용자 요청). 매체명은 모델이 캡션 흐름 안에서
   // 말하고("부산일보 보도에 따르면"), 주소는 서버가 붙인다. 주소를 모델에게
   // 쓰게 하면 지어낸다.
-  const caption = [result.caption.trim(), sources.map((s) => `출처: ${s.name} ${s.url}`).join("\n")]
+  const caption = [result.caption.trim(), sources.map((s) => `${tone === "promo" ? "자세히 보기" : "출처"}: ${s.name} ${s.url}`).join("\n")]
     .filter(Boolean)
     .join("\n\n");
   return { ...result, caption, source: { name, url: first.url }, sources };
@@ -405,7 +421,7 @@ export async function POST(request: Request) {
   // 형식 문제로만 한 번 더 시도하고, 그래도 실패하면 오류로 돌려준다.
   try {
     const generated = await withFallback(generate(prompt), left, "생성", "flash");
-    return Response.json(await finish(generated, links, material, left));
+    return Response.json(await finish(generated, links, material, left, tone));
   } catch (firstError) {
     console.warn("[generate] 1차 실패:", firstError);
 
@@ -416,7 +432,7 @@ export async function POST(request: Request) {
     try {
       const stricter = `${prompt}\n\n[재시도 안내]\n직전 응답이 형식에 맞지 않았습니다. 여는 중괄호로 시작해 닫는 중괄호로 끝나는 JSON 하나만, 다른 글자 없이 출력하세요. 슬라이드는 반드시 ${MIN_SLIDES}~${GENERATED_MAX_SLIDES}장입니다.`;
       const generated = await withFallback(generate(stricter), left, "재시도", "flash");
-      return Response.json(await finish(generated, links, material, left));
+      return Response.json(await finish(generated, links, material, left, tone));
     } catch (error) {
       console.error("[generate] 최종 실패:", error);
       return failure(error, "카드뉴스 생성");

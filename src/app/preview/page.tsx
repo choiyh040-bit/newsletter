@@ -292,8 +292,11 @@ function PreviewContent() {
   }, [next, prev, total]);
 
   // 출처 목록. 예전 결과에는 `sources` 가 없으므로 `source` 하나로 대신한다.
-  const sourceList =
-    data?.sources && data.sources.length > 0 ? data.sources : data?.source ? [data.source] : [];
+  // 홍보형은 "출처"가 아니라 공식 사이트(자세히 보기)다. 확인된 주소가 없으면 칸을 숨긴다(2026-11-05).
+  const isPromo = entry?.tone === "promo";
+  const sourceList = (
+    data?.sources && data.sources.length > 0 ? data.sources : data?.source ? [data.source] : []
+  ).filter((src) => !isPromo || !!src.url);
 
   const copy = async (target: CopyTarget) => {
     if (!data) return;
@@ -895,7 +898,7 @@ function PreviewContent() {
             {sourceList.length > 0 && (
               <div className="glass-panel p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-white font-korean-bold text-sm">출처</h4>
+                  <h4 className="text-white font-korean-bold text-sm">{isPromo ? "자세히 보기" : "출처"}</h4>
                   {sourceList.some((src) => src.url) && (
                     <button
                       onClick={() => copy("sources")}
@@ -929,8 +932,9 @@ function PreviewContent() {
                   ))}
                 </ul>
                 <p className="text-white/40 text-xs mt-3 leading-relaxed font-korean-reg">
-                  기사 원문을 그대로 옮기지 않고 다시 쓴 내용입니다. 게시 전에 사실 관계를
-                  한 번 더 확인하세요.
+                  {isPromo
+                    ? "공식 안내를 바탕으로 쓴 홍보글입니다. 게시 전에 가격·기간·장소를 한 번 더 확인하세요."
+                    : "기사 원문을 그대로 옮기지 않고 다시 쓴 내용입니다. 게시 전에 사실 관계를 한 번 더 확인하세요."}
                 </p>
               </div>
             )}

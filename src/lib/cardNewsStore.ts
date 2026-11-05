@@ -40,6 +40,8 @@ export interface CardNewsEntry {
   align?: TextAlign;
   /** 고른 서체(고딕/명조). 없으면 템플릿 id 로 판단한다(`fontFor`). */
   font?: CardFont;
+  /** 만들 때 고른 말투. 저장할 때 디자인 선택과 함께 들어간다(`saveCardNews`). 미리보기가 홍보형인지 볼 때 쓴다. */
+  tone?: ToneId;
   /**
    * 사용자가 직접 고른 강조색. **템플릿 id 별로** 둔다.
    * 있으면 색 조합의 강조색을 덮는다(바탕은 색 조합 그대로).

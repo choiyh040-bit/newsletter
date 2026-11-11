@@ -82,7 +82,7 @@ export default function LandingPage() {
         <div className="flex justify-between items-center gap-2 px-4 md:px-12 h-16 w-full max-w-7xl mx-auto">
           <Link href="/" className="flex items-center gap-2 md:gap-2.5 hover:opacity-80 transition-opacity whitespace-nowrap">
             <div className="w-8 h-8 rounded-xl cta-gradient flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span translate="no" className="material-symbols-outlined notranslate text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 auto_awesome
               </span>
             </div>
@@ -150,7 +150,7 @@ export default function LandingPage() {
             <div className="relative w-full max-w-2xl mx-auto">
               <div className="relative flex items-center glass-panel p-2 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors"
                 style={{ boxShadow: "0 0 40px rgba(59,130,246,0.12)" }}>
-                <span className="material-symbols-outlined ml-2 md:ml-4 text-primary/70">search</span>
+                <span translate="no" className="material-symbols-outlined notranslate ml-2 md:ml-4 text-primary/70">search</span>
                 <input
                   id="query-input"
                   className="w-full min-w-0 bg-transparent border-none focus:ring-0 text-white placeholder-white/30 font-korean-reg px-1.5 md:px-4 py-3 outline-none text-[15px]"
@@ -171,7 +171,7 @@ export default function LandingPage() {
                   <span className="hidden md:inline">생성하기</span>
                   {/* 아이콘 서체 CSS 가 display 를 덮어써서 hidden 이 안 먹는다. 감싸서 숨긴다. */}
                   <span className="hidden md:inline-flex">
-                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                    <span translate="no" className="material-symbols-outlined notranslate text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                   </span>
                 </button>
               </div>
@@ -184,7 +184,7 @@ export default function LandingPage() {
                   data-my-link
                   className="inline-flex items-center gap-1.5 mt-3 px-3.5 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-korean-bold hover:bg-primary/20 transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[16px]">history</span>
+                  <span translate="no" className="material-symbols-outlined notranslate text-[16px]">history</span>
                   내 카드뉴스 {history.length}건 보기 →
                 </Link>
               )}
@@ -211,7 +211,7 @@ export default function LandingPage() {
         <section id="features" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel mb-4">
-              <span className="material-symbols-outlined text-primary text-[14px]">auto_awesome</span>
+              <span translate="no" className="material-symbols-outlined notranslate text-primary text-[14px]">auto_awesome</span>
               <span className="text-white/70 text-xs font-medium">핵심 기능</span>
             </div>
             <h2 className="font-korean-bold text-3xl md:text-5xl text-white mb-4">인스타그램에 집중합니다</h2>
@@ -228,7 +228,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}>
-                  <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
+                  <span translate="no" className="material-symbols-outlined notranslate text-white" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
                 </div>
                 <div>
                   <h3 className="font-korean-bold text-white text-xl">Instagram 카드뉴스</h3>
@@ -252,7 +252,7 @@ export default function LandingPage() {
                 {["키워드로 최신 기사 검색", "기사 URL이면 본문까지 읽어옴", "디자인은 만든 뒤에도 바로 바꾸기", "표지 + 상세 + 마무리 자동 구성", "캡션 + 해시태그 + 출처 자동 작성", "PNG 한 장씩 또는 전체 ZIP으로 저장"].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-white/70 text-sm">
                     {/* 동그라미 없이 체크만(2026-10-16 사용자 지정 색). */}
-                    <span className="material-symbols-outlined flex-shrink-0 text-[20px] leading-none" style={{ color: "#D1F9FF" }}>check</span>
+                    <span translate="no" className="material-symbols-outlined notranslate flex-shrink-0 text-[20px] leading-none" style={{ color: "#D1F9FF" }}>check</span>
                     {item}
                   </li>
                 ))}
@@ -276,7 +276,7 @@ export default function LandingPage() {
             ].map((step) => (
               <div key={step.num} className="glass-panel p-8 border border-white/8 hover:border-white/15 transition-all text-center group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform shadow-lg`}>
-                  <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>{step.icon}</span>
+                  <span translate="no" className="material-symbols-outlined notranslate text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>{step.icon}</span>
                 </div>
                 <div className="text-primary/40 font-mono text-xs font-bold mb-2">{step.num}</div>
                 <h3 className="font-korean-bold text-white text-xl mb-3">{step.title}</h3>
@@ -319,7 +319,7 @@ export default function LandingPage() {
             ].map(({ icon, title, desc }) => (
               <div key={title} className="glass-panel p-6">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-primary text-xl">{icon}</span>
+                  <span translate="no" className="material-symbols-outlined notranslate text-primary text-xl">{icon}</span>
                 </div>
                 <h4 className="font-korean-bold text-white text-base mb-2">{title}</h4>
                 <p className="text-white/50 text-sm leading-relaxed font-korean-reg"><Lines lines={desc} /></p>
@@ -361,7 +361,7 @@ export default function LandingPage() {
         <div className="flex flex-col md:flex-row justify-between items-center px-6 md:px-12 gap-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg cta-gradient flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+              <span translate="no" className="material-symbols-outlined notranslate text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
             </div>
             <span className="font-korean-bold text-white text-base">CardGen AI</span>
           </div>

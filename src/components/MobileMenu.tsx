@@ -47,7 +47,7 @@ export default function MobileMenu({ extra = [] }: { extra?: MenuItem[] }) {
         onClick={() => setOpen((v) => !v)}
         className="w-10 h-10 rounded-xl flex items-center justify-center text-white/80 hover:bg-white/5"
       >
-        <span className="material-symbols-outlined text-[26px]">
+        <span translate="no" className="material-symbols-outlined notranslate text-[26px]">
           {open ? "close" : "menu"}
         </span>
       </button>

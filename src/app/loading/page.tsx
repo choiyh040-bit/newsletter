@@ -204,7 +204,7 @@ function LoadingContent() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6 text-center">
         <div className="w-20 h-20 rounded-2xl glass-panel flex items-center justify-center">
-          <span className="material-symbols-outlined text-red-400 text-4xl">error</span>
+          <span translate="no" className="material-symbols-outlined notranslate text-red-400 text-4xl">error</span>
         </div>
         <h2 className="font-korean-bold text-2xl text-white">
           {isTimeout
@@ -252,12 +252,12 @@ function LoadingContent() {
         <nav className="flex justify-between items-center gap-3 px-4 md:px-12 h-full max-w-7xl mx-auto whitespace-nowrap">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="w-7 h-7 rounded-lg cta-gradient flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+              <span translate="no" className="material-symbols-outlined notranslate text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
             </div>
             <span className="font-korean-bold text-white text-base">CardGen AI</span>
           </Link>
           <div className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full glass-panel">
-            <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <span translate="no" className="material-symbols-outlined notranslate text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
               photo_camera
             </span>
             <span className="text-white/60 text-xs font-medium">
@@ -324,7 +324,7 @@ function LoadingContent() {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span
-                  className="material-symbols-outlined text-4xl animate-pulse"
+                  translate="no" className="material-symbols-outlined notranslate text-4xl animate-pulse"
                   style={{
                     fontVariationSettings: "'FILL' 1",
                     color: "#5b9bff",

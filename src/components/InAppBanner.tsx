@@ -46,7 +46,7 @@ export default function InAppBanner() {
       data-inapp-banner
       className="relative z-20 max-w-2xl mx-auto mb-6 glass-panel rounded-2xl border border-primary/30 px-4 py-3 text-left flex items-start gap-3"
     >
-      <span className="material-symbols-outlined text-primary text-[20px] mt-0.5 flex-shrink-0">open_in_browser</span>
+      <span translate="no" className="material-symbols-outlined notranslate text-primary text-[20px] mt-0.5 flex-shrink-0">open_in_browser</span>
       <div className="flex-1 min-w-0">
         <p className="text-white/85 text-sm font-korean-reg leading-relaxed">
           {app} 안에서 열렸어요. <strong className="text-white">크롬·사파리로 열면</strong> 카드를 ZIP 으로 한 번에
@@ -63,7 +63,7 @@ export default function InAppBanner() {
         )}
       </div>
       <button onClick={close} aria-label="안내 닫기" className="text-white/40 hover:text-white/80 flex-shrink-0 -mr-1">
-        <span className="material-symbols-outlined text-[18px]">close</span>
+        <span translate="no" className="material-symbols-outlined notranslate text-[18px]">close</span>
       </button>
     </div>
   );

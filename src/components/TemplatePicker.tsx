@@ -160,7 +160,8 @@ export default function TemplatePicker() {
                 }`}
               >
                 <div
-                  className="relative overflow-hidden rounded-lg pointer-events-none"
+                  className="relative overflow-hidden rounded-lg pointer-events-none notranslate"
+                  translate="no"
                   style={{ width: THUMB_WIDTH, height: CARD_HEIGHT * SCALE }}
                   aria-hidden
                 >
@@ -217,7 +218,7 @@ export default function TemplatePicker() {
                 side === "left" ? "-left-5" : "-right-5"
               } w-9 h-9 rounded-full bg-surface/90 border border-white/15 items-center justify-center text-white/80 hover:bg-white/10 disabled:opacity-0 transition-opacity`}
             >
-              <span className="material-symbols-outlined text-xl">{side === "left" ? "chevron_left" : "chevron_right"}</span>
+              <span translate="no" className="material-symbols-outlined notranslate text-xl">{side === "left" ? "chevron_left" : "chevron_right"}</span>
             </button>
           );
         })}

@@ -37,7 +37,7 @@ function Card({ templateId, width }: { templateId: string; width: number }) {
   const Render = template.Render;
   const scale = width / CARD_WIDTH;
   return (
-    <div className="relative overflow-hidden pointer-events-none" style={{ width, height: CARD_HEIGHT * scale }} aria-hidden>
+    <div className="relative overflow-hidden pointer-events-none notranslate" translate="no" style={{ width, height: CARD_HEIGHT * scale }} aria-hidden>
       <div
         style={{
           transform: `scale(${scale})`,

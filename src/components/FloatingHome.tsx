@@ -13,7 +13,7 @@ export default function FloatingHome() {
       className="fixed bottom-8 right-8 z-[9999] bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-4 ring-blue-500/30"
       title="홈으로 돌아가기"
     >
-      <span className="material-symbols-outlined text-3xl font-bold">home</span>
+      <span translate="no" className="material-symbols-outlined notranslate text-3xl font-bold">home</span>
     </Link>
   );
 }

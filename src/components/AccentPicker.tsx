@@ -74,7 +74,7 @@ export default function AccentPicker({ template, current, onPreset, onCustom }: 
               style={{ background: current!.neon }}
             />
           ) : (
-            <span className="material-symbols-outlined text-white text-[16px] drop-shadow">
+            <span translate="no" className="material-symbols-outlined notranslate text-white text-[16px] drop-shadow">
               colorize
             </span>
           )}

@@ -24,7 +24,7 @@ function CoverThumb({ entry }: { entry: CardNewsEntry }) {
   const cover = data.slides[0];
   if (!cover) return null;
   return (
-    <div className="relative overflow-hidden rounded-lg pointer-events-none" style={{ width: THUMB, height: CARD_HEIGHT * SCALE }} aria-hidden>
+    <div className="relative overflow-hidden rounded-lg pointer-events-none notranslate" translate="no" style={{ width: THUMB, height: CARD_HEIGHT * SCALE }} aria-hidden>
       <div
         style={{
           transform: `scale(${SCALE})`,
@@ -112,7 +112,7 @@ export default function MyCards() {
                 aria-label="이 결과 삭제"
                 className="w-7 h-7 -mr-1 rounded-lg flex-shrink-0 flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-white/5 transition-colors"
               >
-                <span className="material-symbols-outlined text-[16px]">close</span>
+                <span translate="no" className="material-symbols-outlined notranslate text-[16px]">close</span>
               </button>
             </div>
           </div>

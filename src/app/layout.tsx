@@ -41,11 +41,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // 한국어 사이트다. lang 이 "en" 이면 휴대폰 크롬이 한국어로 자동 번역을
-  // 걸면서 아이콘 이름(chevron_left 등)까지 "왼쪽 셰브론"으로 바꿔 화면이
-  // 깨졌다. 번역기가 카드 글자를 건드리는 것도 막는다(translate="no").
+  // 한국어 사이트다. 처음엔 lang 이 "en" 이라 휴대폰 크롬이 자동 번역을 걸면서 아이콘 이름(chevron_left 등)까지
+  // "왼쪽 셰브론"으로 바꿔 화면이 깨졌다. 그래서 한동안 사이트 전체에 translate="no" 를 걸었는데, 그러자 외국인이
+  // 번역 버튼을 눌러도 아무것도 번역되지 않았다(2026-11-11). 지금은 **아이콘과 카드 그림에만** 번역 금지
+  // (translate="no" + notranslate)를 걸고, 메뉴·안내 글은 번역되게 둔다.
   return (
-    <html lang="ko" translate="no" className={`${inter.variable} dark notranslate`}>
+    <html lang="ko" className={`${inter.variable} dark`}>
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />

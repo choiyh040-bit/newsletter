@@ -116,7 +116,7 @@ export default function SlideEditor({
     <div className="glass-panel p-5 space-y-5">
       <div className="flex items-center justify-between">
         <h4 className="text-white font-korean-bold text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-sm">edit</span>
+          <span translate="no" className="material-symbols-outlined notranslate text-primary text-sm">edit</span>
           {index + 1}번 장 고치기
         </h4>
         <span className="text-white/35 text-xs">

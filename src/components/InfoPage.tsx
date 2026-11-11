@@ -33,7 +33,7 @@ export default function InfoPage({
         <div className="flex justify-between items-center gap-2 px-4 md:px-12 h-16 w-full max-w-7xl mx-auto">
           <Link href="/" className="flex items-center gap-2 md:gap-2.5 hover:opacity-80 transition-opacity whitespace-nowrap">
             <div className="w-8 h-8 rounded-xl cta-gradient flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span translate="no" className="material-symbols-outlined notranslate text-white text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 auto_awesome
               </span>
             </div>

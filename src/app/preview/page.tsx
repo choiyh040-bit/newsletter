@@ -396,7 +396,7 @@ function PreviewContent() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 text-center px-6">
         <div className="w-20 h-20 rounded-2xl glass-panel flex items-center justify-center">
-          <span className="material-symbols-outlined text-primary text-4xl">article</span>
+          <span translate="no" className="material-symbols-outlined notranslate text-primary text-4xl">article</span>
         </div>
         <h2 className="font-korean-bold text-2xl text-white">생성된 카드뉴스가 없습니다</h2>
         <p className="text-white/50 font-korean-reg max-w-sm">
@@ -450,7 +450,7 @@ function PreviewContent() {
       )}
       {/* 캡처용 원본 카드. 화면 밖에 두되 display:none 은 쓰지 않는다.
           렌더링이 안 된 노드는 이미지로 구울 수 없기 때문이다. */}
-      <div aria-hidden style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none" }}>
+      <div aria-hidden translate="no" className="notranslate" style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none" }}>
         {data.slides.map((slide, i) => (
           <div
             key={slide.slideNumber}
@@ -476,7 +476,7 @@ function PreviewContent() {
         <div className="flex justify-between items-center gap-2 px-4 md:px-12 h-16 w-full max-w-7xl mx-auto">
           <Link href="/" className="flex items-center gap-2 md:gap-2.5 hover:opacity-80 transition-opacity whitespace-nowrap">
             <div className="w-7 h-7 rounded-lg cta-gradient flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span translate="no" className="material-symbols-outlined notranslate text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
                 auto_awesome
               </span>
             </div>
@@ -512,7 +512,8 @@ function PreviewContent() {
           {/* 카드 미리보기 */}
           <div ref={previewBoxRef} className="lg:col-span-7 min-w-0 flex flex-col items-center">
             <div
-              className="relative rounded-2xl overflow-hidden shadow-2xl"
+              className="relative rounded-2xl overflow-hidden shadow-2xl notranslate"
+              translate="no"
               style={{
                 width: CARD_WIDTH * previewScale,
                 height: CARD_HEIGHT * previewScale,
@@ -545,7 +546,7 @@ function PreviewContent() {
                 className="w-10 h-10 rounded-full glass-panel flex items-center justify-center hover:bg-white/10 transition-colors"
                 aria-label="이전 카드"
               >
-                <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
+                <span translate="no" className="material-symbols-outlined notranslate text-white text-xl">chevron_left</span>
               </button>
               <span className="text-white/60 text-sm font-korean-reg tabular-nums">
                 {current + 1} / {total}
@@ -555,7 +556,7 @@ function PreviewContent() {
                 className="w-10 h-10 rounded-full glass-panel flex items-center justify-center hover:bg-white/10 transition-colors"
                 aria-label="다음 카드"
               >
-                <span className="material-symbols-outlined text-white text-xl">chevron_right</span>
+                <span translate="no" className="material-symbols-outlined notranslate text-white text-xl">chevron_right</span>
               </button>
             </div>
           </div>
@@ -590,7 +591,7 @@ function PreviewContent() {
 
             <div className="glass-panel p-5">
               <h4 className="text-white font-korean-bold text-sm mb-1 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-sm">palette</span>
+                <span translate="no" className="material-symbols-outlined notranslate text-primary text-sm">palette</span>
                 디자인
               </h4>
               <p className="text-white/40 text-xs mb-4 font-korean-reg">
@@ -825,7 +826,7 @@ function PreviewContent() {
 
             <div className="glass-panel p-5">
               <h4 className="text-white font-korean-bold text-sm mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-sm">download</span>
+                <span translate="no" className="material-symbols-outlined notranslate text-primary text-sm">download</span>
                 내보내기
               </h4>
               <div className="grid grid-cols-2 gap-3">
@@ -977,7 +978,7 @@ function PreviewContent() {
                           aria-label="이 결과 삭제"
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-red-400 hover:bg-white/5 transition-colors flex-shrink-0"
                         >
-                          <span className="material-symbols-outlined text-[16px]">close</span>
+                          <span translate="no" className="material-symbols-outlined notranslate text-[16px]">close</span>
                         </button>
                       </li>
                     );
